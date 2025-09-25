@@ -644,6 +644,14 @@ const Index = () => {
     setAppState("landing");
   };
 
+  const handleMentorSignup = () => {
+    setAppState("mentor-signup");
+  };
+
+  const handleInvestorSignup = () => {
+    setAppState("investor-signup");
+  };
+
 
   const handleLogin = () => {
     setAppState("user-login");
@@ -1211,6 +1219,8 @@ const Index = () => {
         <FactoryLanding 
           onStartJourney={handleStartJourney} 
           onB2BConfig={handleB2BConfig}
+          onMentorSignup={handleMentorSignup}
+          onInvestorSignup={handleInvestorSignup}
           onLogin={handleLogin}
           onAccountCreation={handleAccountCreationFromLanding}
           onHome={() => { if (user) { logout(); } setAppState("landing"); }}

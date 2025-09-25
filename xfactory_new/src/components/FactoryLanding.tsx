@@ -5,6 +5,8 @@ import { ArrowRight, Factory, Cog, Users, Shield, TrendingUp, Target, Building2,
 interface FactoryLandingProps {
   onStartJourney: () => void;
   onB2BConfig: () => void;
+  onMentorSignup: () => void;
+  onInvestorSignup: () => void;
   onLogin: () => void;
   onAccountCreation: () => void;
   onHome: () => void;
@@ -13,6 +15,8 @@ interface FactoryLandingProps {
 export const FactoryLanding = ({
   onStartJourney,
   onB2BConfig,
+  onMentorSignup,
+  onInvestorSignup,
   onLogin,
   onAccountCreation,
   onHome,
@@ -33,11 +37,11 @@ export const FactoryLanding = ({
               <Button variant="outline" size="sm" onClick={onLogin}>
                 Login
               </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a href="mailto:trinity@ivyfactory.com?subject=Mentor Application">Contact Sales</a>
+              <Button variant="outline" size="sm" onClick={onMentorSignup}>
+                Join as Mentor
               </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a href="mailto:programs@ivyfactory.com?subject=Investor Application">Contact Sales</a>
+              <Button variant="outline" size="sm" onClick={onInvestorSignup}>
+                Join as Investor
               </Button>
               <Button variant="outline" size="sm" onClick={onB2BConfig}>
                 Admin Login
