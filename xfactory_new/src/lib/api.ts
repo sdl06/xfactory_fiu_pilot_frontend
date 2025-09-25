@@ -1,5 +1,5 @@
 import axios from 'axios';
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'https://api.ivyfactory.io/api';
 export const API_ORIGIN = (() => {
   try { return new URL(API_BASE_URL).origin; } catch { return 'https://api.ivyfactory.io'; }
 })();
