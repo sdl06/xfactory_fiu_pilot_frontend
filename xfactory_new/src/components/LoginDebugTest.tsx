@@ -12,7 +12,7 @@ export const LoginDebugTest = () => {
     setResult("Testing direct fetch...\n");
     
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login/', {
+      const response = await fetch('https://api.ivyfactory.io/api/auth/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ export const LoginDebugTest = () => {
     
     try {
       // First test a simple GET request
-      const getResponse = await fetch('http://localhost:8000/api/auth/profile/', {
+      const getResponse = await fetch('https://api.ivyfactory.io/api/auth/profile/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ export const LoginDebugTest = () => {
       setResult(prev => prev + `GET Status: ${getResponse.status}\n`);
       
       // Then test the POST request with CORS headers
-      const postResponse = await fetch('http://localhost:8000/api/auth/login/', {
+      const postResponse = await fetch('https://api.ivyfactory.io/api/auth/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

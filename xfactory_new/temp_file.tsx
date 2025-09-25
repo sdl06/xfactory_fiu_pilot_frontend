@@ -1571,7 +1571,7 @@ const TeamProgressView: React.FC<TeamProgressViewProps> = ({
                   onError={(event) => {
                     const target = event.target as HTMLImageElement;
                     if (mvpData.image_url && !target.src.includes('localhost:8000')) {
-                      target.src = `http://localhost:8000${mvpData.image_url}`;
+                      target.src = `https://api.ivyfactory.io${mvpData.image_url}`;
                     }
                   }}
                 />
