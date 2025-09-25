@@ -1272,7 +1272,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                                 // Fallback to direct backend URL if image fails to load
                                 const target = e.target as HTMLImageElement;
                                 if (mvpData.image_url && !target.src.includes('localhost:8000')) {
-                                  target.src = `http://localhost:8000${mvpData.image_url}`;
+                                  target.src = `https://api.ivyfactory.io${mvpData.image_url}`;
                                 }
                               }}
                             />
@@ -1999,7 +1999,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     try {
       setIsResettingAll(true);
       const token = localStorage.getItem('authToken');
-      await fetch('http://localhost:8000/api/auth/admin/reset-all-progress/', {
+      await fetch('https://api.ivyfactory.io/api/auth/admin/reset-all-progress/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

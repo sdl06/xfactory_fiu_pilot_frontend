@@ -32,9 +32,9 @@ const getBackendMediaUrl = (mediaPath: string): string => {
     // Fallbacks: pass-through absolute, prefix origin for relative
     const s = String(mediaPath || '');
     if (/^https?:\/\//i.test(s)) return s;
-    const origin = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api';
+    const origin = (import.meta as any).env?.VITE_API_URL || 'https://api.ivyfactory.io/api';
     // derive origin without trailing /api
-    const base = (() => { try { const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return 'http://localhost:8000'; } })();
+    const base = (() => { try { const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return 'https://api.ivyfactory.io'; } })();
     return s.startsWith('/') ? `${base}${s}` : `${base}/${s}`;
   }
 };

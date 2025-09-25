@@ -385,7 +385,7 @@ export const MVPDevelopmentStation = ({
                                 console.error('Failed to load image:', mvpImage);
                                 console.error('Image error:', e);
                                 // Try to construct a direct backend URL
-                                const backendUrl = mvpImage.startsWith('http') ? mvpImage : `http://localhost:8000${mvpImage}`;
+                                const backendUrl = mvpImage.startsWith('http') ? mvpImage : `https://api.ivyfactory.io${mvpImage}`;
                                 if (backendUrl !== mvpImage) {
                                   (e.target as HTMLImageElement).src = backendUrl;
                                 }
