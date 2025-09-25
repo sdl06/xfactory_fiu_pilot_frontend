@@ -5,8 +5,6 @@ import { ArrowRight, Factory, Cog, Users, Shield, TrendingUp, Target, Building2,
 interface FactoryLandingProps {
   onStartJourney: () => void;
   onB2BConfig: () => void;
-  onMentorSignup: () => void;
-  onInvestorSignup: () => void;
   onLogin: () => void;
   onAccountCreation: () => void;
   onHome: () => void;
@@ -15,8 +13,6 @@ interface FactoryLandingProps {
 export const FactoryLanding = ({
   onStartJourney,
   onB2BConfig,
-  onMentorSignup,
-  onInvestorSignup,
   onLogin,
   onAccountCreation,
   onHome,
@@ -31,17 +27,17 @@ export const FactoryLanding = ({
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <Factory className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-2xl font-bold">XFactory</span>
+              <span className="text-2xl font-bold">Ivy Factory</span>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" onClick={onLogin}>
                 Login
               </Button>
-              <Button variant="outline" size="sm" onClick={onMentorSignup}>
-                Join as Mentor
+              <Button variant="outline" size="sm" asChild>
+                <a href="mailto:trinity@ivyfactory.com?subject=Mentor Application">Contact Sales</a>
               </Button>
-              <Button variant="outline" size="sm" onClick={onInvestorSignup}>
-                Join as Investor
+              <Button variant="outline" size="sm" asChild>
+                <a href="mailto:programs@ivyfactory.com?subject=Investor Application">Contact Sales</a>
               </Button>
               <Button variant="outline" size="sm" onClick={onB2BConfig}>
                 Admin Login
@@ -61,7 +57,7 @@ export const FactoryLanding = ({
               </Badge>
               
               <h1 className="text-6xl md:text-7xl font-bold leading-tight">
-                <span className="text-primary">Startup</span>
+                <span className="text-primary">Ivy</span>
                 <br />
                 <span className="text-accent">Factory</span>
               </h1>
@@ -201,8 +197,8 @@ export const FactoryLanding = ({
                   <span>Professional development opportunities</span>
                 </div>
               </div>
-              <Button className="w-full" onClick={onMentorSignup}>
-                Apply as Mentor
+              <Button className="w-full" asChild>
+                <a href="mailto:trinity@ivyfactory.com?subject=Mentor Application">Contact Sales</a>
               </Button>
             </div>
 
@@ -229,8 +225,8 @@ export const FactoryLanding = ({
                   <span>Direct founder access</span>
                 </div>
               </div>
-              <Button variant="accent" className="w-full" onClick={onInvestorSignup}>
-                Join as Investor
+              <Button variant="accent" className="w-full" asChild>
+                <a href="mailto:programs@ivyfactory.com?subject=Investor Application">Contact Sales</a>
               </Button>
             </div>
           </div>
@@ -256,8 +252,8 @@ export const FactoryLanding = ({
               <p className="text-muted-foreground text-center mb-6">
                 Custom curriculum integration, student tracking, and academic mentor networks
               </p>
-              <Button variant="outline" className="w-full" onClick={onB2BConfig}>
-                Configure University Factory
+              <Button variant="outline" className="w-full" asChild>
+                <a href="mailto:trinity@ivyfactory.com?subject=University Factory Configuration">Contact Sales</a>
               </Button>
             </div>
 
@@ -269,8 +265,8 @@ export const FactoryLanding = ({
               <p className="text-muted-foreground text-center mb-6">
                 Cohort management, investor connections, and fast-track development programs
               </p>
-              <Button variant="accent" className="w-full" onClick={onB2BConfig}>
-                Setup Accelerator Factory
+              <Button variant="accent" className="w-full" asChild>
+                <a href="mailto:programs@ivyfactory.com?subject=Accelerator Factory Setup">Contact Sales</a>
               </Button>
             </div>
 
@@ -282,8 +278,8 @@ export const FactoryLanding = ({
               <p className="text-muted-foreground text-center mb-6">
                 Innovation labs, intrapreneurship programs, and corporate venture building
               </p>
-              <Button variant="success" className="w-full" onClick={onB2BConfig}>
-                Launch Corporate Factory
+              <Button variant="success" className="w-full" asChild>
+                <a href="mailto:trinity@ivyfactory.com?subject=Corporate Factory Launch">Contact Sales</a>
               </Button>
             </div>
           </div>

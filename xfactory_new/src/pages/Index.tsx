@@ -644,13 +644,6 @@ const Index = () => {
     setAppState("landing");
   };
 
-  const handleMentorSignup = () => {
-    setAppState("mentor-signup");
-  };
-
-  const handleInvestorSignup = () => {
-    setAppState("investor-signup");
-  };
 
   const handleLogin = () => {
     setAppState("user-login");
@@ -1018,22 +1011,16 @@ const Index = () => {
         if (teamId) {
           // Pre-load quantitative score to trigger validation complete window if all scores exist
           const quantScore = await apiClient.getQuantitativeScoreTeam(teamId);
-          console.log('DEBUG: Pre-loaded quantitative score for validation:', quantScore);
           
           // Only proceed if we got a valid score (not 404)
           const score = (quantScore as any)?.data?.score || (quantScore as any)?.score || null;
           if (score && typeof score.final_score_50 === 'number') {
-            console.log('DEBUG: Valid quantitative score found, validation may be complete');
           } else {
-            console.log('DEBUG: No valid quantitative score found, validation not complete');
           }
         }
       } catch (e: any) {
         // Handle 404 specifically - don't mark as done if quantitative score doesn't exist
         if (e?.status === 404 || e?.response?.status === 404) {
-          console.log('DEBUG: Quantitative score not found (404), validation not complete');
-        } else {
-          console.log('DEBUG: Error pre-loading quantitative score:', e);
         }
       }
       
@@ -1059,9 +1046,6 @@ const Index = () => {
     setAppState("dashboard");
   };
 
-  const handleEnterCommunity = () => {
-    setAppState("community");
-  };
 
   const handleStationComplete = (stationId: number, data: any) => {
     setStationData(prev => {
@@ -1227,44 +1211,10 @@ const Index = () => {
         <FactoryLanding 
           onStartJourney={handleStartJourney} 
           onB2BConfig={handleB2BConfig}
-          onMentorSignup={handleMentorSignup}
-          onInvestorSignup={handleInvestorSignup}
           onLogin={handleLogin}
           onAccountCreation={handleAccountCreationFromLanding}
           onHome={() => { if (user) { logout(); } setAppState("landing"); }}
         />
-        {/* Debug info */}
-        <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.8)', color: 'white', padding: '10px', fontSize: '12px', borderRadius: '5px'}}>
-          <div>App State: {appState}</div>
-          <div>User: {user ? user.email : 'None'}</div>
-          <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
-          <button onClick={async () => {
-            try {
-              const { apiClient } = await import("@/lib/api");
-              await apiClient.resetProgress();
-            } catch {}
-            // Clear team-scoped local storage keys
-            try {
-              const teamId = localStorage.getItem('xfactoryTeamId');
-              const prefixes = [
-                'xfactoryIdeaId', 'xfactoryConceptTitle', 'xfactoryIdeaCompleted', 'xfactoryStationCompleted_1',
-                'xfactoryBrainstormOpportunities', 'xfactoryBrainstormUserProblems'
-              ];
-              prefixes.forEach((p) => {
-                if (teamId) localStorage.removeItem(`${p}_${teamId}`);
-                localStorage.removeItem(p);
-              });
-            } catch {}
-            alert('Progress reset');
-          }} style={{marginTop: 6, padding: '4px 8px', background: '#444', color: '#fff', border: 'none', borderRadius: 4}}>Reset Progress</button>
-          <button onClick={async () => {
-            try {
-              const token = localStorage.getItem('authToken');
-              await fetch('http://localhost:8000/api/auth/admin/reset-all-progress/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Token ${token}` } : {}) } });
-              alert('All progress and artifacts reset');
-            } catch {}
-          }} style={{marginTop: 6, marginLeft: 6, padding: '4px 8px', background: '#822', color: '#fff', border: 'none', borderRadius: 4}}>Reset ALL (Admin)</button>
-        </div>
       </div>
     );
   }
@@ -1285,11 +1235,6 @@ const Index = () => {
     return (
       <div>
         <AccountCreationFlow onComplete={handleAccountComplete} onBack={handleBackToLanding} forceNewAccount={!user} />
-        {/* Debug info */}
-        <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(255,255,0,0.8)', color: 'black', padding: '10px', fontSize: '12px', borderRadius: '5px'}}>
-          <div>⚠️ TEAM FORMATION</div>
-          <div>User: {user ? user.email : 'None'}</div>
-        </div>
       </div>
     );
   }
@@ -1329,14 +1274,7 @@ const Index = () => {
           onBack={onboardingBackHandler}
           // Force remount when we gain concept card data so initialStep applies
           key={stationData?.ideaCard ? 'onboarding-with-card' : 'onboarding-default'}
-          initialStep={stationData?.onboardingInitialStep ?? (stationData?.ideaCard ? 4 : 1)}
-          initialConceptCardData={stationData?.ideaCard}
         />
-        {/* Debug info */}
-        <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,255,0,0.8)', color: 'black', padding: '10px', fontSize: '12px', borderRadius: '5px'}}>
-          <div>✅ ONBOARDING (Idea Generation)</div>
-          <div>User: {user ? user.email : 'None'}</div>
-        </div>
       </div>
     );
   }
@@ -1357,7 +1295,7 @@ const Index = () => {
           stationData={stationData}
           onEnterStation={handleEnterStation}
           onGoHome={handleBackToLanding}
-          onEnterCommunity={handleEnterCommunity}
+          onEnterCommunity={() => setAppState("community")}
         />
 
         {/* Idea Review Modal (dashboard-level, Station 1) */}
@@ -1791,7 +1729,7 @@ const Index = () => {
         stationData={stationData}
         onEnterStation={handleEnterStation}
         onGoHome={handleBackToLanding}
-        onEnterCommunity={handleEnterCommunity}
+        onEnterCommunity={() => setAppState("community")}
       />
     );
   }
@@ -1804,7 +1742,7 @@ const Index = () => {
           stationData={stationData}
           onEnterStation={handleEnterStation}
           onGoHome={handleBackToLanding}
-          onEnterCommunity={handleEnterCommunity}
+          onEnterCommunity={() => setAppState("community")}
         />
         <CompletionCelebration onClose={() => setAppState("community")} />
       </>

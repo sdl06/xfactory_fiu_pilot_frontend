@@ -93,7 +93,6 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
         return;
       }
 
-      console.log('Regenerating financials for city:', city);
 
       // Get current team ID
       const status = await apiClient.get('/team-formation/status/');
@@ -110,10 +109,8 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
         const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
         ideaId = (ideaResponse as any)?.data?.id;
       } catch (error) {
-        console.log('No idea found, proceeding without idea context');
       }
 
-      console.log('Calling AI generation for city:', city, 'teamId:', teamId, 'ideaId:', ideaId);
 
       // Force regenerate - always generate new AI data
       const businessModel = previousData?.businessModel || previousData?.concept || 'SaaS Platform';
@@ -160,7 +157,6 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
         const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
         ideaId = (ideaResponse as any)?.data?.id;
       } catch (error) {
-        console.log('No idea found, proceeding without idea context');
       }
 
       // Always generate new AI-powered finance setup
@@ -630,7 +626,6 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
         const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
         ideaId = (ideaResponse as any)?.data?.id;
       } catch (error) {
-        console.log('No idea found, proceeding without idea context');
       }
 
       // Prepare finance data for auto-save
@@ -728,7 +723,6 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
             const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
             ideaId = (ideaResponse as any)?.data?.id;
           } catch (error) {
-            console.log('No idea found, proceeding without idea context');
           }
 
           // Create or update finance setup

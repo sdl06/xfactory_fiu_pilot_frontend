@@ -81,12 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    console.log('Login attempt for:', email);
-    
     try {
       const response = await apiClient.login(email, password);
-      console.log('Login response status:', response.status);
-      console.log('Login response data:', response.data ? 'SUCCESS' : 'FAILED');
 
       if (response.data && response.data.token) {
         console.log('Setting auth data...');

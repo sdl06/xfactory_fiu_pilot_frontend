@@ -97,7 +97,6 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         await apiClient.saveSurveyInsightsTeam(teamId, questions);
       }
     } catch (e) {
-      console.error('Error saving survey insights:', e);
     }
   };
 

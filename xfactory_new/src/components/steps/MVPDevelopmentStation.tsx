@@ -61,7 +61,6 @@ export const MVPDevelopmentStation = ({
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
     } catch (error) {
-      console.error('Error updating task status:', error);
       alert('Failed to update task status. Please try again.');
     }
   };

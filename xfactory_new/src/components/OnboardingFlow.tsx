@@ -195,51 +195,8 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
     } catch {}
   };
 
-  // On mount: if user has a concept card but hasn't submitted elevator pitch,
-  // jump straight to the Concept Card (step 4)
-  useEffect(() => {
-    const checkConceptCardAndElevator = async () => {
-      try {
-        const status = await apiClient.get('/team-formation/status/');
-        const teamId = (status as any)?.data?.current_team?.id;
-        if (!teamId) return;
-
-        // Fetch elevator pitch submission status
-        let elevatorSubmitted = false;
-        try {
-          const elevRes = await apiClient.getElevatorPitchSubmission(teamId);
-          const elevData: any = elevRes?.data || {};
-          if (typeof elevData.google_drive_link === 'string') setElevatorLink(elevData.google_drive_link);
-          elevatorSubmitted = !!elevData.submitted;
-          setElevatorSaved(elevatorSubmitted);
-        } catch {}
-
-        if (elevatorSubmitted) return; // Already submitted; keep normal flow
-
-        // Fetch existing concept card
-        try {
-          const cardRes = await apiClient.getTeamConceptCard(teamId);
-          const conceptData: any = cardRes?.data;
-          if (conceptData) {
-            // Map backend response into our UI shape
-            const mapped = {
-              businessSummary: conceptData.title || 'AI-powered startup concept',
-              problem: conceptData.problem || data.problem || data.questionnaireData?.problem_description || 'Problem to be defined',
-              customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || data.target || data.questionnaireData?.target_who_feels_most || 'Target audience based on your analysis',
-              existingAlternatives: conceptData.current_solutions || data.questionnaireData?.current_solutions || 'Current market solutions that your analysis identified as insufficient',
-              solutionConcept: conceptData.solution || data.solution || data.questionnaireData?.solution_concept || 'Solution approach based on your insights',
-              businessModel: conceptData.business_model || data.businessModel || '',
-              assumptions: conceptData.assumptions || []
-            };
-            setData(prev => ({ ...prev, hasIdea: true, conceptCard: mapped }));
-            setStep(4);
-          }
-        } catch {}
-      } catch {}
-    };
-    checkConceptCardAndElevator();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Removed: auto-jump to concept card on mount. Users should only reach the
+  // concept card after completing prior steps or when re-entering with a saved flow.
 
   const handleBack = () => {
     if (step === 1) {
@@ -435,13 +392,10 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             });
                             
                             if (result.status >= 200 && result.status < 300) {
-                              console.log('Idea saved successfully:', result.data);
                             } else {
-                              console.error('Failed to save idea:', result.error);
                             }
                           }
                         } catch (error) {
-                          console.error('Failed to save user input:', error);
                         }
                         
                         const summary = `Problem: ${data.problem || ''}\nSolution: ${data.solution || ''}\nTarget: ${data.target || ''}\nBusiness Model: ${data.businessModel || ''}`;

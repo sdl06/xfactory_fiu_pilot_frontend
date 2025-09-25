@@ -1,5 +1,5 @@
 import axios from 'axios';
-const API_BASE_URL = 'https://api.ivyfactory.io/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 export const API_ORIGIN = (() => {
   try { return new URL(API_BASE_URL).origin; } catch { return 'https://api.ivyfactory.io'; }
 })();
@@ -24,6 +24,34 @@ class ApiClient {
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+  }
+
+  // Get CSRF token from server
+  async getCSRFToken(): Promise<string> {
+    try {
+      // First try to get from cookies
+      const name = 'csrftoken';
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) {
+        const token = parts.pop()?.split(';').shift();
+        if (token) return token;
+      }
+      
+      // If not in cookies, fetch from server
+      const response = await fetch(`${this.baseUrl}/auth/csrf/`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.csrfToken || '';
+      }
+    } catch (error) {
+      console.warn('Failed to get CSRF token:', error);
+    }
+    return '';
   }
 
   private getAuthHeaders(): Record<string, string> {
@@ -79,7 +107,6 @@ class ApiClient {
         };
       }
     } catch (error) {
-      console.error('API request failed:', error);
       return { 
         error: 'Network error. Please check your connection.', 
         status: 0 
@@ -126,23 +153,33 @@ class ApiClient {
 
   // Auth endpoints
   async login(email: string, password: string) {
-    // Login should NOT include auth headers since we're trying to get a token
+    // First, get CSRF token
+    const csrfToken = await this.getCSRFToken();
+    console.log('🔍 API DEBUG: CSRF Token:', csrfToken);
+    
     const url = `${this.baseUrl}/auth/login/`;
+    const requestData = { email, password };
+    
+    console.log('🔍 API DEBUG: Login request:', { url, email, csrfToken: csrfToken ? 'Present' : 'Missing' });
     
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
         },
-        body: JSON.stringify({ email, password }),
+        credentials: 'include', // Include cookies for CSRF
+        body: JSON.stringify(requestData),
       });
 
       const data = await response.json();
+      console.log('🔍 API DEBUG: Response:', { status: response.status, ok: response.ok, data });
 
       if (response.ok) {
         return { data, status: response.status };
       } else {
+        console.log('🔍 API DEBUG: Login failed:', { status: response.status, data });
         return { 
           error: data.error || data.message || 'Login failed',
           data: data,

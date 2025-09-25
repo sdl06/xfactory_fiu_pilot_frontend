@@ -296,7 +296,7 @@ export const FactoryDashboard = ({
               <Factory className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{conceptTitle || 'xFactory Dashboard'}</h1>
+              <h1 className="text-2xl font-bold text-foreground">Ivy Factory Dashboard</h1>
               <p className="text-sm text-muted-foreground">Your startup journey</p>
             </div>
           </div>
@@ -308,10 +308,6 @@ export const FactoryDashboard = ({
             <Button variant="secondary" onClick={() => { setShowMembers(true); loadMembers(); }}>
               <Users className="h-4 w-4 mr-2" />
               Members
-            </Button>
-            <Button variant="warning" onClick={() => onEnterStation(2)}>
-              <Image className="h-4 w-4 mr-2" />
-              Mockup Station
             </Button>
           </div>
         </div>
@@ -523,9 +519,11 @@ export const FactoryDashboard = ({
               <Users className="h-5 w-5" />
               <span>Factory Community</span>
             </Button>
-            <Button variant="machinery" size="sm" className="h-auto p-4 flex-col gap-2">
-              <Cog className="h-5 w-5" />
-              <span>Support Crew</span>
+            <Button variant="machinery" size="sm" className="h-auto p-4 flex-col gap-2" style={{ animation: 'none' }} asChild>
+              <a href="mailto:trinity@ivyfactory.com,adelaide@ivyfactory.com?subject=Support Request">
+                <Cog className="h-5 w-5" />
+                <span>Support Crew</span>
+              </a>
             </Button>
             <Button variant="warning" size="sm" className="h-auto p-4 flex-col gap-2" onClick={() => onEnterStation(4)}>
               <TrendingUp className="h-5 w-5" />

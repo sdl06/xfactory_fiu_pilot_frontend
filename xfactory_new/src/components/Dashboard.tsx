@@ -141,10 +141,10 @@ export const Dashboard = ({ userData }: DashboardProps) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">X</span>
+                <span className="text-primary-foreground font-bold">I</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">xFactory Dashboard</h1>
+                <h1 className="text-xl font-bold text-foreground">Ivy Factory Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
                   {userData.businessType} • {userData.ideaSummary.slice(0, 50)}...
                 </p>

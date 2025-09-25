@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import {
@@ -305,6 +304,15 @@ export const ProductionLineFlow = ({
   const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
   const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
+  
+  // Viewport metrics for positioning
+  const [viewportMetrics, setViewportMetrics] = useState({
+    x: 0,
+    y: 0,
+    zoom: 1,
+    width: 0,
+    height: 0
+  });
 
   // Stable reference for loading admin locks
   const loadAdminLocks = useCallback(async () => {
@@ -443,13 +451,9 @@ export const ProductionLineFlow = ({
   // Build pipeline order: after 7, include workshops 12-14, then continue 8..11, and 15
   const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15], []);
 
-  // Calculate dynamic container height based on content  
-  const calculateContainerHeight = () => {
-    const titleSectionHeight = 140; // Reduced space for title and workshops
-    const rows = Math.ceil(pipelineOrder.length / 3);
-    const mainFlowHeight = rows * 240 + 80; // tighter vertical spacing
-    return titleSectionHeight + mainFlowHeight + 60; // Extra bottom padding
-  };
+  // Fixed container height for consistent layout (desktop), adaptive on ultra-narrow devices
+  const isUltraNarrow = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 420px)').matches : false;
+  const FIXED_CONTAINER_HEIGHT = isUltraNarrow ? (typeof window !== 'undefined' ? Math.max(Math.floor(window.innerHeight * 0.7), 560) : 560) : 1400;
 
   // Memoize nodes calculation (top workshops + pipeline grid)
   const initialNodes: any[] = useMemo(() => {
@@ -607,35 +611,62 @@ export const ProductionLineFlow = ({
     return edgesNext;
   }, [stateKey, getStationStatus]); // Only depend on stateKey and stable functions
 
-  // Use dynamic container height
-  const containerHeight = calculateContainerHeight();
+  // Handle viewport changes to track metrics
+  const onViewportChange = useCallback((viewport: any) => {
+    setViewportMetrics(prev => ({
+      ...prev,
+      x: Math.round(viewport.x),
+      y: Math.round(viewport.y),
+      zoom: Math.round(viewport.zoom * 100) / 100
+    }));
+  }, []);
+
+  // Handle resize to track container dimensions
+  const onResize = useCallback((dimensions: any) => {
+    setViewportMetrics(prev => ({
+      ...prev,
+      width: Math.round(dimensions.width),
+      height: Math.round(dimensions.height)
+    }));
+  }, []);
 
   return (
-    <div className="w-full bg-transparent" style={{ height: `${containerHeight}px` }}>
-      <ReactFlow
-        nodes={finalNodes}
-        edges={finalEdges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ 
-          padding: 0.1,
-          includeHiddenNodes: false,
-          minZoom: 0.6,
-          maxZoom: 1.2
-        }}
-        zoomOnScroll={false}
-        zoomOnPinch={false}
-        zoomOnDoubleClick={false}
-        panOnScroll={false}
-        attributionPosition="bottom-left"
-        proOptions={{ hideAttribution: true }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={true}
-        panOnDrag={false}
-      >
-        {/* Background/Controls removed to match installed @xyflow/react typings */}
-      </ReactFlow>
+    <div className="w-full bg-transparent relative" style={{ height: `${FIXED_CONTAINER_HEIGHT}px` }}>
+      <div className={isUltraNarrow ? "absolute inset-0 overflow-auto" : "absolute inset-0 overflow-auto hover:overflow-auto"}>
+        <ReactFlow
+          nodes={finalNodes}
+          edges={finalEdges}
+          nodeTypes={nodeTypes}
+          defaultViewport={isUltraNarrow ? { x: -40, y: -40, zoom: 0.6 } : { x: -62, y: -65, zoom: 0.88 }}
+          fitView={false}
+          zoomOnScroll={false}
+          zoomOnPinch={false}
+          zoomOnDoubleClick={false}
+          panOnScroll={false}
+          preventScrolling={false}
+          attributionPosition="bottom-left"
+          proOptions={{ hideAttribution: true }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={true}
+          panOnDrag={isUltraNarrow ? true : false}
+          onViewportChange={onViewportChange}
+          onResize={onResize}
+        >
+          {/* Background/Controls removed to match installed @xyflow/react typings */}
+        </ReactFlow>
+      </div>
+      
+      {/* Viewport Metrics Display - Bottom Right Corner */}
+      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs font-mono p-2 rounded border backdrop-blur-sm">
+        <div className="space-y-1">
+          <div>X: {viewportMetrics.x}</div>
+          <div>Y: {viewportMetrics.y}</div>
+          <div>Zoom: {viewportMetrics.zoom}</div>
+          <div>W: {viewportMetrics.width}</div>
+          <div>H: {viewportMetrics.height}</div>
+        </div>
+      </div>
     </div>
   );
 };

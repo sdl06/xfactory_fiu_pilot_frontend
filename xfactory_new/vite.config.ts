@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  esbuild: {
+    // Strip console/debugger in production builds only
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
     define: {
       // Expose only the required env keys for libs that read process.env
       'process.env.V0_API_KEY': JSON.stringify(V0_API_KEY),

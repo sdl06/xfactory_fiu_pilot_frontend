@@ -211,18 +211,18 @@ const FlowchartSVG = ({ flow }: { flow: { lanes?: string[]; nodes: AdmFlowNode[]
       <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} preserveAspectRatio="xMidYMid meet" className="min-w-full" style={{ width: '100%', height: 420 }}>
         <g transform={`translate(${tx}, ${ty}) scale(${scaleX}, ${scaleY})`}>
           {/* Swimlanes */}
-          {lanes.map((l, i) => (
-            <g key={l}>
+      {lanes.map((l, i) => (
+        <g key={l}>
               <rect x={0} y={lanePad + i * laneH - laneH/2 + laneH/2} width={rawWidth} height={laneH} fill={i % 2 === 0 ? '#fafafa' : '#ffffff'} stroke="#f3f4f6" />
               <text x={12} y={lanePad + i * laneH + 18} fill="#6b7280" fontSize={12} fontWeight={700}>{l}</text>
-            </g>
-          ))}
+        </g>
+      ))}
           {/* Edges with elbow routing */}
-          <defs>
-            <marker id="adm-edge" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-              <path d="M0,0 L0,10 L10,5 z" fill="#6d28d9" />
-            </marker>
-          </defs>
+      <defs>
+        <marker id="adm-edge" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M0,0 L0,10 L10,5 z" fill="#6d28d9" />
+        </marker>
+      </defs>
           {edges.map((e, i) => {
             const a = xy[e.from]; const b = xy[e.to]; if (!a || !b) return null;
             // Limit horizontal runs so edges don't span the full width visually
@@ -296,7 +296,7 @@ const FlowchartSVG = ({ flow }: { flow: { lanes?: string[]; nodes: AdmFlowNode[]
           );
         })}
         </g>
-      </svg>
+    </svg>
     </div>
   );
 };
@@ -431,12 +431,9 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
 
   // Map interview kit data (same as ValidationEngine)
   const mapInterviewKit = (raw: any) => {
-    console.log('DEBUG: mapInterviewKit called with raw data:', raw);
     if (!raw) return null;
     const data = raw.data || raw;
-    console.log('DEBUG: mapInterviewKit data:', data);
     const user_personas = data.user_personas || data.interview_profiles || [];
-    console.log('DEBUG: mapInterviewKit user_personas:', user_personas);
     const demographic_questions = data.demographic_questions || data.warm_up_questions || [];
     const market_validation_questions = data.market_validation_questions || [];
     const solution_questions = data.solution_questions || data.solution_feedback_questions || [];
@@ -837,14 +834,14 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                     );
                   })()}
                 </div>
-                <TeamProgressView
-                  team={team}
-                  initialSection="finance"
-                  mode="admin"
-                  showSectionNavigation={false}
-                  onBack={() => setIsViewing(false)}
+              <TeamProgressView
+                team={team}
+                initialSection="finance"
+                mode="admin"
+                showSectionNavigation={false}
+                onBack={() => setIsViewing(false)}
                   key={`finance-${team.id}`}
-                />
+              />
               </div>
             )}
 
@@ -882,14 +879,14 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                     );
                   })()}
                 </div>
-                <TeamProgressView
-                  team={team}
-                  initialSection="marketing"
-                  mode="admin"
-                  showSectionNavigation={false}
-                  onBack={() => setIsViewing(false)}
+              <TeamProgressView
+                team={team}
+                initialSection="marketing"
+                mode="admin"
+                showSectionNavigation={false}
+                onBack={() => setIsViewing(false)}
                   key={`marketing-${team.id}`}
-                />
+              />
               </div>
             )}
             {selectedSection === 'idea' && (
@@ -2269,7 +2266,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                 <Factory className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">xFactory Admin Dashboard</h1>
+                <h1 className="text-xl font-bold text-foreground">Ivy Factory Admin Dashboard</h1>
                 <p className="text-sm text-muted-foreground">Manage student access and permissions</p>
               </div>
             </div>
@@ -2380,7 +2377,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                       <div>
                         <div className="font-semibold">{team.name}</div>
                         <div className="text-xs text-muted-foreground">{team.description || 'No description'}</div>
-                    <div className="mt-1 text-xs">
+                          <div className="mt-1 text-xs">
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">Mentor: </span>
                         {Array.isArray(team.mentors) && team.mentors.length > 0 ? (
@@ -2404,7 +2401,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                         >
                           Manage
                         </Button>
-                      </div>
+                          </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-muted-foreground">Investor: </span>
                         {Array.isArray(team.investors) && team.investors.length > 0 ? (

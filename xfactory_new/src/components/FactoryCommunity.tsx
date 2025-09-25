@@ -272,7 +272,7 @@ export const FactoryCommunity = ({ onGoBack }: FactoryCommunityProps) => {
                   <Users className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-slate-50">Factory Community</h1>
+                  <h1 className="text-xl font-bold text-slate-50">Ivy Factory Community</h1>
                   <p className="text-sm text-slate-50">Connect, collaborate, and build together</p>
                 </div>
               </div>

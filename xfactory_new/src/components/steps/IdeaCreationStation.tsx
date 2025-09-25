@@ -157,7 +157,6 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
             }));
           }
         } catch (error) {
-          console.log('Could not load team idea data:', error);
         }
       }
 
