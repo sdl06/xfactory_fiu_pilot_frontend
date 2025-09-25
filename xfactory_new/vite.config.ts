@@ -27,10 +27,10 @@ export default defineConfig(({ mode }) => {
     // Strip console/debugger in production builds only
     drop: mode === 'production' ? ['console', 'debugger'] : [],
   },
-    define: {
-      // Expose only the required env keys for libs that read process.env
-      'process.env.V0_API_KEY': JSON.stringify(V0_API_KEY),
-      'process.env.V0_PROJECT_ID': JSON.stringify(V0_PROJECT_ID),
-    }
+  define: {
+    // Expose only the required env keys for libs that read process.env
+    'process.env.V0_API_KEY': JSON.stringify(V0_API_KEY),
+    'process.env.V0_PROJECT_ID': JSON.stringify(V0_PROJECT_ID),
   }
+}
 });
