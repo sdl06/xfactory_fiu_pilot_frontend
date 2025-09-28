@@ -673,15 +673,33 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
         if (teamId) {
           // Always generate a new concept card when not in review mode
           if (!reviewMode) {
-            try { await apiClient.generateTeamConceptCard(teamId); } catch {}
+            try { 
+              console.log('Generating new concept card for team:', teamId);
+              const generateResult = await apiClient.generateTeamConceptCard(teamId);
+              console.log('Generate concept card result:', generateResult);
+            } catch (error) {
+              console.error('Failed to generate concept card:', error);
+            }
           }
           
           // Get the concept card (either newly generated or existing)
           let teamCardRes: any = await apiClient.getTeamConceptCard(teamId);
+          console.log('Get concept card result:', teamCardRes);
           const ok = teamCardRes && teamCardRes.status >= 200 && teamCardRes.status < 300 && !('error' in teamCardRes);
           if (!ok) {
-            try { await apiClient.generateTeamConceptCard(teamId); } catch {}
-            try { teamCardRes = await apiClient.getTeamConceptCard(teamId) as any; } catch {}
+            console.log('Concept card not found or error, attempting to generate...');
+            try { 
+              const retryGenerate = await apiClient.generateTeamConceptCard(teamId);
+              console.log('Retry generate result:', retryGenerate);
+            } catch (error) {
+              console.error('Retry generate failed:', error);
+            }
+            try { 
+              teamCardRes = await apiClient.getTeamConceptCard(teamId) as any;
+              console.log('Retry get concept card result:', teamCardRes);
+            } catch (error) {
+              console.error('Retry get concept card failed:', error);
+            }
           }
           const tcRaw: any = (teamCardRes && !('error' in teamCardRes)) ? (teamCardRes as any).data : null;
           let pstForSummary: any = {};
