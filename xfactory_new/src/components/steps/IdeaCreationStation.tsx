@@ -671,6 +671,12 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
         const teamIdStr = localStorage.getItem('xfactoryTeamId');
         const teamId = teamIdStr ? Number(teamIdStr) : null;
         if (teamId) {
+          // Always generate a new concept card when not in review mode
+          if (!reviewMode) {
+            try { await apiClient.generateTeamConceptCard(teamId); } catch {}
+          }
+          
+          // Get the concept card (either newly generated or existing)
           let teamCardRes: any = await apiClient.getTeamConceptCard(teamId);
           const ok = teamCardRes && teamCardRes.status >= 200 && teamCardRes.status < 300 && !('error' in teamCardRes);
           if (!ok) {
