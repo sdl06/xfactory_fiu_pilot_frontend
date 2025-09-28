@@ -129,6 +129,18 @@ export function OutputCard({ type, data, onNext, onDownload, isVisible }: Output
                 <>
                   <h4 className="font-semibold">{data.title || data.ideaName || "Your Business"}</h4>
                   <p className="text-sm text-white/80">{data.summary || "Your startup concept"}</p>
+                  {data.problem && (
+                    <div className="text-sm">
+                      <span className="font-medium text-white/90">Problem: </span>
+                      <span className="text-white/80">{data.problem}</span>
+                    </div>
+                  )}
+                  {data.current_solutions && (
+                    <div className="text-sm">
+                      <span className="font-medium text-white/90">Current Solutions: </span>
+                      <span className="text-white/80">{data.current_solutions}</span>
+                    </div>
+                  )}
                 </>
               )}
               
@@ -138,6 +150,26 @@ export function OutputCard({ type, data, onNext, onDownload, isVisible }: Output
             {/* Expanded Details */}
             {isExpanded && (
               <div className="mt-4 p-3 bg-white/10 rounded space-y-4 text-sm">
+                {/* Problem Statement */}
+                {data.problem && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-white">Problem Statement</h5>
+                    <div className="bg-white/10 rounded p-2">
+                      <p className="text-white/90">{data.problem}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Current Solutions */}
+                {data.current_solutions && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-white">Current Solutions</h5>
+                    <div className="bg-white/10 rounded p-2">
+                      <p className="text-white/90">{data.current_solutions}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Primary Persona */}
                 {data.primary_persona && (
                   <div className="space-y-2">
@@ -160,46 +192,64 @@ export function OutputCard({ type, data, onNext, onDownload, isVisible }: Output
                 )}
 
                 {/* Key Assumptions */}
-                {(data.assumption_1 || data.assumption_2 || data.assumption_3) && (
+                {(data.assumptions && Array.isArray(data.assumptions) && data.assumptions.length > 0) || (data.assumption_1 || data.assumption_2 || data.assumption_3) ? (
                   <div className="space-y-2">
                     <h5 className="font-semibold text-white">Key Assumptions</h5>
                     <div className="space-y-2">
-                      {data.assumption_1 && (
-                        <div className="bg-white/10 rounded p-2">
-                          <p className="font-medium">1. {data.assumption_1}</p>
-                          {data.assumption_1_confidence && (
-                            <p className="text-xs text-white/70">Confidence: {data.assumption_1_confidence}%</p>
+                      {/* Handle assumptions array from backend */}
+                      {data.assumptions && Array.isArray(data.assumptions) && data.assumptions.length > 0 ? (
+                        data.assumptions.slice(0, 3).map((assumption: any, index: number) => (
+                          <div key={index} className="bg-white/10 rounded p-2">
+                            <p className="font-medium">{index + 1}. {assumption.text || assumption}</p>
+                            {assumption.confidence && (
+                              <p className="text-xs text-white/70">Confidence: {assumption.confidence}%</p>
+                            )}
+                            {assumption.testing_plan && (
+                              <p className="text-xs text-white/70">Test: {assumption.testing_plan}</p>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        /* Fallback to individual assumption fields */
+                        <>
+                          {data.assumption_1 && (
+                            <div className="bg-white/10 rounded p-2">
+                              <p className="font-medium">1. {data.assumption_1}</p>
+                              {data.assumption_1_confidence && (
+                                <p className="text-xs text-white/70">Confidence: {data.assumption_1_confidence}%</p>
+                              )}
+                              {data.assumption_1_testing_plan && (
+                                <p className="text-xs text-white/70">Test: {data.assumption_1_testing_plan}</p>
+                              )}
+                            </div>
                           )}
-                          {data.assumption_1_testing_plan && (
-                            <p className="text-xs text-white/70">Test: {data.assumption_1_testing_plan}</p>
+                          {data.assumption_2 && (
+                            <div className="bg-white/10 rounded p-2">
+                              <p className="font-medium">2. {data.assumption_2}</p>
+                              {data.assumption_2_confidence && (
+                                <p className="text-xs text-white/70">Confidence: {data.assumption_2_confidence}%</p>
+                              )}
+                              {data.assumption_2_testing_plan && (
+                                <p className="text-xs text-white/70">Test: {data.assumption_2_testing_plan}</p>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      )}
-                      {data.assumption_2 && (
-                        <div className="bg-white/10 rounded p-2">
-                          <p className="font-medium">2. {data.assumption_2}</p>
-                          {data.assumption_2_confidence && (
-                            <p className="text-xs text-white/70">Confidence: {data.assumption_2_confidence}%</p>
+                          {data.assumption_3 && (
+                            <div className="bg-white/10 rounded p-2">
+                              <p className="font-medium">3. {data.assumption_3}</p>
+                              {data.assumption_3_confidence && (
+                                <p className="text-xs text-white/70">Confidence: {data.assumption_3_confidence}%</p>
+                              )}
+                              {data.assumption_3_testing_plan && (
+                                <p className="text-xs text-white/70">Test: {data.assumption_3_testing_plan}</p>
+                              )}
+                            </div>
                           )}
-                          {data.assumption_2_testing_plan && (
-                            <p className="text-xs text-white/70">Test: {data.assumption_2_testing_plan}</p>
-                          )}
-                        </div>
-                      )}
-                      {data.assumption_3 && (
-                        <div className="bg-white/10 rounded p-2">
-                          <p className="font-medium">3. {data.assumption_3}</p>
-                          {data.assumption_3_confidence && (
-                            <p className="text-xs text-white/70">Confidence: {data.assumption_3_confidence}%</p>
-                          )}
-                          {data.assumption_3_testing_plan && (
-                            <p className="text-xs text-white/70">Test: {data.assumption_3_testing_plan}</p>
-                          )}
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 {/* Tagline */}
                 {data.tagline && (

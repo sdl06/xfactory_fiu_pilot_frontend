@@ -356,6 +356,36 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
     })();
   }, []);
 
+  // Check if concept card exists and adjust step accordingly
+  useEffect(() => {
+    const checkExistingConceptCard = async () => {
+      try {
+        const teamIdStr = localStorage.getItem('xfactoryTeamId');
+        const teamId = teamIdStr ? Number(teamIdStr) : null;
+        
+        if (teamId && !reviewMode) {
+          // Check if a concept card already exists
+          try {
+            const cardRes: any = await apiClient.getTeamConceptCard(teamId);
+            const hasCard = !!(cardRes && cardRes.status >= 200 && cardRes.status < 300 && (cardRes as any).data);
+            
+            if (hasCard) {
+              // If concept card exists, skip to step 3 (concept card generation/display)
+              setStep(3);
+            }
+          } catch (error) {
+            // If no concept card exists, stay at step 2
+            console.log('No existing concept card found, staying at step 2');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for existing concept card:', error);
+      }
+    };
+
+    checkExistingConceptCard();
+  }, [teamId, reviewMode]);
+
   // Completion gating considers both locally built state and backend-loaded review data
   const hasBrainstorm = (
     Array.isArray((ideaData as any).opportunities) && (ideaData as any).opportunities.length > 0 &&
