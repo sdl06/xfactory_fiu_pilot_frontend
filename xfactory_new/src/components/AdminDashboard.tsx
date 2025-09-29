@@ -75,7 +75,7 @@ const JourneyFlowSVG = ({ stages }: { stages: Array<{ stage?: string; activities
               <rect x={x} y={y} width={nodeW} height={24} rx={12} ry={12} fill="#eef2ff" stroke="#e5e7eb" />
               <text x={x + 10} y={y + 16} fill="#3730a3" fontSize="12" fontWeight={700}>{label}</text>
               {acts.length > 0 && (
-                <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">� {String(acts[0])}</text>
+                <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">• {String(acts[0])}</text>
               )}
               {tps.length > 0 && (
                 <text x={x + 12} y={y + 58} fill="#6b7280" fontSize="11">@ {String(tps[0])}</text>
@@ -326,7 +326,7 @@ const renderServiceSection = (doc: any, section: 'flowchart'|'journeys'|'timelin
             <div key={i} className="rounded border p-3 text-sm bg-background">
               <div className="font-semibold mb-1">{s?.stage || `Stage ${i+1}`}</div>
               {Array.isArray(s?.activities) && s.activities.length > 0 && (
-                <div className="text-xs text-muted-foreground">� {s.activities.slice(0,3).map((a:any)=>String(a?.name||a)).join(' � ')}</div>
+                <div className="text-xs text-muted-foreground">• {s.activities.slice(0,3).map((a:any)=>String(a?.name||a)).join(' • ')}</div>
               )}
               {Array.isArray(s?.touchpoints) && s.touchpoints.length > 0 && (
                 <div className="text-xs text-muted-foreground mt-1">@ {s.touchpoints.slice(0,3).join(', ')}</div>
@@ -783,7 +783,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
           <div className="space-y-3 mb-6">
             <div className="flex items-center justify-end">
               <Button variant="machinery" size="sm" onClick={saveLocks} disabled={savingLocks}>
-                {savingLocks ? 'Saving�' : 'Save Locks'}
+                {savingLocks ? 'Saving…' : 'Save Locks'}
               </Button>
             </div>
             {sections.map((s) => (
@@ -923,7 +923,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                               {typeof a !== 'string' && (
                                 <div className="text-xs text-muted-foreground mt-1">
                                   {typeof a?.confidence === 'number' ? `${a.confidence}% confidence` : ''}
-                                  {a?.testing_plan ? ` � ${a.testing_plan}` : ''}
+                                  {a?.testing_plan ? ` — ${a.testing_plan}` : ''}
                                 </div>
                               )}
                             </div>
@@ -1066,7 +1066,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                       <div className="text-muted-foreground">
                         {pitchSubmission?.submission?.submitted_at 
                           ? new Date(pitchSubmission.submission.submitted_at).toLocaleDateString()
-                          : "�"
+                          : "—"
                         }
                       </div>
                     </div>
@@ -1526,11 +1526,11 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                         <div className="space-y-3">
                           <div>
                             <div className="text-sm font-medium">Title</div>
-                            <div className="text-sm text-muted-foreground">{deepResearch.report.title || '�'}</div>
+                            <div className="text-sm text-muted-foreground">{deepResearch.report.title || 'N/A'}</div>
                           </div>
                           <div>
                             <div className="text-sm font-medium">Abstract</div>
-                            <div className="text-sm text-muted-foreground">{deepResearch.report.abstract || '�'}</div>
+                            <div className="text-sm text-muted-foreground">{deepResearch.report.abstract || 'N/A'}</div>
                           </div>
                           <div>
                             <div className="text-sm font-medium">Status</div>
@@ -1542,7 +1542,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                           </div>
                           <div>
                             <div className="text-sm font-medium">Processing Time</div>
-                            <div className="text-sm text-muted-foreground">{deepResearch.report.processing_time ? `${deepResearch.report.processing_time.toFixed(2)}s` : '�'}</div>
+                            <div className="text-sm text-muted-foreground">{deepResearch.report.processing_time ? `${deepResearch.report.processing_time.toFixed(2)}s` : 'N/A'}</div>
                           </div>
                           <div>
                             <div className="text-sm font-medium">Key Findings</div>
@@ -1553,7 +1553,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                                     <li key={idx}>{finding}</li>
                                   ))}
                                 </ul>
-                              ) : '�'}
+                              ) : 'N/A'}
                             </div>
                           </div>
                           <div>
@@ -1561,15 +1561,15 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
                                 <div className="font-medium">TAM</div>
-                                <div className="text-muted-foreground">{deepResearch.report.tam || '�'}</div>
+                                <div className="text-muted-foreground">{deepResearch.report.tam || 'N/A'}</div>
                               </div>
                               <div>
                                 <div className="font-medium">SAM</div>
-                                <div className="text-muted-foreground">{deepResearch.report.sam || '�'}</div>
+                                <div className="text-muted-foreground">{deepResearch.report.sam || 'N/A'}</div>
                               </div>
                               <div>
                                 <div className="font-medium">SOM</div>
-                                <div className="text-muted-foreground">{deepResearch.report.som || '�'}</div>
+                                <div className="text-muted-foreground">{deepResearch.report.som || 'N/A'}</div>
                               </div>
                             </div>
                           </div>
@@ -1726,7 +1726,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <a href={validationEvidence.qual_interview_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {validationEvidence.qual_interview_link}
                             </a>
-                          ) : '�'}
+                          ) : 'N/A'}
                         </div>
                         <div className="text-sm">
                           <span className="font-medium">Focus Groups: </span>
@@ -1734,7 +1734,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <a href={validationEvidence.qual_focus_group_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {validationEvidence.qual_focus_group_link}
                             </a>
-                          ) : '�'}
+                          ) : 'N/A'}
                         </div>
                         <div className="text-sm">
                           <span className="font-medium">Transcript Folders: </span>
@@ -2287,7 +2287,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               <CardDescription>Danger zone: irreversible actions</CardDescription>
             </div>
             <Button variant="destructive" onClick={resetAll} disabled={isResettingAll}>
-              {isResettingAll ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resetting�</>) : (<>Reset ALL Progress</>)}
+              {isResettingAll ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resetting…</>) : (<>Reset ALL Progress</>)}
             </Button>
           </CardHeader>
         </Card>
@@ -2649,7 +2649,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                         <div className="font-medium">{user.name}</div>
                         <div className="text-sm text-muted-foreground">{user.email}</div>
                         <div className="text-xs text-muted-foreground">
-                          {getUserTypeLabel(user.user_type)} � Added: {new Date(user.created_at).toLocaleDateString()}
+                          {getUserTypeLabel(user.user_type)} — Added: {new Date(user.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </div>

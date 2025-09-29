@@ -103,7 +103,7 @@ const JourneyFlowSVG = ({ stages }: { stages: Array<{ stage?: string; activities
               <rect x={x} y={y} width={nodeW} height={24} rx={12} ry={12} fill="#eef2ff" stroke="#e5e7eb" />
               <text x={x + 10} y={y + 16} fill="#3730a3" fontSize="12" fontWeight={700}>{label}</text>
               {acts.length > 0 && (
-                <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">� {String(acts[0])}</text>
+                <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">• {String(acts[0])}</text>
               )}
               {tps.length > 0 && (
                 <text x={x + 12} y={y + 58} fill="#6b7280" fontSize="11">@ {String(tps[0])}</text>
