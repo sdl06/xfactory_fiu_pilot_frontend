@@ -75,11 +75,29 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [isRedoingSecondary, setIsRedoingSecondary] = useState(false);
+  
+  // Rate limiting state
+  const [lastApiCall, setLastApiCall] = useState<number>(0);
+  const apiCallDelay = 1000; // Minimum 1 second between API calls
 
   // Auto-resize textarea function
   const autoResizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
+  };
+
+  // Throttled API call function to prevent rate limiting
+  const throttledApiCall = async (apiCall: () => Promise<any>) => {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastApiCall;
+    
+    if (timeSinceLastCall < apiCallDelay) {
+      const waitTime = apiCallDelay - timeSinceLastCall;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    setLastApiCall(Date.now());
+    return await apiCall();
   };
 
   // Check if survey should be considered assembled
@@ -841,14 +859,22 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       let waitedMs = 0;
       pollingAbortRef.current = false;
       while (!reportReady && !pollingAbortRef.current && waitedMs < 15 * 60 * 1000) {
-        await new Promise(r => setTimeout(r, 1500));
-        waitedMs += 1500;
+        // Increase polling interval to reduce API calls and avoid 429 errors
+        await new Promise(r => setTimeout(r, 5000)); // Changed from 1500ms to 5000ms
+        waitedMs += 5000;
         try {
           const statusRes = await apiClient.getDeepResearchStatusTeam(teamId);
           const s = (statusRes.data as any)?.status;
           if (s === 'completed') { reportReady = true; break; }
           if (s === 'failed') throw new Error((statusRes.data as any)?.error_message || 'Deep research failed');
-        } catch {}
+        } catch (error: any) {
+          // If we get a 429 error, wait longer before retrying
+          if (error?.response?.status === 429) {
+            console.log('Rate limited, waiting 30 seconds before retry...');
+            await new Promise(r => setTimeout(r, 30000));
+            waitedMs += 30000;
+          }
+        }
       }
 
       // Fetch report
@@ -1486,14 +1512,22 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
           let waitedMs = 0;
           pollingAbortRef.current = false;
           while (!reportReady && !pollingAbortRef.current && waitedMs < 15 * 60 * 1000) {
-            await new Promise(r => setTimeout(r, 2000));
-            waitedMs += 2000;
+            // Increase polling interval to reduce API calls and avoid 429 errors
+            await new Promise(r => setTimeout(r, 5000)); // Changed from 2000ms to 5000ms
+            waitedMs += 5000;
             try {
               const st = await apiClient.getDeepResearchStatusTeam(teamId);
               const stv = (st.data as any)?.status;
               if (stv === 'completed') { reportReady = true; break; }
               if (stv === 'failed') break;
-            } catch {}
+            } catch (error: any) {
+              // If we get a 429 error, wait longer before retrying
+              if (error?.response?.status === 429) {
+                console.log('Rate limited, waiting 30 seconds before retry...');
+                await new Promise(r => setTimeout(r, 30000));
+                waitedMs += 30000;
+              }
+            }
           }
           if (reportReady) {
             try {
