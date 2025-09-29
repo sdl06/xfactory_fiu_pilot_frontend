@@ -73,6 +73,8 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
   const [aiSurveyQuestions, setAISurveyQuestions] = useState<Array<{ id: string; type: 'multiple_choice'|'multi_select'|'scale_0_100'|'open'; text: string; options?: string[]; required?: boolean; insights?: string }>>([]);
   const [surveyAssembled, setSurveyAssembled] = useState(false);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [isRedoingSecondary, setIsRedoingSecondary] = useState(false);
 
   // Auto-resize textarea function
   const autoResizeTextarea = (textarea: HTMLTextAreaElement) => {
@@ -1548,10 +1550,27 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                 <Dialog open={showValidationResults} onOpenChange={setShowValidationResults}>
                   <Button 
                     variant="outline"
-                    onClick={async () => { try { await loadQualSnapshot(true); } catch {} setShowValidationResults(true); }}
+                    onClick={async () => { 
+                      setIsLoadingResults(true);
+                      try { 
+                        await loadQualSnapshot(true); 
+                      } catch {} 
+                      setIsLoadingResults(false);
+                      setShowValidationResults(true); 
+                    }}
+                    disabled={isLoadingResults}
                   >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Show Validation Results
+                    {isLoadingResults ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Loading Results...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Show Validation Results
+                      </>
+                    )}
                   </Button>
                   <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
@@ -1565,8 +1584,17 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                     </DialogHeader>
                     
                     <div className="space-y-6">
-                      {/* Overall Score Card */}
-                      <Card className="bg-gradient-machinery text-primary-foreground">
+                      {isLoadingResults ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="flex items-center gap-3">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            <span className="text-lg">Loading validation results...</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Overall Score Card */}
+                          <Card className="bg-gradient-machinery text-primary-foreground">
                         <CardHeader className="text-center">
                           <CardTitle className="text-3xl font-bold">
                             {calculateOverallScore()} / 100
@@ -2348,8 +2376,29 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                        </h4>
                                        {/* Redo button to re-run Secondary Data Analysis if needed */}
                                        <div className="mb-3 flex justify-end">
-                                         <Button variant="outline" size="sm" onClick={runSecondaryValidation}>
-                                           ↻ Redo Secondary Analysis
+                                         <Button 
+                                           variant="outline" 
+                                           size="sm" 
+                                           onClick={async () => {
+                                             setIsRedoingSecondary(true);
+                                             try {
+                                               await runSecondaryValidation();
+                                             } finally {
+                                               setIsRedoingSecondary(false);
+                                             }
+                                           }}
+                                           disabled={isRedoingSecondary || isValidating}
+                                         >
+                                           {isRedoingSecondary ? (
+                                             <>
+                                               <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                               Re-running...
+                                             </>
+                                           ) : (
+                                             <>
+                                               ↻ Redo Secondary Analysis
+                                             </>
+                                           )}
                                          </Button>
                                        </div>
                                        <Collapsible open={isReportExpanded} onOpenChange={setIsReportExpanded}>
@@ -2550,6 +2599,8 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                           </p>
                         </CardContent>
                       </Card>
+                        </>
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -2747,7 +2798,14 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                       disabled={isValidating}
                       className="w-full max-w-md"
                     >
-                      {isValidating ? "Analyzing..." : "🔍 Run Secondary Analysis"}
+                      {isValidating ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        "🔍 Run Secondary Analysis"
+                      )}
                     </Button>
                   </div>
                 </div>
