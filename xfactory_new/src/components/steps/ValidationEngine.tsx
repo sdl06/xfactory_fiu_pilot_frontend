@@ -966,6 +966,10 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       setCompletedTiers(prev => [...prev, 'secondary']);
       // Mark backend team completion for secondary
       try { await apiClient.markValidationCompleted(teamId, { secondary: true }); } catch {}
+
+      // Auto-open results after first generation completes
+      setShowValidationResults(true);
+      setIsReportExpanded(true);
     } catch (e: any) {
       console.error('Secondary research failed', e);
     } finally {
