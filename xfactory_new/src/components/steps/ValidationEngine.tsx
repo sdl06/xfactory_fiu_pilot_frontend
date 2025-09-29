@@ -750,7 +750,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       status: 'warning',
       insights: insights.slice(0,4),
       data: {
-        report: `# ${report?.title || 'Secondary Market Research Report'}\n\n${report?.content || ''}\n\n${report?.summary || ''}`,
+        report: `# ${report?.report_title || 'Secondary Market Research Report'}\n\n${report?.report_content || ''}\n\n${report?.abstract || ''}`,
         tam: extracted.tam,
         sam: extracted.sam,
         som: extracted.som,
@@ -880,7 +880,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       status,
         insights: insights.slice(0,4),
         data: {
-          report: `# ${report?.title || 'Secondary Market Research Report'}\n\n${report?.content || ''}\n\n${report?.summary || ''}`,
+          report: `# ${report?.report_title || 'Secondary Market Research Report'}\n\n${report?.report_content || ''}\n\n${report?.abstract || ''}`,
           tam: extracted.tam,
           sam: extracted.sam,
           som: extracted.som,
