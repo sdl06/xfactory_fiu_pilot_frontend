@@ -826,11 +826,13 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
   };
 
   const runSecondaryValidation = async () => {
+    console.log('runSecondaryValidation called');
     setIsValidating(true);
     try {
       // Require current team id
       const teamIdStr = localStorage.getItem('xfactoryTeamId');
       const teamId = teamIdStr ? Number(teamIdStr) : null;
+      console.log('Team ID:', teamId);
       if (!teamId) throw new Error('Missing team id');
 
       // Kick off deep research (team-scoped)
@@ -919,7 +921,8 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     } catch (e: any) {
       console.error('Secondary research failed', e);
     } finally {
-    setIsValidating(false);
+      console.log('runSecondaryValidation finally block - setting isValidating to false');
+      setIsValidating(false);
     }
   };
 
@@ -2376,10 +2379,15 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                        </h4>
                                        {/* Redo button to re-run Secondary Data Analysis if needed */}
                                        <div className="mb-3 flex justify-end">
+                                         {/* Debug info */}
+                                         <div className="text-xs text-muted-foreground mr-2">
+                                           Debug: isValidating={isValidating.toString()}, isRedoingSecondary={isRedoingSecondary.toString()}
+                                         </div>
                                          <Button 
                                            variant="outline" 
                                            size="sm" 
                                            onClick={async () => {
+                                             console.log('Redo Secondary Analysis clicked');
                                              setIsRedoingSecondary(true);
                                              try {
                                                await runSecondaryValidation();
