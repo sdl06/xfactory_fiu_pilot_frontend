@@ -777,7 +777,19 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         competitive
       }
     };
-    setValidationScores(prev => hasSecondaryScore() ? prev : [...prev, validationScore]);
+    setValidationScores(prev => {
+      // Update existing secondary score or add new one
+      const existingIndex = prev.findIndex(s => s.tier === 'secondary');
+      if (existingIndex >= 0) {
+        // Update existing secondary score
+        const updated = [...prev];
+        updated[existingIndex] = validationScore;
+        return updated;
+      } else {
+        // Add new secondary score
+        return [...prev, validationScore];
+      }
+    });
     setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
   };
   const loadExistingSecondaryIfAny = async () => {
@@ -914,7 +926,19 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         }
     };
 
-    setValidationScores(prev => [...prev, validationScore]);
+    setValidationScores(prev => {
+      // Update existing secondary score or add new one
+      const existingIndex = prev.findIndex(s => s.tier === 'secondary');
+      if (existingIndex >= 0) {
+        // Update existing secondary score
+        const updated = [...prev];
+        updated[existingIndex] = validationScore;
+        return updated;
+      } else {
+        // Add new secondary score
+        return [...prev, validationScore];
+      }
+    });
       // Try to compute and fetch the secondary score (0–20) now that report exists
       try {
         await apiClient.computeSecondaryScoreTeam(teamId);
@@ -2417,6 +2441,20 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                              setIsRedoingSecondary(true);
                                              try {
                                                await runSecondaryValidation();
+                                               // Force refresh of validation scores to ensure UI updates
+                                               const teamIdStr = localStorage.getItem('xfactoryTeamId');
+                                               const teamId = teamIdStr ? Number(teamIdStr) : null;
+                                               if (teamId) {
+                                                 try {
+                                                   const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
+                                                   const report = (reportRes.data as any)?.report;
+                                                   if (report) {
+                                                     markSecondaryFromReport(report);
+                                                   }
+                                                 } catch (error) {
+                                                   console.error('Failed to refresh report after regeneration:', error);
+                                                 }
+                                               }
                                              } finally {
                                                setIsRedoingSecondary(false);
                                              }
