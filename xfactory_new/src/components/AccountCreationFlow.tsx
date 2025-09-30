@@ -1182,10 +1182,34 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                             </div>
                           )}
                           
+                          {/* Looking For Section */}
+                          {team.looking_for && team.looking_for.length > 0 && (
+                            <div className="mb-3">
+                              <div className="text-xs font-medium text-muted-foreground mb-2">Looking For:</div>
+                              <div className="space-y-2">
+                                {team.looking_for.map((role: any, index: number) => (
+                                  <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
+                                    <div className="font-medium text-sm">{role.job_role || "Team Member"}</div>
+                                    {role.keywords && (
+                                      <div className="text-xs text-muted-foreground mt-1">
+                                        Skills: {role.keywords}
+                                      </div>
+                                    )}
+                                    {role.job_description && (
+                                      <div className="text-xs text-muted-foreground mt-1">
+                                        {role.job_description}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="text-xs text-muted-foreground">
                             <div className="font-medium">Led by: {team.created_by_name}</div>
                             {team.needed_archetypes && team.needed_archetypes.length > 0 && (
-                              <div>Looking for: {team.needed_archetypes.join(", ")}</div>
+                              <div>Archetypes needed: {team.needed_archetypes.join(", ")}</div>
                             )}
                           </div>
                         </div>

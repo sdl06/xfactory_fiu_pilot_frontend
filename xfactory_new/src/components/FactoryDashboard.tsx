@@ -30,6 +30,7 @@ interface FactoryDashboardProps {
   onEnterStation: (stationId: number, reviewMode?: boolean) => void;
   onGoHome: () => void;
   onEnterCommunity: () => void;
+  onEnterTeamFormation?: () => void;
 }
 interface FactoryDepartment {
   id: string;
@@ -45,7 +46,8 @@ export const FactoryDashboard = ({
   stationData,
   onEnterStation,
   onGoHome,
-  onEnterCommunity
+  onEnterCommunity,
+  onEnterTeamFormation
 }: FactoryDashboardProps) => {
   const [showDepartments, setShowDepartments] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export const FactoryDashboard = ({
   const [newMemberMessage, setNewMemberMessage] = useState("");
   const [isInvitingMember, setIsInvitingMember] = useState(false);
   const [eligibleUsers, setEligibleUsers] = useState<any[]>([]);
+  const [teamInfo, setTeamInfo] = useState<any|null>(null);
   const [selectedEligibleUser, setSelectedEligibleUser] = useState<string>("");
   const [isLoadingEligibleUsers, setIsLoadingEligibleUsers] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
@@ -71,6 +74,7 @@ export const FactoryDashboard = ({
       const status = await apiClient.get('/team-formation/status/');
       const team = status.data?.current_team;
       if (team?.id) {
+        setTeamInfo(team);
         const res = await apiClient.get(`/team-formation/teams/${team.id}/members/`);
         setMembers(Array.isArray(res.data) ? res.data : []);
         
@@ -305,7 +309,11 @@ export const FactoryDashboard = ({
               <Home className="h-4 w-4 mr-2" />
               Home
             </Button>
-            <Button variant="secondary" onClick={() => { setShowMembers(true); loadMembers(); }}>
+            <Button variant="secondary" onClick={() => { 
+              if (onEnterTeamFormation) {
+                onEnterTeamFormation();
+              }
+            }}>
               <Users className="h-4 w-4 mr-2" />
               Members
             </Button>
@@ -448,6 +456,25 @@ export const FactoryDashboard = ({
                   </div>
                 </div>
                 <div>
+                  {/* Looking For Section */}
+                  {teamInfo?.looking_for && Array.isArray(teamInfo.looking_for) && teamInfo.looking_for.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold mb-2">Looking For</h4>
+                      <div className="space-y-2">
+                        {teamInfo.looking_for.map((role: any, index: number) => (
+                          <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
+                            <div className="font-medium text-sm">{role.job_role || 'Team Member'}</div>
+                            {role.keywords && (
+                              <div className="text-xs text-muted-foreground mt-1">Skills: {role.keywords}</div>
+                            )}
+                            {role.job_description && (
+                              <div className="text-xs text-muted-foreground mt-1">{role.job_description}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {selectedMember ? (
                     <div className="space-y-3">
                       <div>
@@ -548,7 +575,11 @@ export const FactoryDashboard = ({
             </Badge>
           </div>
           {/* Make roadmap section same max width as Departments by inheriting container width */}
-          <ProductionLineFlow completedStations={stationData.completedStations} currentStation={stationData.currentStation} onEnterStation={onEnterStation} />
+          <ProductionLineFlow 
+            completedStations={stationData.completedStations}
+            currentStation={stationData.currentStation}
+            onEnterStation={onEnterStation}
+          />
         </div>
 
         {/* FactorAI Assistant */}

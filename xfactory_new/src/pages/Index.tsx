@@ -724,6 +724,18 @@ const Index = () => {
         const team = statusData.current_team;
         const sections = loginData?.progress?.sections_completed || loginData?.user?.progress?.sections_completed || [];
 
+        // Check if team formation is complete (deadline passed or team is full)
+        const now = new Date();
+        const formationDeadline = team.formation_deadline ? new Date(team.formation_deadline) : null;
+        const isFormationComplete = formationDeadline ? now > formationDeadline : team.current_member_count >= team.max_members;
+
+        // If team formation is not complete, go to team formation dashboard
+        if (!isFormationComplete) {
+          setTeamData(team);
+          setAppState("member-addition");
+          return;
+        }
+
         // If ideation already completed for the user, go to dashboard
         if (sections.length > 0) {
           setUserData({
@@ -1254,7 +1266,8 @@ const Index = () => {
       <MemberAdditionScreen 
         teamData={teamData} 
         onComplete={handleMemberAdditionComplete}
-        onBack={handleBackFromMemberAddition}
+        onBack={teamData?.fromDashboard ? () => setAppState("dashboard") : handleBackFromMemberAddition}
+        fromDashboard={teamData?.fromDashboard || false}
       />
     );
   }
@@ -1306,6 +1319,22 @@ const Index = () => {
           onEnterStation={handleEnterStation}
           onGoHome={handleBackToLanding}
           onEnterCommunity={() => setAppState("community")}
+          onEnterTeamFormation={() => {
+            // Load team data and navigate to team formation
+            (async () => {
+              try {
+                const { apiClient } = await import("@/lib/api");
+                const status = await apiClient.get('/team-formation/status/');
+                const team = status.data?.current_team;
+                if (team) {
+                  setTeamData({ ...team, fromDashboard: true }); // Mark as coming from dashboard
+                  setAppState("member-addition");
+                }
+              } catch (error) {
+                console.error('Failed to load team data:', error);
+              }
+            })();
+          }}
         />
 
         {/* Idea Review Modal (dashboard-level, Station 1) */}
@@ -1753,6 +1782,22 @@ const Index = () => {
           onEnterStation={handleEnterStation}
           onGoHome={handleBackToLanding}
           onEnterCommunity={() => setAppState("community")}
+          onEnterTeamFormation={() => {
+            // Load team data and navigate to team formation
+            (async () => {
+              try {
+                const { apiClient } = await import("@/lib/api");
+                const status = await apiClient.get('/team-formation/status/');
+                const team = status.data?.current_team;
+                if (team) {
+                  setTeamData({ ...team, fromDashboard: true }); // Mark as coming from dashboard
+                  setAppState("member-addition");
+                }
+              } catch (error) {
+                console.error('Failed to load team data:', error);
+              }
+            })();
+          }}
         />
         <CompletionCelebration onClose={() => setAppState("community")} />
       </>

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Copy, Clock, CheckCircle, XCircle, User, Mail, MessageSquare, UserPlus, Loader2 } from "lucide-react";
+import { Users, Copy, Clock, CheckCircle, XCircle, User, Mail, MessageSquare, UserPlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 
@@ -14,6 +14,7 @@ interface MemberAdditionScreenProps {
   teamData: any;
   onComplete: () => void;
   onBack: () => void;
+  fromDashboard?: boolean; // New prop to track if user came from dashboard
 }
 
 interface JoinRequest {
@@ -27,7 +28,7 @@ interface JoinRequest {
   created_at: string;
 }
 
-export const MemberAdditionScreen = ({ teamData, onComplete, onBack }: MemberAdditionScreenProps) => {
+export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboard = false }: MemberAdditionScreenProps) => {
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -38,6 +39,10 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack }: MemberAdd
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [pendingAdditionRequests, setPendingAdditionRequests] = useState<any[]>([]);
   const [isLoadingAdditionRequests, setIsLoadingAdditionRequests] = useState(false);
+  const [lookingFor, setLookingFor] = useState<any[]>([]);
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [newRole, setNewRole] = useState({ job_role: '', keywords: '', job_description: '' });
+  const [isUpdatingLookingFor, setIsUpdatingLookingFor] = useState(false);
   const { toast } = useToast();
 
   // Mock deadline - in real implementation, this would come from backend
@@ -55,6 +60,8 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack }: MemberAdd
           const currentTeam = (status as any)?.data?.current_team;
           if (currentTeam?.id === tid) {
             Object.assign(teamData, currentTeam);
+            // Initialize looking_for state
+            setLookingFor(Array.isArray(currentTeam.looking_for) ? currentTeam.looking_for : []);
           }
         } catch {}
       })();
@@ -262,6 +269,79 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack }: MemberAdd
     onComplete();
   };
 
+  const addRole = async () => {
+    if (!newRole.job_role.trim()) {
+      toast({
+        title: "Role Required",
+        description: "Please enter a job role.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsUpdatingLookingFor(true);
+      const updatedLookingFor = [...lookingFor, { ...newRole }];
+      
+      // Update team's looking_for field
+      const teamId = teamData?.id;
+      if (teamId) {
+        await apiClient.put(`/team-formation/teams/${teamId}/`, {
+          looking_for: updatedLookingFor
+        });
+        
+        setLookingFor(updatedLookingFor);
+        setNewRole({ job_role: '', keywords: '', job_description: '' });
+        setShowAddRole(false);
+        
+        toast({
+          title: "Role Added!",
+          description: "New role added to your team's looking for list.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error adding role:', error);
+      toast({
+        title: "Error",
+        description: error?.error || "Failed to add role. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingLookingFor(false);
+    }
+  };
+
+  const removeRole = async (index: number) => {
+    try {
+      setIsUpdatingLookingFor(true);
+      const updatedLookingFor = lookingFor.filter((_, i) => i !== index);
+      
+      // Update team's looking_for field
+      const teamId = teamData?.id;
+      if (teamId) {
+        await apiClient.put(`/team-formation/teams/${teamId}/`, {
+          looking_for: updatedLookingFor
+        });
+        
+        setLookingFor(updatedLookingFor);
+        
+        toast({
+          title: "Role Removed",
+          description: "Role removed from your team's looking for list.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error removing role:', error);
+      toast({
+        title: "Error",
+        description: error?.error || "Failed to remove role. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingLookingFor(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Factory Header */}
@@ -384,6 +464,121 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack }: MemberAdd
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Looking For Management Section */}
+                <div className="mb-6 p-4 bg-muted/20 rounded-lg border">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold">Looking For</h4>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAddRole(!showAddRole)}
+                      disabled={isUpdatingLookingFor}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Role
+                    </Button>
+                  </div>
+                  
+                  {/* Add Role Form */}
+                  {showAddRole && (
+                    <div className="space-y-3 p-3 bg-background rounded border mb-4">
+                      <div>
+                        <Label htmlFor="jobRole" className="text-sm">Job Role *</Label>
+                        <Input
+                          id="jobRole"
+                          placeholder="e.g., Frontend Developer, Marketing Specialist"
+                          value={newRole.job_role}
+                          onChange={(e) => setNewRole(prev => ({ ...prev, job_role: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="keywords" className="text-sm">Skills/Keywords</Label>
+                        <Input
+                          id="keywords"
+                          placeholder="e.g., React, JavaScript, Marketing"
+                          value={newRole.keywords}
+                          onChange={(e) => setNewRole(prev => ({ ...prev, keywords: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="jobDescription" className="text-sm">Description</Label>
+                        <Textarea
+                          id="jobDescription"
+                          placeholder="Brief description of the role and what you're looking for..."
+                          value={newRole.job_description}
+                          onChange={(e) => setNewRole(prev => ({ ...prev, job_description: e.target.value }))}
+                          rows={2}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={addRole}
+                          disabled={!newRole.job_role.trim() || isUpdatingLookingFor}
+                        >
+                          {isUpdatingLookingFor ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Role
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddRole(false);
+                            setNewRole({ job_role: '', keywords: '', job_description: '' });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Current Roles */}
+                  {lookingFor.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <UserPlus className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No roles added yet</p>
+                      <p className="text-sm">Click "Add Role" to specify what you're looking for</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {lookingFor.map((role: any, index: number) => (
+                        <div key={index} className="flex items-start justify-between p-3 bg-background rounded border">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{role.job_role || 'Team Member'}</div>
+                            {role.keywords && (
+                              <div className="text-xs text-muted-foreground mt-1">Skills: {role.keywords}</div>
+                            )}
+                            {role.job_description && (
+                              <div className="text-xs text-muted-foreground mt-1">{role.job_description}</div>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeRole(index)}
+                            disabled={isUpdatingLookingFor}
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {joinRequests.length === 0 ? (
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -639,12 +834,39 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack }: MemberAdd
 
         {/* Action Buttons */}
         <div className="flex justify-between mt-8">
-          <Button variant="ghost" onClick={onBack}>
-            ← Back
-          </Button>
-          <Button onClick={proceedToIdeaGeneration} size="lg" variant="machinery">
-            Complete Team Formation →
-          </Button>
+          {fromDashboard ? (
+            // When coming from dashboard, show "Back to Dashboard" as primary button
+            <Button onClick={onBack} size="lg" variant="machinery" className="w-full">
+              ← Back to Dashboard
+            </Button>
+          ) : (
+            // Original behavior when coming from onboarding flow
+            <>
+              <Button variant="ghost" onClick={onBack}>
+                ← Back
+              </Button>
+              <Button onClick={proceedToIdeaGeneration} size="lg" variant="machinery">
+                {(() => { 
+                  try { 
+                    const isIdeaCompleted = localStorage.getItem('xfactoryIdeaCompleted') === 'true';
+                    const now = new Date();
+                    const formationDeadline = teamData.formation_deadline ? new Date(teamData.formation_deadline) : null;
+                    const isFormationComplete = formationDeadline ? now > formationDeadline : teamData.current_member_count >= teamData.max_members;
+                    
+                    if (isIdeaCompleted) {
+                      return 'Back to Dashboard →';
+                    } else if (isFormationComplete) {
+                      return 'Complete Team Formation →';
+                    } else {
+                      return 'Go to Idea Generation →';
+                    }
+                  } catch { 
+                    return 'Complete Team Formation →'; 
+                  } 
+                })()}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

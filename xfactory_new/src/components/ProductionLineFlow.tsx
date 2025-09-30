@@ -299,7 +299,7 @@ const nodeTypes = {
 export const ProductionLineFlow = ({ 
   completedStations = [], 
   currentStation = 1, 
-  onEnterStation 
+  onEnterStation
 }: ProductionLineFlowProps) => {
   const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
   const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
