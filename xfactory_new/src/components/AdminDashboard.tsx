@@ -469,10 +469,21 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
           }
         } catch {}
         const teamId = team.id;
-        const rc = (team as any)?.roadmap_completion || {};
-        setAdminLocks(rc?.admin_locks || {});
-        setAdminUnlocks(rc?.admin_unlocks || {});
-        console.log('[AdminModal] init locks/unlocks', { admin_locks: rc?.admin_locks, admin_unlocks: rc?.admin_unlocks });
+        
+        // Fetch fresh roadmap data from server instead of using stale team prop
+        try {
+          const roadmapRes = await apiClient.getTeamRoadmap(teamId);
+          const roadmapData = (roadmapRes as any)?.data || {};
+          setAdminLocks(roadmapData?.admin_locks || {});
+          setAdminUnlocks(roadmapData?.admin_unlocks || {});
+          console.log('[AdminModal] fresh locks/unlocks from server', { admin_locks: roadmapData?.admin_locks, admin_unlocks: roadmapData?.admin_unlocks });
+        } catch (error) {
+          // Fallback to team prop data if server fetch fails
+          const rc = (team as any)?.roadmap_completion || {};
+          setAdminLocks(rc?.admin_locks || {});
+          setAdminUnlocks(rc?.admin_unlocks || {});
+          console.log('[AdminModal] fallback to team prop locks/unlocks', { admin_locks: rc?.admin_locks, admin_unlocks: rc?.admin_unlocks });
+        }
         // Idea gen
         try { const cc = await apiClient.getTeamConceptCard(teamId); setConceptCard((cc as any).data || null); } catch {}
         try { const ep = await apiClient.getElevatorPitchSubmission(teamId); setElevator((ep as any).data || null); } catch {}
