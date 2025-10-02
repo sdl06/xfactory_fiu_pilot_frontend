@@ -1338,7 +1338,7 @@ const Index = () => {
         />
 
         {/* Idea Review Modal (dashboard-level, Station 1) */}
-        <Dialog open={showIdeaReview} onOpenChange={(open) => { 
+        <Dialog modal={false} open={showIdeaReview} onOpenChange={(open) => { 
           setShowIdeaReview(open); 
           if (open) { try { loadElevatorPitch(); } catch {} } 
           if (!open) setIdeaReviewPage(0); 
