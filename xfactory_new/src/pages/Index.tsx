@@ -1359,7 +1359,7 @@ const Index = () => {
               onClick={() => setShowIdeaReview(false)}
             />
           )}
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto z-50 relative">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto z-50 relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between w-full">
                 <span>Idea Review</span>
