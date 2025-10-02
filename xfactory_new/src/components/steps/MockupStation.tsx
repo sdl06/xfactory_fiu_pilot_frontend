@@ -102,6 +102,12 @@ export const MockupStation = ({
   const [timelineEditMode, setTimelineEditMode] = useState<boolean>(false);
   const [milestonesEditMode, setMilestonesEditMode] = useState<boolean>(false);
   const [phasesEditMode, setPhasesEditMode] = useState<boolean>(false);
+  // Physical mockup personalization state
+  const [editingPrompts, setEditingPrompts] = useState<boolean>(false);
+  const [editedPrompts, setEditedPrompts] = useState<Record<string, string>>({});
+  const [regenerationRound, setRegenerationRound] = useState<number>(0);
+  const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
+  const [maxRegenerationReached, setMaxRegenerationReached] = useState<boolean>(false);
 
   // Build a save payload that always includes current flowchart
   const getRoadmapSaveObject = (): any => {
@@ -2326,7 +2332,14 @@ user problems: ${probsLine}`;
                             </div>
                             
                             <CardHeader className="pb-2">
-                              <Badge variant="secondary" className="w-fit text-xs">{mockup.type}</Badge>
+                              <div className="flex items-center justify-between">
+                                <Badge variant="secondary" className="w-fit text-xs">{mockup.type}</Badge>
+                                {mockup.regeneration_round > 0 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Round {mockup.regeneration_round}
+                                  </Badge>
+                                )}
+                              </div>
                               <CardTitle className="text-lg">{mockup.title}</CardTitle>
                             </CardHeader>
                             
@@ -2336,8 +2349,38 @@ user problems: ${probsLine}`;
                               </p>
                               {mockup.prompt && (
                                 <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
-                                  <div className="font-semibold mb-1">Image Prompt</div>
-                                  <div className="whitespace-pre-wrap break-words">{mockup.prompt}</div>
+                                  <div className="font-semibold mb-1 flex items-center justify-between">
+                                    <span>Image Prompt</span>
+                                    {editingPrompts && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 px-2 text-xs"
+                                        onClick={() => {
+                                          const newPrompts = { ...editedPrompts };
+                                          delete newPrompts[mockup.id];
+                                          setEditedPrompts(newPrompts);
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {editingPrompts ? (
+                                    <textarea
+                                      className="w-full h-20 text-xs bg-background border rounded p-2 resize-none"
+                                      value={editedPrompts[mockup.id] || mockup.prompt}
+                                      onChange={(e) => {
+                                        setEditedPrompts(prev => ({
+                                          ...prev,
+                                          [mockup.id]: e.target.value
+                                        }));
+                                      }}
+                                      placeholder="Edit the image prompt..."
+                                    />
+                                  ) : (
+                                    <div className="whitespace-pre-wrap break-words">{mockup.prompt}</div>
+                                  )}
                                 </div>
                               )}
                             </CardContent>
@@ -2350,6 +2393,138 @@ user problems: ${probsLine}`;
                       <Button variant="outline" onClick={() => setSelectionMode('menu')}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back
                       </Button>
+                      
+                      {/* Prompt editing and regeneration controls */}
+                      <div className="flex gap-2">
+                        {!editingPrompts ? (
+                          <Button 
+                            variant="secondary" 
+                            onClick={() => {
+                              setEditingPrompts(true);
+                              // Initialize edited prompts with current prompts
+                              const initialPrompts: Record<string, string> = {};
+                              generatedMockups.forEach(mockup => {
+                                if (mockup.prompt) {
+                                  initialPrompts[mockup.id] = mockup.prompt;
+                                }
+                              });
+                              setEditedPrompts(initialPrompts);
+                            }}
+                          >
+                            <Palette className="mr-2 h-4 w-4" />
+                            Edit Prompts
+                          </Button>
+                        ) : (
+                          <>
+                            <Button 
+                              variant="secondary" 
+                              onClick={async () => {
+                                try {
+                                  const teamId = localStorage.getItem('xfactoryTeamId');
+                                  if (!teamId) return;
+                                  
+                                  const editedPromptsList = Object.entries(editedPrompts).map(([mockupId, prompt]) => ({
+                                    mockup_id: mockupId,
+                                    user_edited_prompt: prompt
+                                  }));
+                                  
+                                  await apiClient.post(`/teams/${teamId}/physical-mockup/edit-prompts/`, {
+                                    team_id: Number(teamId),
+                                    edited_prompts: editedPromptsList
+                                  });
+                                  
+                                  setEditingPrompts(false);
+                                  // Update the mockups with edited prompts
+                                  setGeneratedMockups(prev => prev.map(mockup => ({
+                                    ...mockup,
+                                    prompt: editedPrompts[mockup.id] || mockup.prompt
+                                  })));
+                                } catch (error) {
+                                  console.error('Failed to save edited prompts:', error);
+                                }
+                              }}
+                            >
+                              Save Prompts
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                setEditingPrompts(false);
+                                setEditedPrompts({});
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                        
+                        {/* Regeneration button */}
+                        <Button 
+                          variant="warning" 
+                          disabled={isRegenerating || maxRegenerationReached || regenerationRound >= 3}
+                          onClick={async () => {
+                            try {
+                              setIsRegenerating(true);
+                              const teamId = localStorage.getItem('xfactoryTeamId');
+                              if (!teamId) return;
+                              
+                              // First save any edited prompts
+                              if (editingPrompts && Object.keys(editedPrompts).length > 0) {
+                                const editedPromptsList = Object.entries(editedPrompts).map(([mockupId, prompt]) => ({
+                                  mockup_id: mockupId,
+                                  user_edited_prompt: prompt
+                                }));
+                                
+                                await apiClient.post(`/teams/${teamId}/physical-mockup/edit-prompts/`, {
+                                  team_id: Number(teamId),
+                                  edited_prompts: editedPromptsList
+                                });
+                              }
+                              
+                              // Regenerate images
+                              const response = await apiClient.post(`/teams/${teamId}/physical-mockup/regenerate/`, {
+                                team_id: Number(teamId)
+                              });
+                              
+                              if (response.data?.success) {
+                                const newMockups = response.data.new_mockups.map((m: any, idx: number) => ({
+                                  id: `phys_${m.id || idx}`,
+                                  type: 'Product Mockup',
+                                  title: m.title,
+                                  url: getBackendMediaUrl(m.image_url || m.url),
+                                  description: m.description,
+                                  prompt: m.image_prompt,
+                                  regeneration_round: m.regeneration_round
+                                }));
+                                
+                                setGeneratedMockups(newMockups);
+                                setRegenerationRound(response.data.regeneration_round);
+                                setEditingPrompts(false);
+                                setEditedPrompts({});
+                              } else if (response.data?.max_rounds_reached) {
+                                setMaxRegenerationReached(true);
+                              }
+                            } catch (error) {
+                              console.error('Failed to regenerate images:', error);
+                            } finally {
+                              setIsRegenerating(false);
+                            }
+                          }}
+                        >
+                          {isRegenerating ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                              Regenerating...
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="mr-2 h-4 w-4" />
+                              Regenerate All ({regenerationRound}/3)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
                       <Button variant="warning" onClick={async () => {
                         // Save selected images as PhysicalMockup records
                         try {
