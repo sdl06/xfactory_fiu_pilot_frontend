@@ -1352,7 +1352,14 @@ const Index = () => {
             }, 100);
           }
         }}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          {/* Custom backdrop to restore the shade */}
+          {showIdeaReview && (
+            <div 
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              onClick={() => setShowIdeaReview(false)}
+            />
+          )}
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto z-50 relative">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between w-full">
                 <span>Idea Review</span>
