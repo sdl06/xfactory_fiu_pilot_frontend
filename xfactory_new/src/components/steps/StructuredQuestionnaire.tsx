@@ -229,7 +229,7 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
           await apiClient.post('/ideation/user-questionnaire-progress/', {
             answers: { [currentQuestionData.id]: value },
             current_section: currentSection,
-            current_question
+            current_question: currentQuestion
           });
         } catch (error) {
           console.error('Failed to save progress:', error);
