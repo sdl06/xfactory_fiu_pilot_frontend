@@ -36,6 +36,7 @@ interface ProductionLineFlowProps {
   completedStations: number[];
   currentStation: number;
   onEnterStation: (stationId: number, reviewMode?: boolean) => void;
+  stationData?: any; // Add stationData for refresh mechanism
 }
 
 const StationNode = ({ data }: { data: any }) => {
@@ -299,7 +300,8 @@ const nodeTypes = {
 export const ProductionLineFlow = ({ 
   completedStations = [], 
   currentStation = 1, 
-  onEnterStation
+  onEnterStation,
+  stationData = {} // Add stationData for refresh mechanism
 }: ProductionLineFlowProps) => {
   const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
   const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
@@ -531,8 +533,8 @@ export const ProductionLineFlow = ({
 
   // Create a stable key for memoization based on actual state changes
   const stateKey = useMemo(() => {
-    return `${completedStations.join(',')}-${currentStation}-${JSON.stringify(adminLocks)}-${JSON.stringify(adminUnlocks)}`;
-  }, [completedStations, currentStation, adminLocks, adminUnlocks]);
+    return `${completedStations.join(',')}-${currentStation}-${JSON.stringify(adminLocks)}-${JSON.stringify(adminUnlocks)}-${stationData._refresh || 0}`;
+  }, [completedStations, currentStation, adminLocks, adminUnlocks, stationData._refresh]);
 
   // Memoize nodes with stable dependencies
   const finalNodes = useMemo(() => {
@@ -634,6 +636,7 @@ export const ProductionLineFlow = ({
     <div className="w-full bg-transparent relative" style={{ height: `${FIXED_CONTAINER_HEIGHT}px` }}>
       <div className={isUltraNarrow ? "absolute inset-0 overflow-auto" : "absolute inset-0 overflow-auto hover:overflow-auto"}>
         <ReactFlow
+          key={`flow-${stateKey}`}
           nodes={finalNodes}
           edges={finalEdges}
           nodeTypes={nodeTypes}

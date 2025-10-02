@@ -1340,8 +1340,17 @@ const Index = () => {
         {/* Idea Review Modal (dashboard-level, Station 1) */}
         <Dialog modal={false} open={showIdeaReview} onOpenChange={(open) => { 
           setShowIdeaReview(open); 
-          if (open) { try { loadElevatorPitch(); } catch {} } 
-          if (!open) setIdeaReviewPage(0); 
+          if (open) { 
+            try { loadElevatorPitch(); } catch {} 
+          } else { 
+            setIdeaReviewPage(0);
+            // Force refresh of ProductionLineFlow by updating a dummy state
+            setTimeout(() => {
+              console.log('🔄 Forcing ProductionLineFlow refresh after dialog close');
+              // This will trigger a re-render of the ProductionLineFlow component
+              setStationData(prev => ({ ...prev, _refresh: Date.now() }));
+            }, 100);
+          }
         }}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>

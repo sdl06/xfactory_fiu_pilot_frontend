@@ -579,6 +579,7 @@ export const FactoryDashboard = ({
             completedStations={stationData.completedStations}
             currentStation={stationData.currentStation}
             onEnterStation={onEnterStation}
+            stationData={stationData}
           />
         </div>
 
