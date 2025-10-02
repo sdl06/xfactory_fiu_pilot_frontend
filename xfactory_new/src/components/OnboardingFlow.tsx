@@ -195,8 +195,26 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
     } catch {}
   };
 
+  // Auto-resume questionnaire if user left mid-way in the help path
+  useEffect(() => {
+    try {
+      if (step === 1) {
+        const uid = localStorage.getItem('authUserEmail') || 'anon';
+        const localKey = `xfactory_questionnaire_${uid}_no_team`;
+        const raw = localStorage.getItem(localKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.answers && typeof parsed.answers === 'object') {
+            setData(prev => ({ ...prev, hasIdea: false }));
+            setStep(2.5);
+          }
+        }
+      }
+    } catch {}
+  }, [step]);
+
   // Removed: auto-jump to concept card on mount. Users should only reach the
-  // concept card after completing prior steps or when re-entering with a saved flow.
+  // concept card after completing prior steps or when re-entering with saved flow.
 
   const handleBack = () => {
     if (step === 1) {
@@ -233,8 +251,8 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
 
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className={step === 4 ? "max-w-[1450px] mx-auto" : "max-w-2xl mx-auto"}>
+    <div className={`min-h-screen bg-background ${step === 2.5 ? "px-2 sm:px-4 lg:px-6 xl:px-8 py-0" : "p-6"}`}>
+      <div className={step === 4 ? "max-w-[1450px] mx-auto" : step === 2.5 ? "w-full" : "max-w-2xl mx-auto"}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Button variant="ghost" onClick={handleBack}>
@@ -418,23 +436,77 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
         {step === 2.5 && !data.hasIdea && (
           <StructuredQuestionnaire
             teamId={null} // No teamId needed for this flow
-            onComplete={(questionnaireData) => {
-              console.log('Questionnaire completed:', questionnaireData);
-              // Store questionnaire data for later use
-              setData(prev => ({
-                ...prev,
-                questionnaireData
-              }));
-              
-              // Move to manual brainstorming step (step 3)
-              setStep(3);
+            onComplete={async (questionnaireData) => {
+              // Skip brainstorming entirely; save and generate concept card immediately
+              setIsGenerating(true);
+              try {
+                setData(prev => ({ ...prev, questionnaireData }));
+                // Resolve team
+                const status = await apiClient.get('/team-formation/status/');
+                const teamId = (status as any)?.data?.current_team?.id;
+                if (teamId) {
+                  // Persist questionnaire answers server-side
+                  try { await apiClient.post('/ideation/structured-idea-input/', { team_id: teamId, ...questionnaireData }); } catch {}
+
+                  // Build payload from questionnaire
+                  const payload: any = {
+                    problem: questionnaireData?.problem_description || '',
+                    solution: questionnaireData?.solution_concept || '',
+                    target: questionnaireData?.target_who_feels_most || '',
+                    business_model: questionnaireData?.bm_overview || questionnaireData?.bm_money_flow || '',
+                    bm_who_pays: questionnaireData?.bm_who_pays || questionnaireData?.section_7?.bm_who_pays || '',
+                    bm_money_flow: questionnaireData?.bm_money_flow || questionnaireData?.section_7?.bm_money_flow || '',
+                    bm_costs: questionnaireData?.bm_costs || questionnaireData?.section_7?.bm_costs || '',
+                    bm_growth: questionnaireData?.bm_growth || questionnaireData?.section_7?.bm_growth || ''
+                  };
+
+                  // Generate concept card
+                  const response = await apiClient.post(`/ideation/teams/${teamId}/concept-card/`, payload);
+                  if (response.status >= 200 && response.status < 300) {
+                    const conceptData: any = response.data || {};
+                    setData(prev => ({
+                      ...prev,
+                      conceptCard: {
+                        businessSummary: conceptData.title || 'AI-powered startup concept',
+                        problem: conceptData.problem || payload.problem,
+                        customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || payload.target,
+                        existingAlternatives: conceptData.current_solutions || questionnaireData?.current_solutions || '',
+                        solutionConcept: conceptData.solution || payload.solution,
+                        businessModel: conceptData.business_model || payload.business_model || '',
+                        assumptions: Array.isArray(conceptData.assumptions) ? conceptData.assumptions : []
+                      }
+                    }));
+                  } else {
+                    // Fallback minimal concept data if API fails
+                    setData(prev => ({
+                      ...prev,
+                      conceptCard: {
+                        businessSummary: 'AI-powered startup concept',
+                        problem: payload.problem,
+                        customerSegment: payload.target,
+                        existingAlternatives: questionnaireData?.current_solutions || '',
+                        solutionConcept: payload.solution,
+                        businessModel: payload.business_model || '',
+                        assumptions: []
+                      }
+                    }));
+                  }
+                }
+              } catch (e) {
+                // Fallback to concept card from local data
+                const conceptCard = generateConceptCardFromBrainstorming({ ...data, questionnaireData });
+                setData(prev => ({ ...prev, conceptCard }));
+              } finally {
+                setIsGenerating(false);
+                setStep(4);
+              }
             }}
             onBack={() => setStep(1)}
           />
         )}
 
-        {/* Step 3: Manual Brainstorming (for both paths) */}
-        {step === 3 && (
+        {/* Step 3: Manual Brainstorming (kept only for "I have an idea" path) */}
+        {step === 3 && data.hasIdea && (
           <Card className="animate-fade-in">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Brainstorm</CardTitle>

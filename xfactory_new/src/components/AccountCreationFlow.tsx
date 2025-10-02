@@ -83,13 +83,13 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
 
 
   const fundingOptions = [
-    "Self-funded",
-    "Seeking angel investment",
-    "Preparing for VC",
-    "Government grants",
-    "Crowdfunding",
-    "Already funded",
-    "I don't know"
+    "Self-funded - Using your own money",
+    "Seeking angel investment - Rich individuals invest in your idea",
+    "Preparing for VC - Professional investors give larger amounts",
+    "Government grants - Free money from government programs",
+    "Crowdfunding - Many people donate small amounts online",
+    "Already funded - You already have money for your startup",
+    "I don't know - Not sure about funding options yet"
   ];
 
   const techLevels = [
@@ -703,7 +703,23 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                   </div>
 
                   <div>
-                    <Label htmlFor="fundingAccess">Funding Access</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="fundingAccess">Funding Access</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          toast({
+                            title: "What is Funding? 💰",
+                            description: "Funding is money to start your business. It can come from your own savings, investors (people who give money for a share of your company), government programs, or crowdfunding (many people giving small amounts).",
+                            duration: 8000,
+                          });
+                        }}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <Select onValueChange={(value) => setNewTeam(prev => ({ ...prev, funding_access: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your funding situation" />

@@ -17,7 +17,8 @@ import {
   Brain,
   CheckCircle,
   ChevronRight,
-  Banknote
+  Banknote,
+  Lock
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +65,17 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  // Local persistence key (scoped)
+  const localKey = (() => {
+    try {
+      const uid = localStorage.getItem('authUserEmail') || 'anon';
+      const team = teamId ? `team_${teamId}` : 'no_team';
+      return `xfactory_questionnaire_${uid}_${team}`;
+    } catch {
+      return 'xfactory_questionnaire_local';
+    }
+  })();
+
   // Load questionnaire structure and saved answers
   useEffect(() => {
     const loadQuestionnaire = async () => {
@@ -83,31 +95,59 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
     };
     
     const loadSavedAnswers = async () => {
-      if (!teamId) return;
-      try {
-        const response = await apiClient.get(`/ideation/structured-idea-input/${teamId}/`);
-        if (response.status === 200 && response.data) {
-          // Convert the saved data back to the answers format
-          const savedAnswers: Record<string, string> = {};
-          Object.entries(response.data).forEach(([sectionKey, sectionData]: [string, any]) => {
-            if (sectionData && typeof sectionData === 'object') {
-              Object.entries(sectionData).forEach(([questionId, answer]: [string, any]) => {
-                if (typeof answer === 'string') {
-                  savedAnswers[questionId] = answer;
-                }
-              });
-            }
-          });
-          setAnswers(savedAnswers);
+      if (teamId) {
+        // For team-based flow, load from team's idea
+        try {
+          const response = await apiClient.get(`/ideation/structured-idea-input/${teamId}/`);
+          if (response.status === 200 && response.data) {
+            // Convert the saved data back to the answers format
+            const savedAnswers: Record<string, string> = {};
+            Object.entries(response.data).forEach(([sectionKey, sectionData]: [string, any]) => {
+              if (sectionData && typeof sectionData === 'object') {
+                Object.entries(sectionData).forEach(([questionId, answer]: [string, any]) => {
+                  if (typeof answer === 'string') {
+                    savedAnswers[questionId] = answer;
+                  }
+                });
+              }
+            });
+            setAnswers(savedAnswers);
+          }
+        } catch (error) {
+          console.error('Failed to load saved answers:', error);
+          // Don't show error toast for this, as it's not critical
         }
-      } catch (error) {
-        console.error('Failed to load saved answers:', error);
-        // Don't show error toast for this, as it's not critical
+      } else {
+        // For help path (no teamId), load from user's saved progress
+        try {
+          const response = await apiClient.get('/ideation/user-questionnaire-progress/get/');
+          if (response.data?.status === 'success') {
+            const progressData = response.data.data;
+            setAnswers(progressData.answers || {});
+            setCurrentSection(progressData.current_section || 1);
+            setCurrentQuestion(progressData.current_question || 0);
+          }
+        } catch (error) {
+          console.log('No saved progress found for user');
+        }
       }
     };
     
     loadQuestionnaire();
     loadSavedAnswers();
+
+    // Restore local progress for help path (no teamId)
+    if (!teamId) {
+      try {
+        const raw = localStorage.getItem(localKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.answers && typeof parsed.answers === 'object') setAnswers(parsed.answers);
+          if (typeof parsed?.currentSection === 'number') setCurrentSection(parsed.currentSection);
+          if (typeof parsed?.currentQuestion === 'number') setCurrentQuestion(parsed.currentQuestion);
+        }
+      } catch {}
+    }
   }, [toast, teamId]);
 
   if (!questionnaireData) {
@@ -128,8 +168,8 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
     { key: 'section_4', title: 'User Persona', icon: Users, color: 'text-green-600' },
     { key: 'section_5', title: 'Current Solutions', icon: Zap, color: 'text-orange-600' },
     { key: 'section_6', title: 'Solution', icon: Lightbulb, color: 'text-yellow-600' },
-    { key: 'section_7', title: 'Biz Model & Growth', icon: Banknote, color: 'text-indigo-600' },
-    { key: 'section_8', title: 'Top 3 Assumptions', icon: TrendingUp, color: 'text-indigo-600' }
+    { key: 'section_7', title: 'Top 3 Assumptions', icon: TrendingUp, color: 'text-indigo-600' },
+    { key: 'section_8', title: 'Biz Model & Growth', icon: Banknote, color: 'text-indigo-600' }
   ];
 
   const currentSectionKey = sections[currentSection - 1].key as keyof typeof questionnaireData.sections;
@@ -147,11 +187,67 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
 
   const progressPercentage = (currentQuestionNumber / totalQuestions) * 100;
 
+  // Check if a section is completed (all required questions answered)
+  const isSectionCompleted = (sectionNumber: number) => {
+    const sectionKey = `section_${sectionNumber}` as keyof typeof questionnaireData.sections;
+    const sectionData = questionnaireData.sections[sectionKey];
+    
+    if (!sectionData) return false;
+    
+    // Check if all required questions in this section are answered
+    return sectionData.questions.every(question => {
+      if (!question.required) return true;
+      return answers[question.id] && answers[question.id].trim().length > 0;
+    });
+  };
+
+  // Check if a section is accessible (completed or current section)
+  const isSectionAccessible = (sectionNumber: number) => {
+    // Always allow access to current section
+    if (sectionNumber === currentSection) return true;
+    
+    // Allow access to completed sections
+    if (isSectionCompleted(sectionNumber)) return true;
+    
+    // Allow access to previous sections (for navigation)
+    if (sectionNumber < currentSection) return true;
+    
+    return false;
+  };
+
   const handleAnswerChange = (value: string) => {
     setAnswers(prev => ({
       ...prev,
       [currentQuestionData.id]: value
     }));
+
+    // Save progress
+    if (!teamId) {
+      // For help path, save to backend
+      const saveProgress = async () => {
+        try {
+          await apiClient.post('/ideation/user-questionnaire-progress/', {
+            answers: { [currentQuestionData.id]: value },
+            current_section: currentSection,
+            current_question
+          });
+        } catch (error) {
+          console.error('Failed to save progress:', error);
+        }
+      };
+      saveProgress();
+      
+      // Also save locally as fallback
+      try {
+        const snapshot = {
+          answers: { ...answers, [currentQuestionData.id]: value },
+          currentSection,
+          currentQuestion,
+          updatedAt: Date.now()
+        };
+        localStorage.setItem(localKey, JSON.stringify(snapshot));
+      } catch {}
+    }
   };
 
   const canContinue = () => {
@@ -193,10 +289,52 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
     
     if (currentQuestion < currentSectionData.questions.length - 1) {
       // Next question in same section
-      setCurrentQuestion(prev => prev + 1);
+      setCurrentQuestion(prev => {
+        const next = prev + 1;
+        if (!teamId) {
+          // Save progress to backend for help path
+          const saveProgress = async () => {
+            try {
+              await apiClient.post('/ideation/user-questionnaire-progress/', {
+                answers,
+                current_section: currentSection,
+                current_question: next
+              });
+            } catch (error) {
+              console.error('Failed to save progress:', error);
+            }
+          };
+          saveProgress();
+          
+          // Also save locally as fallback
+          try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection, currentQuestion: next, updatedAt: Date.now() })); } catch {}
+        }
+        return next;
+      });
     } else if (currentSection < 8) {
       // Next section
-      setCurrentSection(prev => prev + 1);
+      setCurrentSection(prev => {
+        const nextSection = prev + 1;
+        if (!teamId) {
+          // Save progress to backend for help path
+          const saveProgress = async () => {
+            try {
+              await apiClient.post('/ideation/user-questionnaire-progress/', {
+                answers,
+                current_section: nextSection,
+                current_question: 0
+              });
+            } catch (error) {
+              console.error('Failed to save progress:', error);
+            }
+          };
+          saveProgress();
+          
+          // Also save locally as fallback
+          try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection: nextSection, currentQuestion: 0, updatedAt: Date.now() })); } catch {}
+        }
+        return nextSection;
+      });
       setCurrentQuestion(0);
     } else {
       // All done, submit
@@ -207,10 +345,52 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       // Previous question in same section
-      setCurrentQuestion(prev => prev - 1);
+      setCurrentQuestion(prev => {
+        const next = prev - 1;
+        if (!teamId) {
+          // Save progress to backend for help path
+          const saveProgress = async () => {
+            try {
+              await apiClient.post('/ideation/user-questionnaire-progress/', {
+                answers,
+                current_section: currentSection,
+                current_question: next
+              });
+            } catch (error) {
+              console.error('Failed to save progress:', error);
+            }
+          };
+          saveProgress();
+          
+          // Also save locally as fallback
+          try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection, currentQuestion: next, updatedAt: Date.now() })); } catch {}
+        }
+        return next;
+      });
     } else if (currentSection > 1) {
       // Previous section
-      setCurrentSection(prev => prev - 1);
+      setCurrentSection(prev => {
+        const nextSection = prev - 1;
+        if (!teamId) {
+          // Save progress to backend for help path
+          const saveProgress = async () => {
+            try {
+              await apiClient.post('/ideation/user-questionnaire-progress/', {
+                answers,
+                current_section: nextSection,
+                current_question
+              });
+            } catch (error) {
+              console.error('Failed to save progress:', error);
+            }
+          };
+          saveProgress();
+          
+          // Also save locally as fallback
+          try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection: nextSection, currentQuestion, updatedAt: Date.now() })); } catch {}
+        }
+        return nextSection;
+      });
       const prevSectionData = questionnaireData.sections[`section_${currentSection - 1}` as keyof typeof questionnaireData.sections];
       setCurrentQuestion(prevSectionData.questions.length - 1);
     }
@@ -233,6 +413,20 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
 
       // If no teamId, just pass the answers to onComplete
       if (!teamId) {
+        // Mark questionnaire as completed in backend
+        try {
+          await apiClient.post('/ideation/user-questionnaire-progress/', {
+            answers,
+            current_section: currentSection,
+            current_question,
+            completed: true
+          });
+        } catch (error) {
+          console.error('Failed to mark questionnaire as completed:', error);
+        }
+        
+        // Save completion snapshot locally as fallback
+        try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection, currentQuestion, completedAt: Date.now() })); } catch {}
         onComplete(sectionAnswers);
         return;
       }
@@ -276,10 +470,10 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full">
       {/* Header */}
-      <div className="border-b border-border bg-primary">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+      <div className="border-b border-border bg-primary w-full">
+        <div className="w-full px-1 sm:px-2 lg:px-4 xl:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
@@ -295,9 +489,9 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="w-full py-4 sm:py-6 lg:py-8">
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-muted-foreground">
               Progress: {currentQuestionNumber} of {totalQuestions}
@@ -309,25 +503,70 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
           <Progress value={progressPercentage} className="h-2" />
         </div>
 
-        {/* Section Progress Indicator */}
-        <div className="mb-8">
-          <div className="grid grid-cols-8 gap-4">
+        {/* Section Progress Indicator (icons clickable to jump to first question) */}
+        <div className="mb-6 sm:mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-4">
             {sections.map((section, index) => {
               const isActive = currentSection === index + 1;
               const isCompleted = currentSection > index + 1;
               const Icon = section.icon;
               
               return (
-                <div key={section.key} className="flex flex-col items-center gap-2 flex-1">
+                <button
+                  type="button"
+                  onClick={() => { 
+                    // Only allow navigation to accessible sections
+                    if (!isSectionAccessible(index + 1)) {
+                      toast({
+                        title: "Section Locked",
+                        description: "Complete the current section before accessing this one.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    setCurrentSection(index + 1); 
+                    setCurrentQuestion(0);
+                    
+                    // Save progress when jumping to different section
+                    if (!teamId) {
+                      const saveProgress = async () => {
+                        try {
+                          await apiClient.post('/ideation/user-questionnaire-progress/', {
+                            answers,
+                            current_section: index + 1,
+                            current_question: 0
+                          });
+                        } catch (error) {
+                          console.error('Failed to save progress:', error);
+                        }
+                      };
+                      saveProgress();
+                      
+                      // Also save locally as fallback
+                      try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection: index + 1, currentQuestion: 0, updatedAt: Date.now() })); } catch {}
+                    }
+                  }}
+                  key={section.key}
+                  className={`flex flex-col items-center gap-2 flex-1 focus:outline-none ${
+                    !isSectionAccessible(index + 1) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transition-transform'
+                  }`}
+                >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                     isActive 
                       ? 'border-primary bg-primary text-primary-foreground' 
                       : isCompleted 
                         ? 'border-green-500 bg-green-500 text-white'
-                        : 'border-muted bg-muted text-muted-foreground'
+                        : isSectionCompleted(index + 1)
+                          ? 'border-green-500 bg-green-500 text-white'
+                          : !isSectionAccessible(index + 1)
+                            ? 'border-gray-300 bg-gray-100 text-gray-400'
+                            : 'border-muted bg-muted text-muted-foreground'
                   }`}>
-                    {isCompleted ? (
+                    {isCompleted || isSectionCompleted(index + 1) ? (
                       <CheckCircle className="h-5 w-5" />
+                    ) : !isSectionAccessible(index + 1) ? (
+                      <Lock className="h-5 w-5" />
                     ) : (
                       <Icon className={`h-5 w-5 ${isActive ? 'text-primary-foreground' : section.color}`} />
                     )}
@@ -339,16 +578,16 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
                   }`}>
                     {section.title}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
 
         {/* Question Card */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-          <CardHeader className="text-center pb-6">
-            <div className="flex items-center justify-center gap-3 mb-4">
+        <Card className="w-full shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+          <CardHeader className="text-center pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                 getSectionColor(currentSection).replace('text-', 'bg-') + '/10'
               }`}>
@@ -357,11 +596,11 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
                   return <Icon className={`h-6 w-6 ${getSectionColor(currentSection)}`} />;
                 })()}
               </div>
-              <div>
-                <CardTitle className="text-2xl">
+              <div className="text-center sm:text-left">
+                <CardTitle className="text-xl sm:text-2xl">
                   Section {currentSection}: {currentSectionData.title}
                 </CardTitle>
-                <CardDescription className="text-lg mt-2">
+                <CardDescription className="text-base sm:text-lg mt-2">
                   {currentSectionData.description}
                 </CardDescription>
               </div>
@@ -379,28 +618,28 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8">
             {/* Question */}
             <div className="text-center">
-              <h3 className="text-xl font-semibold mb-4">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-4 sm:mb-6">
                 Question {currentQuestion + 1}:
               </h3>
-              <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+              <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed w-full">
                 {currentQuestionData.text}
               </p>
             </div>
 
             {/* Answer Input */}
-            <div className="max-w-2xl mx-auto">
+            <div className="w-full">
               <Textarea
                 placeholder="Type your answer here..."
                 value={answers[currentQuestionData.id] || ''}
                 onChange={(e) => handleAnswerChange(e.target.value)}
-                className="min-h-[120px] text-base resize-none"
+                className="min-h-[150px] sm:min-h-[200px] lg:min-h-[250px] text-base sm:text-lg lg:text-xl resize-none w-full"
                 disabled={isSubmitting}
               />
               {currentQuestionData.required && (
-                <p className="text-sm text-muted-foreground mt-2 text-center">
+                <p className="text-sm sm:text-base text-muted-foreground mt-3 text-center">
                   * This question is required
                 </p>
               )}
