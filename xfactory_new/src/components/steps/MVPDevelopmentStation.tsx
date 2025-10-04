@@ -672,10 +672,27 @@ export const MVPDevelopmentStation = ({
                         </p>
                       </div>
                     </div>
-                    <Button onClick={() => setShowSubmissionDialog(true)} className="flex items-center gap-2">
-                      Submit MVP
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <InfoButton
+                        title="What Do I Need to Submit?"
+                        content={`**Demo Link** (Required)
+                        - A working version of your MVP that we can actually see and try
+                        - This could be a website, app, video demo, slides, or anything that shows your MVP in action
+                        - Think of it as "proof" that you built something real
+                        
+                        **Validation Video** (Required - Less than 3 minutes)
+                        - A short video showing your MVP demo AND how you validated it
+                        - Show us your MVP working, then explain how you tested it with real people
+                        - Tell us what you learned from testing and how it changed your idea
+                        
+                        **Why This Matters**
+                        We need to see that you didn't just build something - you actually tested it with real people and learned from the experience. This is what separates a real startup from just a cool project!`}
+                      />
+                      <Button onClick={() => setShowSubmissionDialog(true)} className="flex items-center gap-2">
+                        Submit MVP
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -727,55 +744,64 @@ export const MVPDevelopmentStation = ({
               Submit MVP
             </DialogTitle>
             <DialogDescription>
-              Submit your MVP with a video explanation showing what problem you're solving and how long it will take to solve it.
+              Submit your MVP demo and validation video. We need to see your working MVP and proof that you tested it with real people!
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Google Drive Video Link *</label>
+              <label className="text-sm font-medium">Validation Video Link *</label>
               <input
                 type="url"
-                placeholder="https://drive.google.com/file/d/..."
+                placeholder="https://drive.google.com/file/d/... or https://youtube.com/watch?v=..."
                 value={submissionData.videoLink}
                 onChange={(e) => setSubmissionData(prev => ({ ...prev, videoLink: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Upload a video to Google Drive and share the link. The video should explain your MVP and the problem it solves.
+                Upload a video (less than 3 minutes) showing your MVP demo AND how you validated it with real people. You can use Google Drive, YouTube, or any video platform.
               </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Demo Link</label>
+              <label className="text-sm font-medium">MVP Demo Link (Optional)</label>
               <input
                 type="url"
-                placeholder="https://..."
+                placeholder="https://your-app.com or https://drive.google.com/file/d/..."
                 value={submissionData.demoLink}
                 onChange={(e) => setSubmissionData(prev => ({ ...prev, demoLink: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                If you have a working website, app, or demo that we can try ourselves, share the link here. This is optional if your video already shows everything.
+              </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Validation Evidence Link</label>
+              <label className="text-sm font-medium">Validation Evidence Link (Optional)</label>
               <input
                 type="url"
-                placeholder="https://..."
+                placeholder="https://drive.google.com/file/d/... or https://youtube.com/watch?v=..."
                 value={submissionData.validationLink}
                 onChange={(e) => setSubmissionData(prev => ({ ...prev, validationLink: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                If you have additional evidence of validation (surveys, interview recordings, etc.), share the link here. This is optional if your main video already covers validation.
+              </p>
             </div>
 
             <div>
               <label className="text-sm font-medium">Video Description</label>
               <textarea
-                placeholder="Briefly describe what the video shows..."
+                placeholder="Briefly describe what your video shows: your MVP demo, how you tested it, and what you learned from validation..."
                 value={submissionData.videoDescription}
                 onChange={(e) => setSubmissionData(prev => ({ ...prev, videoDescription: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary h-20 resize-none"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Help us understand what to expect in your video before we watch it.
+              </p>
             </div>
 
             <div>
