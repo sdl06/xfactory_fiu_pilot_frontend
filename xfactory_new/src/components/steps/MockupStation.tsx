@@ -2428,7 +2428,7 @@ user problems: ${probsLine}`;
                                     user_edited_prompt: prompt
                                   }));
                                   
-                                  await apiClient.post(`/teams/${teamId}/physical-mockup/edit-prompts/`, {
+                                  await apiClient.post(`/ideation/teams/${teamId}/physical-mockup/edit-prompts/`, {
                                     team_id: Number(teamId),
                                     edited_prompts: editedPromptsList
                                   });
@@ -2475,14 +2475,14 @@ user problems: ${probsLine}`;
                                   user_edited_prompt: prompt
                                 }));
                                 
-                                await apiClient.post(`/teams/${teamId}/physical-mockup/edit-prompts/`, {
+                                await apiClient.post(`/ideation/teams/${teamId}/physical-mockup/edit-prompts/`, {
                                   team_id: Number(teamId),
                                   edited_prompts: editedPromptsList
                                 });
                               }
                               
                               // Regenerate images
-                              const response = await apiClient.post(`/teams/${teamId}/physical-mockup/regenerate/`, {
+                              const response = await apiClient.post(`/ideation/teams/${teamId}/physical-mockup/regenerate/`, {
                                 team_id: Number(teamId)
                               });
                               
@@ -2561,7 +2561,7 @@ user problems: ${probsLine}`;
                             if (ideaId) {
                               for (const m of selected) {
                                 if (m.url) {
-                                  await apiClient.post('/physical-mockup/save/', {
+                                  await apiClient.post('/ideation/physical-mockup/save/', {
                                     idea_id: ideaId,
                                     image_url: m.url,
                                     image_prompt: m.prompt || '',
@@ -3285,16 +3285,16 @@ user problems: ${probsLine}`;
       <Dialog open={showServiceFlowIntro} onOpenChange={setShowServiceFlowIntro}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>What’s a Service Flowchart?</DialogTitle>
+            <DialogTitle>What's a Service Flowchart?</DialogTitle>
             <DialogDescription>
-              The quick meme‑friendly tour: it’s a map of your service from the customer’s POV plus what happens behind the scenes.
+              The quick meme‑friendly tour: it's a map of your service from the customer's POV plus what happens behind the scenes.
             </DialogDescription>
           </DialogHeader>
           <div className="text-sm space-y-2">
-            <div><span className="font-semibold">Lanes:</span> the “who/where” rows — Customer, Frontstage UI, Backstage System, External Integrations. Think class group project lanes.</div>
+            <div><span className="font-semibold">Lanes:</span> the "who/where" rows — Customer, Frontstage UI, Backstage System, External Integrations. Think class group project lanes.</div>
             <div><span className="font-semibold">Nodes:</span> steps like start/end/process/decision/system/subprocess/feedback. Start = spawn point, End = GG.</div>
-            <div><span className="font-semibold">Edges:</span> arrows that connect steps. Diamonds use Yes/No branches — like “did you study?” No → retry loop.</div>
-            <div>Use this to customize the AI’s draft so it matches your real ops. Future you (and your team) will thank you.</div>
+            <div><span className="font-semibold">Edges:</span> arrows that connect steps. Diamonds use Yes/No branches — like "did you study?" No → retry loop.</div>
+            <div>Use this to customize the AI's draft so it matches your real ops. Future you (and your team) will thank you.</div>
           </div>
         </DialogContent>
       </Dialog>
@@ -3306,11 +3306,11 @@ user problems: ${probsLine}`;
           </DialogHeader>
           <div className="text-sm space-y-2">
             <div><span className="font-semibold">Start/End:</span> only one of each. Start kickoffs, End = donezo.</div>
-            <div><span className="font-semibold">Process:</span> a normal step (e.g., “User signs up”).</div>
-            <div><span className="font-semibold">Decision:</span> a question with Yes/No edges (e.g., “Payment approved?”). Label the edges!</div>
+            <div><span className="font-semibold">Process:</span> a normal step (e.g., "User signs up").</div>
+            <div><span className="font-semibold">Decision:</span> a question with Yes/No edges (e.g., "Payment approved?"). Label the edges!</div>
             <div><span className="font-semibold">System/Subprocess:</span> backstage or integrations (Stripe, CRM, etc.).</div>
-            <div><span className="font-semibold">Feedback:</span> messages back to the user (“Order confirmed”).</div>
-            <div>Pro‑tip: if your diagram looks like spaghetti, split it into mini‑flows. Chef’s kiss.</div>
+            <div><span className="font-semibold">Feedback:</span> messages back to the user ("Order confirmed").</div>
+            <div>Pro‑tip: if your diagram looks like spaghetti, split it into mini‑flows. Chef's kiss.</div>
           </div>
         </DialogContent>
       </Dialog>
@@ -3318,10 +3318,10 @@ user problems: ${probsLine}`;
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Customer Journeys — What to Capture</DialogTitle>
-            <DialogDescription>It’s the story arc from “I saw a TikTok” → “I paid”.</DialogDescription>
+            <DialogDescription>It's the story arc from "I saw a TikTok" → "I paid".</DialogDescription>
           </DialogHeader>
           <div className="text-sm space-y-2">
-            <div><span className="font-semibold">Personas:</span> who’s your main character (student, parent, founder)?</div>
+            <div><span className="font-semibold">Personas:</span> who's your main character (student, parent, founder)?</div>
             <div><span className="font-semibold">Stages:</span> Awareness → Consideration → Purchase → Onboarding → Retention.</div>
             <div><span className="font-semibold">Activities:</span> what they do at each stage.</div>
             <div><span className="font-semibold">Touchpoints:</span> where it happens (site, app, email, IRL).</div>
@@ -3340,7 +3340,7 @@ user problems: ${probsLine}`;
             <div><span className="font-semibold">Phases:</span> Discovery → Build → Test → Launch (tweak as needed).</div>
             <div><span className="font-semibold">Duration:</span> rough time per phase (e.g., 2 weeks).</div>
             <div><span className="font-semibold">Activities:</span> what the team does.</div>
-            <div><span className="font-semibold">Deliverables:</span> what gets shipped (“Prototype v1”).</div>
+            <div><span className="font-semibold">Deliverables:</span> what gets shipped ("Prototype v1").</div>
             <div><span className="font-semibold">Resources:</span> who/what is needed (dev, designer, budget).</div>
           </div>
         </DialogContent>
@@ -3348,13 +3348,13 @@ user problems: ${probsLine}`;
       <Dialog open={showMilestonesInfo} onOpenChange={setShowMilestonesInfo}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Milestones — Checkpoints You Can’t Skip</DialogTitle>
-            <DialogDescription>Think “boss fights”: clear criteria to pass.</DialogDescription>
+            <DialogTitle>Milestones — Checkpoints You Can't Skip</DialogTitle>
+            <DialogDescription>Think "boss fights": clear criteria to pass.</DialogDescription>
           </DialogHeader>
           <div className="text-sm space-y-2">
-            <div><span className="font-semibold">Title & date:</span> name the checkpoint and when it’s due.</div>
-            <div><span className="font-semibold">Description:</span> what “done” means.</div>
-            <div><span className="font-semibold">Success criteria:</span> measurable outcomes (e.g., “10 test users complete checkout”).</div>
+            <div><span className="font-semibold">Title & date:</span> name the checkpoint and when it's due.</div>
+            <div><span className="font-semibold">Description:</span> what "done" means.</div>
+            <div><span className="font-semibold">Success criteria:</span> measurable outcomes (e.g., "10 test users complete checkout").</div>
           </div>
         </DialogContent>
       </Dialog>
