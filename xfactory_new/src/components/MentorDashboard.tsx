@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ import {
   Lightbulb,
   Target,
   Rocket,
-  Settings
+  Settings,
+  Loader2
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,6 +38,8 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
   const [selectedIdea, setSelectedIdea] = useState<number | null>(null);
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [myTeams, setMyTeams] = useState<any[]>([]);
+  const [mentorRequests, setMentorRequests] = useState<Record<number, any>>({});
+  const [joiningTeamId, setJoiningTeamId] = useState<number | null>(null);
   const [loadingOpps, setLoadingOpps] = useState(false);
   const [loadingMyTeams, setLoadingMyTeams] = useState(false);
   const [ideaDialogOpen, setIdeaDialogOpen] = useState(false);
@@ -54,7 +57,41 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
     calendlyUrl: mentorData?.calendly_url || mentorData?.calendlyUrl || "",
     photo: mentorData?.photo_url || mentorData?.photo || "",
   });
+  const mentorEmail = mentorData?.email || "";
+
+  const loadMentorRequests = useCallback(async () => {
+    if (!mentorEmail) {
+      setMentorRequests({});
+      return;
+    }
+    try {
+      const response = await apiClient.getMentorRequests(mentorEmail);
+      const payload = (response as any)?.data;
+      const items = Array.isArray(payload?.items)
+        ? payload.items
+        : (Array.isArray(payload) ? payload : []);
+      const map: Record<number, any> = {};
+      items.forEach((item: any) => {
+        const teamId = item?.team?.id;
+        if (teamId) map[teamId] = item;
+      });
+      setMentorRequests(map);
+    } catch {
+      setMentorRequests({});
+    }
+  }, [mentorEmail]);
+
   const [meetingCounts, setMeetingCounts] = useState<Record<number, number>>({});
+  const myTeamIds = useMemo(() => {
+    const ids = new Set<number>();
+    (myTeams || []).forEach((item: any) => {
+      const teamId = item?.team?.id;
+      if (typeof teamId === 'number') {
+        ids.add(teamId);
+      }
+    });
+    return ids;
+  }, [myTeams]);
 
   useEffect(() => {
     (async () => {
@@ -65,11 +102,16 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
       } finally { setLoadingOpps(false); }
       try {
         setLoadingMyTeams(true);
-        const mt = await apiClient.get(`/mentorship/my-teams/?email=${encodeURIComponent(mentorData?.email || '')}`);
-        setMyTeams(((mt as any)?.data?.items || []));
+        if (mentorEmail) {
+          const mt = await apiClient.getMentorTeams(mentorEmail);
+          setMyTeams(((mt as any)?.data?.items || []));
+        } else {
+          setMyTeams([]);
+        }
       } finally { setLoadingMyTeams(false); }
+      await loadMentorRequests();
     })();
-  }, []);
+  }, [loadMentorRequests, mentorEmail]);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -150,10 +192,39 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
 
   const handleJoinStartup = async (teamId: number) => {
     try {
-      await apiClient.post(`/mentorship/teams/${teamId}/join/`, { email: mentorData?.email });
-      const mt = await apiClient.get(`/mentorship/my-teams/?email=${encodeURIComponent(mentorData?.email || '')}`);
-      setMyTeams(((mt as any)?.data?.items || []));
-    } catch {}
+      setJoiningTeamId(teamId);
+      const response = await apiClient.post(`/mentorship/teams/${teamId}/join/`, { email: mentorEmail });
+      if (response.error || response.status < 200 || response.status >= 300) {
+        throw new Error(response.error || 'Request failed');
+      }
+      const payload: any = response.data || {};
+      const requestStatus = (payload?.status || 'pending').toLowerCase();
+      if (payload?.request_id) {
+        setMentorRequests(prev => ({
+          ...prev,
+          [teamId]: { ...prev[teamId], ...payload }
+        }));
+      } else if (requestStatus) {
+        setMentorRequests(prev => ({
+          ...prev,
+          [teamId]: { ...(prev[teamId] || {}), status: requestStatus }
+        }));
+      }
+      if (requestStatus === 'already_linked' || myTeamIds.has(teamId)) {
+        toast({ title: 'Mentor already assigned', description: 'You are already mentoring this team.' });
+      } else {
+        toast({ title: 'Mentorship request sent', description: 'The team will review your request.' });
+      }
+      if (mentorEmail) {
+        const mt = await apiClient.getMentorTeams(mentorEmail);
+        setMyTeams(((mt as any)?.data?.items || []));
+      }
+    } catch (error) {
+      toast({ title: 'Unable to send request', description: 'Please try again in a moment.', variant: 'destructive' });
+    } finally {
+      await loadMentorRequests();
+      setJoiningTeamId(null);
+    }
   };
 
   const handleViewIdea = async (teamId: number) => {
@@ -369,7 +440,27 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
           {/* New Opportunities */}
           <TabsContent value="opportunities" className="space-y-6">
             <div className="grid gap-6">
-              {opportunities.map((opportunity) => (
+              {opportunities.map((opportunity) => {
+                const requestInfo = mentorRequests[opportunity.id];
+                const normalizedStatus = (requestInfo?.status || '').toLowerCase();
+                const isPendingRequest = normalizedStatus === 'pending' || normalizedStatus === 'requested';
+                const isDeclinedRequest = normalizedStatus === 'declined';
+                const isApprovedRequest = normalizedStatus === 'approved' || normalizedStatus === 'already_linked';
+                const isAlreadyMentor = myTeamIds.has(opportunity.id) || isApprovedRequest;
+                const buttonDisabled = isPendingRequest || joiningTeamId === opportunity.id || isAlreadyMentor;
+                let joinLabel = 'Join as Mentor';
+                let statusLabel: string | null = null;
+                if (isAlreadyMentor) {
+                  joinLabel = 'Already Mentoring';
+                  statusLabel = 'Mentor assigned';
+                } else if (isPendingRequest) {
+                  joinLabel = 'Request Sent';
+                  statusLabel = 'Request pending';
+                } else if (isDeclinedRequest) {
+                  joinLabel = 'Send Request Again';
+                  statusLabel = 'Request declined';
+                }
+                return (
                 <Card key={opportunity.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -387,6 +478,14 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-muted-foreground">Open for mentors</p>
+                        {statusLabel && (
+                          <Badge
+                            variant={isAlreadyMentor ? 'success' : isDeclinedRequest ? 'destructive' : 'outline'}
+                            className="mt-2"
+                          >
+                            {statusLabel}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
@@ -405,9 +504,17 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <Button onClick={() => handleJoinStartup(opportunity.id)}>
-                        <Users className="h-4 w-4 mr-2" />
-                        Join as Mentor
+                      <Button
+                        onClick={() => handleJoinStartup(opportunity.id)}
+                        disabled={buttonDisabled}
+                        variant={buttonDisabled ? 'outline' : 'default'}
+                      >
+                        {joiningTeamId === opportunity.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Users className="h-4 w-4 mr-2" />
+                        )}
+                        {joinLabel}
                       </Button>
                       <Button variant="outline" onClick={() => handleViewIdea(opportunity.id)}>
                         <MessageSquare className="h-4 w-4 mr-2" />
@@ -416,7 +523,8 @@ export const MentorDashboard = ({ onBack, mentorData }: MentorDashboardProps) =>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
               {(!opportunities || opportunities.length === 0) && (
                 <div className="text-sm text-muted-foreground">{loadingOpps ? 'Loading opportunities...' : 'No teams available'}</div>
               )}

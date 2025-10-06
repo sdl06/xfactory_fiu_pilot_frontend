@@ -658,8 +658,25 @@ class ApiClient {
   async legalGetStrategyTeam(teamId: number) {
     return this.get(`/legal/teams/${teamId}/strategy/`);
   }
-  async legalGenerateInsightsTeam(teamId: number) {
-    return this.post(`/legal/teams/${teamId}/insights/`, {});
+  async legalGenerateInsightsTeam(teamId: number, payload: any = {}) {
+    return this.post(`/legal/teams/${teamId}/insights/`, payload);
+  }
+  async legalSaveImplementationGuideTeam(teamId: number, payload: any) {
+    return this.post(`/legal/teams/${teamId}/implementation/save/`, payload);
+  }
+  async legalGenerateFeasibilityTeam(teamId: number) {
+    return this.post(`/legal/teams/${teamId}/feasibility/generate/`, {});
+  }
+  async legalGetFeasibilityStatusTeam(teamId: number) {
+    return this.get(`/legal/teams/${teamId}/feasibility/status/`);
+  }
+  async legalGetFeasibilityReportTeam(teamId: number) {
+    return this.get(`/legal/teams/${teamId}/feasibility/report/`);
+  }
+  async legalUpdateTaskStatusTeam(teamId: number, taskId: string, status: string) {
+    return this.put(`/legal/teams/${teamId}/tasks/${taskId}/status/`, {
+      status: status
+    });
   }
   async legalTrademarkCheckTeam(teamId: number, businessName: string) {
     return this.post(`/legal/teams/${teamId}/trademark/check/`, { business_name: businessName });
@@ -696,6 +713,20 @@ class ApiClient {
   // Mentor: get detailed team data
   async getMentorTeamDetails(teamId: number, email: string) {
     return this.get(`/mentorship/teams/${teamId}/details/?email=${encodeURIComponent(email)}`);
+  }
+
+  async getMentorRequests(email: string) {
+    return this.get(`/mentorship/requests/?email=${encodeURIComponent(email)}`);
+  }
+
+  async getTeamMentorRequests(teamId: number) {
+    return this.get(`/mentorship/teams/${teamId}/requests/`);
+  }
+
+  async respondMentorRequest(requestId: number, action: 'approve' | 'decline' | 'cancel', message?: string) {
+    const payload: any = { action };
+    if (message) payload.message = message;
+    return this.post(`/mentorship/requests/${requestId}/respond/`, payload);
   }
 
   // Software mockups (team-scoped only)
@@ -970,6 +1001,7 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export default apiClient;
+
 
 
 
