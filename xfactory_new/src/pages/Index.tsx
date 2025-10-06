@@ -1221,9 +1221,10 @@ const Index = () => {
   const isPreMvpMentorshipDone = !!(trcSnapshot?.mentorship?.pre_mvp_completed);
   const isMvpDone = !!(trcSnapshot?.mvp?.task_plan_generated || trcSnapshot?.mvp?.prototype_built);
 
-  const canEnterPreMvp = isPitchDeckDone; // station 5
-  const canEnterMvp = isPitchDeckDone && isPreMvpMentorshipDone; // station 6
-  const canEnterPostMvpMentorship = true; // Always allow post-MVP mentorship if user navigates back
+  // Do not gate in deployment frontend; admin locks control access
+  const canEnterPreMvp = true; // station 5
+  const canEnterMvp = true; // station 6
+  const canEnterPostMvpMentorship = true; // station 7
 
   if (appState === "landing") {
     return (
@@ -1650,7 +1651,6 @@ const Index = () => {
     }
     
     if (currentStation === 5) {
-      if (!canEnterPreMvp) return <div className="p-6 text-sm text-muted-foreground">Complete the Investor Pitch Deck first to unlock this station.</div>;
       return (
         <MentorshipStation 
           sessionType="pre-mvp"
@@ -1662,7 +1662,6 @@ const Index = () => {
     }
     
     if (currentStation === 6) {
-      if (!canEnterMvp) return <div className="p-6 text-sm text-muted-foreground">Complete the Pre‑MVP Mentorship Session to unlock this station.</div>;
       return (
         <MVPDevelopmentStation 
           mentorshipData={null}

@@ -430,24 +430,16 @@ export const ProductionLineFlow = ({
     // Completion display - always show completed stations as completed
     if (completedStations.includes(stationId)) return 'completed';
     
-    // Check if admin data has been loaded
-    const adminDataLoaded = Object.keys(adminLocks).length > 0 || Object.keys(adminUnlocks).length > 0;
-    
-    // Do NOT auto-unlock while admin data loads; default to locked (completed stays completed above)
-    if (!adminDataLoaded) {
-      return 'locked';
-    }
-    
-    // Admin-controlled locking: use admin data when available
+    // Default behavior: UNLOCK by default unless admin explicitly locks
     const key = sectionKeyForStation(stationId);
-    const lockedByAdmin = adminLocks?.[key] === true;
-    const explicitlyUnlocked = adminUnlocks?.[key] === true || adminLocks?.[key] === false;
-    
-    // Current station is active only if explicitly unlocked by admin
-    if (stationId === currentStation) return explicitlyUnlocked ? 'active' : 'locked';
-    
-    // For all stations, rely on admin locks when data is available
-    return explicitlyUnlocked ? 'unlocked' : 'locked';
+    const explicitlyLocked = adminLocks?.[key] === true;
+    const isUnlockedByDefault = !explicitlyLocked;
+
+    // Current station is active if not explicitly locked by admin
+    if (stationId === currentStation) return isUnlockedByDefault ? 'active' : 'locked';
+
+    // Other stations: unlocked unless admin explicitly locks
+    return isUnlockedByDefault ? 'unlocked' : 'locked';
   }, [completedStations, currentStation, adminLocks, adminUnlocks]);
 
   // Build pipeline order: after 7, include workshops 12-14, then continue 8..11, and 15
