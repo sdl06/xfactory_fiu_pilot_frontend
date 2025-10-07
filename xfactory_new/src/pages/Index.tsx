@@ -1411,7 +1411,7 @@ const Index = () => {
                               </Button>
                             </div>
                           </div>
-                          <div className="grid grid-cols-3 gap-8">
+                          <div className="grid grid-cols-[1fr_1fr_1.5fr] gap-8">
                             {/* Left Column: Problem, Target market */}
                             <div className="space-y-8">
                               <div className="group">
@@ -1484,7 +1484,7 @@ const Index = () => {
                               </div>
                             </div>
 
-                            {/* Right Column: Assumptions */}
+                            {/* Right Column: Assumptions (wider) */}
                             <div className="space-y-8">
                               {ideaReviewData?.card?.assumptions && Array.isArray(ideaReviewData.card.assumptions) && ideaReviewData.card.assumptions.length > 0 ? (
                                 ideaReviewData.card.assumptions.slice(0,3).map((a: any, idx: number) => (
