@@ -1360,7 +1360,7 @@ const Index = () => {
               onClick={() => setShowIdeaReview(false)}
             />
           )}
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto z-50 relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto z-50 relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between w-full">
                 <span>Idea Review</span>
@@ -1411,9 +1411,9 @@ const Index = () => {
                               </Button>
                             </div>
                           </div>
-                          <div className="grid grid-cols-3 gap-6">
+                          <div className="grid grid-cols-3 gap-8">
                             {/* Left Column: Problem, Target market */}
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                               <div className="group">
                                 <h4 className="text-lg font-bold text-slate-700 mb-3">🎯 The Problem</h4>
                                 <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -1449,7 +1449,7 @@ const Index = () => {
                             </div>
 
                             {/* Middle Column: Solutions, Existing solutions */}
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                               <div className="group">
                                 <h4 className="text-lg font-bold text-slate-700 mb-3">💡 The Solution</h4>
                                 <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -1485,7 +1485,7 @@ const Index = () => {
                             </div>
 
                             {/* Right Column: Assumptions */}
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                               {ideaReviewData?.card?.assumptions && Array.isArray(ideaReviewData.card.assumptions) && ideaReviewData.card.assumptions.length > 0 ? (
                                 ideaReviewData.card.assumptions.slice(0,3).map((a: any, idx: number) => (
                                   <div key={idx} className="group">
