@@ -244,11 +244,19 @@ export const MentorshipStation = ({
                       <Button size="sm" variant="outline" onClick={() => { setSelectedProposal(req); setDetailOpen(true); }}>View</Button>
                       <Button size="sm" onClick={async () => {
                         setProcessingRequestId(req.id);
-                        try { await apiClient.respondMentorRequest(req.id, 'approve');
-                          // Refresh proposals
+                        try { 
+                          await apiClient.respondMentorRequest(req.id, 'approve');
+                          // Refresh mentor data to show the newly linked mentor
                           const status = await apiClient.get('/team-formation/status/');
-                          const teamId = (status as any)?.data?.current_team?.id;
+                          const teamId = (status as any)?.data?.current_team?.id as number | undefined;
                           if (teamId) {
+                            const teams = await apiClient.get('/team-formation/teams/');
+                            const team = Array.isArray((teams as any)?.data) ? (teams as any).data.find((t: any) => t.id === teamId) : null;
+                            const mentors = Array.isArray(team?.mentors) ? team.mentors : [];
+                            if (mentors.length > 0) {
+                              setMentorMatch(mentors[0]);
+                            }
+                            // Refresh proposals
                             const resp = await apiClient.getTeamMentorRequests(teamId);
                             const payload = (resp as any)?.data;
                             const items = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []);
@@ -320,7 +328,29 @@ export const MentorshipStation = ({
                   </div>
                 )}
                 <div className="flex items-center gap-2 pt-2">
-                  <Button size="sm" onClick={async () => { if (!selectedProposal) return; setProcessingRequestId(selectedProposal.id); try { await apiClient.respondMentorRequest(selectedProposal.id, 'approve'); setDetailOpen(false); } finally { setProcessingRequestId(null); } }} disabled={processingRequestId === (selectedProposal?.id || null)}>
+                  <Button size="sm" onClick={async () => { 
+                    if (!selectedProposal) return; 
+                    setProcessingRequestId(selectedProposal.id); 
+                    try { 
+                      await apiClient.respondMentorRequest(selectedProposal.id, 'approve'); 
+                      setDetailOpen(false); 
+                      // Refresh mentor data to show the newly linked mentor
+                      const status = await apiClient.get('/team-formation/status/');
+                      const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+                      if (teamId) {
+                        const teams = await apiClient.get('/team-formation/teams/');
+                        const team = Array.isArray((teams as any)?.data) ? (teams as any).data.find((t: any) => t.id === teamId) : null;
+                        const mentors = Array.isArray(team?.mentors) ? team.mentors : [];
+                        if (mentors.length > 0) {
+                          setMentorMatch(mentors[0]);
+                        }
+                      }
+                      // Remove the accepted proposal from the list
+                      setProposals(prev => prev.filter(p => p.id !== selectedProposal.id));
+                    } finally { 
+                      setProcessingRequestId(null); 
+                    } 
+                  }} disabled={processingRequestId === (selectedProposal?.id || null)}>
                     {processingRequestId === (selectedProposal?.id || null) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept'}
                   </Button>
                   <Button size="sm" variant="destructive" onClick={async () => { if (!selectedProposal) return; setProcessingRequestId(selectedProposal.id); try { await apiClient.respondMentorRequest(selectedProposal.id, 'decline'); setDetailOpen(false); setProposals(prev => prev.filter(p => p.id !== selectedProposal.id)); } finally { setProcessingRequestId(null); } }} disabled={processingRequestId === (selectedProposal?.id || null)}>Decline</Button>
