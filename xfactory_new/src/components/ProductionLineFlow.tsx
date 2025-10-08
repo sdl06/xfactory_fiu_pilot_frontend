@@ -306,6 +306,7 @@ export const ProductionLineFlow = ({
   const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
   const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
+  const [ideaCardComplete, setIdeaCardComplete] = useState<boolean>(false);
   
   // Viewport metrics for positioning
   const [viewportMetrics, setViewportMetrics] = useState({
@@ -344,6 +345,21 @@ export const ProductionLineFlow = ({
   // Load admin locks only once on mount and when explicitly triggered
   useEffect(() => {
     loadAdminLocks();
+    // Also determine if idea generation (station 1) is effectively complete
+    (async () => {
+      try {
+        const teamIdStr = localStorage.getItem('xfactoryTeamId');
+        const teamId = teamIdStr ? Number(teamIdStr) : null;
+        if (!teamId) return;
+        try {
+          const cardRes: any = await apiClient.getTeamConceptCard(teamId);
+          const ok = cardRes && cardRes.status >= 200 && cardRes.status < 300 && (cardRes as any).data;
+          setIdeaCardComplete(Boolean(ok));
+        } catch {
+          setIdeaCardComplete(false);
+        }
+      } catch {}
+    })();
     
     // Throttled refresh function
     let refreshTimeout: NodeJS.Timeout | null = null;
@@ -429,18 +445,21 @@ export const ProductionLineFlow = ({
     
     // Completion display - always show completed stations as completed
     if (completedStations.includes(stationId)) return 'completed';
+
+    // Treat AI Powered Idea Creation as completed if a concept card exists
+    if (stationId === 1 && ideaCardComplete) return 'completed';
     
-    // Default behavior: UNLOCK by default unless admin explicitly locks
+    // Locked-by-default gating: only admin unlocks open a station
     const key = sectionKeyForStation(stationId);
+    const explicitlyUnlocked = adminUnlocks?.[key] === true;
     const explicitlyLocked = adminLocks?.[key] === true;
-    const isUnlockedByDefault = !explicitlyLocked;
 
-    // Current station is active if not explicitly locked by admin
-    if (stationId === currentStation) return isUnlockedByDefault ? 'active' : 'locked';
+    // Current station is active only if explicitly unlocked (and not explicitly locked)
+    if (stationId === currentStation) return (explicitlyUnlocked && !explicitlyLocked) ? 'active' : 'locked';
 
-    // Other stations: unlocked unless admin explicitly locks
-    return isUnlockedByDefault ? 'unlocked' : 'locked';
-  }, [completedStations, currentStation, adminLocks, adminUnlocks]);
+    // Other stations are unlocked only if explicitly unlocked (and not explicitly locked)
+    return (explicitlyUnlocked && !explicitlyLocked) ? 'unlocked' : 'locked';
+  }, [completedStations, currentStation, adminLocks, adminUnlocks, ideaCardComplete]);
 
   // Build pipeline order: after 7, include workshops 12-14, then continue 8..11, and 15
   const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15], []);
