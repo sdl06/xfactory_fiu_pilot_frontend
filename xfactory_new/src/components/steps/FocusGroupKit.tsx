@@ -110,13 +110,47 @@ export const FocusGroupKit: React.FC<FocusGroupKitProps> = ({
           setPersonas(personaKit.user_personas);
         }
 
-        // 2) Load focus group guide (team-scoped)
+        // 2) Load focus group guide (team-scoped); if missing, auto-generate then re-fetch
+        let hasData = false;
         try {
           const fgRes = await apiClient.get(`/validation/teams/${teamId}/focus-group/`);
           if (fgRes?.data?.success && fgRes.data.data) {
             setFocusGroupData(fgRes.data.data);
+            hasData = true;
           }
         } catch {}
+        if (!hasData) {
+          try {
+            const contextData = {
+              idea_info: {
+                problem: ideaCard?.problem || '',
+                solution: ideaCard?.solution || '',
+                target_audience: ideaCard?.targetAudience || '',
+                pain_point: ideaCard?.painPoint || ''
+              },
+              secondary_research: deepResearch ? {
+                market_insights: deepResearch.market_insights || '',
+                competitor_analysis: deepResearch.competitor_analysis || '',
+                trends: deepResearch.trends || ''
+              } : null
+            };
+            const genRes = await apiClient.post(`/validation/teams/${teamId}/focus-group/generate/`, contextData);
+            const payload = (genRes as any)?.data?.data || {};
+            if (payload?.focus_group) setFocusGroupData(payload.focus_group);
+            else {
+              try {
+                const fgRes2 = await apiClient.get(`/validation/teams/${teamId}/focus-group/`);
+                if (fgRes2?.data?.success) setFocusGroupData(fgRes2.data.data || null);
+              } catch {}
+            }
+            if (payload?.persona) {
+              const mappedPersona = mapInterviewKit({ data: payload.persona });
+              if (mappedPersona?.user_personas) setPersonas(mappedPersona.user_personas);
+            }
+          } catch (e) {
+            console.error('Auto-generate focus group failed:', e);
+          }
+        }
 
         // 3) Load saved focus group insights
         try {

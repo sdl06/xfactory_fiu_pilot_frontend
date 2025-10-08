@@ -211,7 +211,7 @@ export const MentorshipStation = ({
       <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-6 py-16 space-y-8">
           <div className="text-center space-y-3">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
+          <Users className="h-12 w-12 mx-auto text-muted-foreground" />
             <h1 className="text-2xl font-bold">Mentorship Proposals</h1>
             <p className="text-sm text-muted-foreground">Review pending mentor proposals and accept the best fit for your team.</p>
           </div>
@@ -278,7 +278,7 @@ export const MentorshipStation = ({
           )}
 
           <div className="flex justify-center">
-            <Button variant="outline" onClick={onBack}>Back to Dashboard</Button>
+          <Button variant="outline" onClick={onBack}>Back to Dashboard</Button>
           </div>
         </div>
 
