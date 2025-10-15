@@ -9,6 +9,7 @@ interface User {
   last_name: string;
   business_type?: string;
   idea_summary?: string;
+  preferred_archetype?: string;
   progress?: {
     sections_completed: string[];
     current_section: string;

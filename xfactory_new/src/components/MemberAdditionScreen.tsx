@@ -6,9 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Copy, Clock, CheckCircle, XCircle, User, Mail, MessageSquare, UserPlus, Loader2, Plus, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Copy, Clock, CheckCircle, XCircle, User, Mail, MessageSquare, UserPlus, Loader2, Plus, Trash2, Settings, Factory } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MemberAdditionScreenProps {
   teamData: any;
@@ -43,13 +46,21 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
   const [showAddRole, setShowAddRole] = useState(false);
   const [newRole, setNewRole] = useState({ job_role: '', keywords: '', job_description: '' });
   const [isUpdatingLookingFor, setIsUpdatingLookingFor] = useState(false);
+  const [userArchetype, setUserArchetype] = useState<string>("");
+  const [isUpdatingArchetype, setIsUpdatingArchetype] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Mock deadline - in real implementation, this would come from backend
   const deadline = new Date();
   deadline.setDate(deadline.getDate() + 7); // 7 days from now
 
   useEffect(() => {
+    // Load user archetype
+    if (user?.preferred_archetype) {
+      setUserArchetype(user.preferred_archetype);
+    }
+
     // Only load when we have a valid team id
     const tid = teamData?.id || Number(localStorage.getItem('xfactoryTeamId')) || null;
     if (tid) {
@@ -88,7 +99,7 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
     }, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, []);
+  }, [user]);
 
   const loadJoinRequests = async () => {
     try {
@@ -342,28 +353,115 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
     }
   };
 
+  const updateUserArchetype = async (newArchetype: string) => {
+    try {
+      setIsUpdatingArchetype(true);
+      
+      // Update user's preferred archetype
+      await apiClient.put('/auth/user/', {
+        preferred_archetype: newArchetype
+      });
+      
+      setUserArchetype(newArchetype);
+      
+      toast({
+        title: "Archetype Updated!",
+        description: `Your archetype has been updated to ${newArchetype}`,
+      });
+    } catch (error: any) {
+      console.error('Error updating archetype:', error);
+      toast({
+        title: "Error",
+        description: error?.error || "Failed to update archetype. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingArchetype(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Factory Header */}
-      <div className="border-b border-border bg-gradient-conveyor">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
+        <div className="w-full px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
                 <Users className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Team Assembly</h1>
-                <p className="text-sm text-muted-foreground">Build your dream team</p>
+                <h1 className="text-xl font-bold text-white">Team Formation</h1>
+                <p className="text-sm text-white/80">Build your dream team</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Centered timer */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">{timeRemaining}</span>
             </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Logo - bigger and positioned on the right */}
+              <img 
+                src="/logos/prov_logo_white.png" 
+                alt="Ivy Factory Logo" 
+                className="h-12 w-auto object-contain"
+                onError={(e) => {
+                  // Fallback to Factory icon if logo fails to load
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  const parent = imgElement.parentElement;
+                  if (parent) {
+                    const fallbackIcon = document.createElement('div');
+                    fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                    parent.appendChild(fallbackIcon);
+                  }
+                }}
+              />
+              
+              {/* Account Settings Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Account Settings
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Account Settings</DialogTitle>
+                    <DialogDescription>
+                      Update your profile information and preferences.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="archetype">Preferred Archetype</Label>
+                      <Select value={userArchetype} onValueChange={updateUserArchetype} disabled={isUpdatingArchetype}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your archetype" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Strategist">Strategist (The Dreamer & Strategist)</SelectItem>
+                          <SelectItem value="Builder">Builder (The Technical Architect)</SelectItem>
+                          <SelectItem value="Seller">Seller (The Sales & Growth Operator)</SelectItem>
+                          <SelectItem value="Designer">Designer (The User Experience Guardian)</SelectItem>
+                          <SelectItem value="Operator">Operator (The Execution Backbone)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your archetype helps teams understand your role and skills.
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Team Info Card */}
@@ -557,10 +655,20 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
                       {lookingFor.map((role: any, index: number) => (
                         <div key={index} className="flex items-start justify-between p-3 bg-background rounded border">
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{role.job_role || 'Team Member'}</div>
                             {role.keywords && (
-                              <div className="text-xs text-muted-foreground mt-1">Skills: {role.keywords}</div>
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {role.keywords.split(',').map((keyword: string, keyIndex: number) => {
+                                  const trimmedKeyword = keyword.trim();
+                                  if (!trimmedKeyword) return null;
+                                  return (
+                                    <Badge key={keyIndex} variant="secondary" className="text-xs">
+                                      {trimmedKeyword}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
                             )}
+                            <div className="font-medium text-sm">{role.job_role || 'Team Member'}</div>
                             {role.job_description && (
                               <div className="text-xs text-muted-foreground mt-1">{role.job_description}</div>
                             )}

@@ -7,13 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Factory, Cog, Users, Target, FileText, UserCheck, Code, Rocket, Scale, TrendingUp, DollarSign, Lock, CheckCircle, ArrowRight, Zap, AlertTriangle, Settings, Star, BarChart3, Home, Image, UserPlus, Loader2 } from "lucide-react";
 import { ProductionLineFlow } from "./ProductionLineFlow";
 import { FactorAI } from "./FactorAI";
 import { BusinessType } from "./OnboardingFlow";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { lsGetScoped, scopedKey } from "@/lib/teamScope";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
 interface FactoryDashboardProps {
   userData: {
     hasIdea: boolean;
@@ -66,6 +69,10 @@ export const FactoryDashboard = ({
   const [isLoadingEligibleUsers, setIsLoadingEligibleUsers] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
   const [isLoadingPendingInvitations, setIsLoadingPendingInvitations] = useState(false);
+  const [userArchetype, setUserArchetype] = useState<string>("");
+  const [isUpdatingArchetype, setIsUpdatingArchetype] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const loadMembers = async () => {
     try {
@@ -242,6 +249,13 @@ export const FactoryDashboard = ({
       if (t) setConceptTitle(t);
   }, []);
 
+  useEffect(() => {
+    // Load user archetype
+    if (user?.preferred_archetype) {
+      setUserArchetype(user.preferred_archetype);
+    }
+  }, [user]);
+
   // Fetch business name (concept title) from backend for cross-browser consistency
   useEffect(() => {
     (async () => {
@@ -285,6 +299,33 @@ export const FactoryDashboard = ({
     })();
   }, []);
 
+  const updateUserArchetype = async (newArchetype: string) => {
+    try {
+      setIsUpdatingArchetype(true);
+      
+      // Update user's preferred archetype
+      await apiClient.put('/auth/user/', {
+        preferred_archetype: newArchetype
+      });
+      
+      setUserArchetype(newArchetype);
+      
+      toast({
+        title: "Archetype Updated!",
+        description: `Your archetype has been updated to ${newArchetype}`,
+      });
+    } catch (error: any) {
+      console.error('Error updating archetype:', error);
+      toast({
+        title: "Error",
+        description: error?.error || "Failed to update archetype. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingArchetype(false);
+    }
+  };
+
   // Calculate progress
   const completedCount = stationData.completedStations.length;
   const totalSteps = 15; // Total number of stations
@@ -304,7 +345,7 @@ export const FactoryDashboard = ({
               <p className="text-sm text-muted-foreground">Your startup journey</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button variant="outline" onClick={onGoHome}>
               <Home className="h-4 w-4 mr-2" />
               Home
@@ -317,6 +358,62 @@ export const FactoryDashboard = ({
               <Users className="h-4 w-4 mr-2" />
               Members
             </Button>
+            
+            {/* Logo - bigger and positioned on the right */}
+            <img 
+              src="/logos/prov_logo_white.png" 
+              alt="Ivy Factory Logo" 
+              className="h-12 w-auto object-contain"
+              onError={(e) => {
+                // Fallback to Factory icon if logo fails to load
+                const imgElement = e.target as HTMLImageElement;
+                imgElement.style.display = 'none';
+                const parent = imgElement.parentElement;
+                if (parent) {
+                  const fallbackIcon = document.createElement('div');
+                  fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                  parent.appendChild(fallbackIcon);
+                }
+              }}
+            />
+            
+            {/* Account Settings Button */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Account Settings
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Account Settings</DialogTitle>
+                  <DialogDescription>
+                    Update your profile information and preferences.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="archetype">Preferred Archetype</Label>
+                    <Select value={userArchetype} onValueChange={updateUserArchetype} disabled={isUpdatingArchetype}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your archetype" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Strategist">Strategist (The Dreamer & Strategist)</SelectItem>
+                        <SelectItem value="Builder">Builder (The Technical Architect)</SelectItem>
+                        <SelectItem value="Seller">Seller (The Sales & Growth Operator)</SelectItem>
+                        <SelectItem value="Designer">Designer (The User Experience Guardian)</SelectItem>
+                        <SelectItem value="Operator">Operator (The Execution Backbone)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your archetype helps teams understand your role and skills.
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -463,10 +560,20 @@ export const FactoryDashboard = ({
                       <div className="space-y-2">
                         {teamInfo.looking_for.map((role: any, index: number) => (
                           <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
-                            <div className="font-medium text-sm">{role.job_role || 'Team Member'}</div>
                             {role.keywords && (
-                              <div className="text-xs text-muted-foreground mt-1">Skills: {role.keywords}</div>
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {role.keywords.split(',').map((keyword: string, keyIndex: number) => {
+                                  const trimmedKeyword = keyword.trim();
+                                  if (!trimmedKeyword) return null;
+                                  return (
+                                    <Badge key={keyIndex} variant="secondary" className="text-xs">
+                                      {trimmedKeyword}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
                             )}
+                            <div className="font-medium text-sm">{role.job_role || 'Team Member'}</div>
                             {role.job_description && (
                               <div className="text-xs text-muted-foreground mt-1">{role.job_description}</div>
                             )}
