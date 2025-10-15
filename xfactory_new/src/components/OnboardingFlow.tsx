@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Lightbulb, Brain, Target, Users, Smartphone, Globe, Building, Settings, Cog, Zap, CheckCircle, RefreshCw, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lightbulb, Brain, Target, Users, Smartphone, Globe, Building, Settings, Cog, Zap, CheckCircle, RefreshCw, Download, Loader2, Factory } from "lucide-react";
 import { StructuredQuestionnaire } from "./steps/StructuredQuestionnaire";
 import { FactorAI } from "./FactorAI";
 import { apiClient } from "@/lib/api";
@@ -148,6 +148,69 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
     setIsGenerating(false);
   };
 
+  // Prefill market opportunities and user problems when entering step 3 (hasIdea path)
+  useEffect(() => {
+    (async () => {
+      if (step === 3 && data.hasIdea) {
+        try {
+          // Try team-scoped brainstorming assistant (cached or generate+fetch)
+          const status = await apiClient.get('/team-formation/status/');
+          const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+          let opps: string[] = [];
+          let probs: string[] = [];
+          if (teamId) {
+            try {
+              let teamBs = await apiClient.getTeamBrainstorming(teamId);
+              if (!(teamBs?.status >= 200 && teamBs.status < 300 && (teamBs as any).data)) {
+                try { await apiClient.generateTeamBrainstorming(teamId); } catch {}
+                try { teamBs = await apiClient.getTeamBrainstorming(teamId); } catch {}
+              }
+              const tbd: any = teamBs?.data;
+              if (Array.isArray(tbd?.opportunity_statements)) {
+                opps = tbd.opportunity_statements.map((s: any) => String(s)).filter(Boolean).slice(0, 3);
+              }
+              if (Array.isArray(tbd?.user_problems)) {
+                probs = tbd.user_problems.map((s: any) => String(s)).filter(Boolean).slice(0, 3);
+              }
+            } catch {}
+          }
+          // Fallback: try generic brainstormingAI
+          if (opps.length === 0 && probs.length === 0) {
+            try {
+              const bs = await apiClient.brainstormingAI({
+                problem: data.problem || '',
+                solution: data.solution || '',
+                target_market: data.target || ''
+              });
+              const bsd: any = (bs as any)?.data || {};
+              if (Array.isArray(bsd?.opportunity_statements)) {
+                opps = bsd.opportunity_statements.map((s: any) => String(s)).filter(Boolean).slice(0, 3);
+              }
+              if (Array.isArray(bsd?.user_problems)) {
+                probs = bsd.user_problems.map((s: any) => String(s)).filter(Boolean).slice(0, 3);
+              }
+            } catch {}
+          }
+          if (opps.length || probs.length) {
+            setData(prev => ({
+              ...prev,
+              marketOpportunities: [
+                opps[0] || prev.marketOpportunities?.[0] || '',
+                opps[1] || prev.marketOpportunities?.[1] || '',
+                opps[2] || prev.marketOpportunities?.[2] || ''
+              ],
+              userProblems: [
+                probs[0] || prev.userProblems?.[0] || '',
+                probs[1] || prev.userProblems?.[1] || '',
+                probs[2] || prev.userProblems?.[2] || ''
+              ]
+            }));
+          }
+        } catch {}
+      }
+    })();
+  }, [step, data.hasIdea, data.problem, data.solution, data.target]);
+
   const loadElevatorPitch = async () => {
     try {
       const status = await apiClient.get('/team-formation/status/');
@@ -251,32 +314,64 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
 
 
   return (
-    <div className={`min-h-screen bg-background ${step === 2.5 ? "px-2 sm:px-4 lg:px-6 xl:px-8 py-0" : "p-6"}`}>
-      <div className={step === 4 ? "max-w-[1450px] mx-auto" : step === 2.5 ? "w-full" : "max-w-2xl mx-auto"}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Button variant="ghost" onClick={handleBack}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <div className="flex items-center gap-2">
-            <Badge variant={step >= 1 ? "default" : "secondary"}>1</Badge>
-            <div className="w-8 h-0.5 bg-border"></div>
-            <Badge variant={step >= 2 ? "default" : "secondary"}>2</Badge>
-                <div className="w-8 h-0.5 bg-border"></div>
-                <Badge variant={step >= 3 ? "default" : "secondary"}>3</Badge>
-                    <div className="w-8 h-0.5 bg-border"></div>
-                    <Badge variant={step >= 4 ? "default" : "secondary"}>4</Badge>
-          </div>
-          {/* Step Labels */}
-          <div className="text-center mt-2">
-            {step === 1 && "Choose Path"}
-            {step === 2 && data.hasIdea && "Define Concept"}
-            {step === 2.5 && !data.hasIdea && "Questionnaire"}
-            {step === 3 && "Brainstorm"}
-            {step === 4 && "Concept Card"}
+    <div className="min-h-screen bg-background">
+      {/* Factory Header */}
+      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
+        <div className="w-full px-6 py-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3 -ml-8">
+              <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
+                <Factory className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Idea Generation</h1>
+                <p className="text-sm text-white/80">Build your startup concept</p>
+              </div>
+            </div>
+            
+            {/* Centered step indicators */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+              <Badge variant={step >= 1 ? "default" : "secondary"} className={step >= 1 ? "bg-green-600 hover:bg-green-700" : ""}>1</Badge>
+              <div className="w-8 h-0.5 bg-border"></div>
+              <Badge variant={step >= 2 ? "default" : "secondary"} className={step >= 2 ? "bg-green-600 hover:bg-green-700" : ""}>2</Badge>
+              <div className="w-8 h-0.5 bg-border"></div>
+              <Badge variant={step >= 3 ? "default" : "secondary"} className={step >= 3 ? "bg-green-600 hover:bg-green-700" : ""}>3</Badge>
+              <div className="w-8 h-0.5 bg-border"></div>
+              <Badge variant={step >= 4 ? "default" : "secondary"} className={step >= 4 ? "bg-green-600 hover:bg-green-700" : ""}>4</Badge>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Logo - bigger and positioned on the right */}
+              <img 
+                src="/logos/prov_logo_white.png" 
+                alt="Ivy Factory Logo" 
+                className="h-12 w-auto object-contain"
+                onError={(e) => {
+                  // Fallback to Factory icon if logo fails to load
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  const parent = imgElement.parentElement;
+                  if (parent) {
+                    const fallbackIcon = document.createElement('div');
+                    fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                    parent.appendChild(fallbackIcon);
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
+      </header>
+
+      <div className={`${step === 2.5 ? "px-2 sm:px-4 lg:px-6 xl:px-8 py-0" : "p-6"}`}>
+        <div className={step === 4 ? "max-w-[1450px] mx-auto" : step === 2.5 ? "w-full" : "max-w-2xl mx-auto"}>
+          {/* Back Button */}
+          <div className="flex items-center justify-start mb-8">
+            <Button variant="ghost" onClick={handleBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
 
         {/* Loading Screen for No Idea Path */}
         {isGenerating && (
@@ -349,7 +444,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Define Your Concept</CardTitle>
                 <CardDescription>
-                  Describe your idea in three key areas
+                  Describe your idea in four key areas
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -358,37 +453,97 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                   <div>
                     <Label>Problem Statement</Label>
                     <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                      style={{
+                        height: 'auto',
+                        minHeight: '6rem',
+                        maxHeight: '20rem'
+                      }}
                       placeholder="What problem are you solving?"
                       value={data.problem || ""}
-                      onChange={(e) => setData(prev => ({ ...prev, problem: e.target.value }))}
+                      onChange={(e) => {
+                        const target = e.target;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                        setData(prev => ({ ...prev, problem: target.value }));
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                      }}
                     />
                   </div>
                   <div>
                     <Label>Solution Approach</Label>
                     <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                      style={{
+                        height: 'auto',
+                        minHeight: '6rem',
+                        maxHeight: '20rem'
+                      }}
                       placeholder="How do you solve this problem?"
                       value={data.solution || ""}
-                      onChange={(e) => setData(prev => ({ ...prev, solution: e.target.value }))}
+                      onChange={(e) => {
+                        const target = e.target;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                        setData(prev => ({ ...prev, solution: target.value }));
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                      }}
                     />
                   </div>
                   <div>
                     <Label>Target Audience</Label>
                     <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                      style={{
+                        height: 'auto',
+                        minHeight: '6rem',
+                        maxHeight: '20rem'
+                      }}
                       placeholder="Who is your target market?"
                       value={data.target || ""}
-                      onChange={(e) => setData(prev => ({ ...prev, target: e.target.value }))}
+                      onChange={(e) => {
+                        const target = e.target;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                        setData(prev => ({ ...prev, target: target.value }));
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                      }}
                     />
                   </div>
                   <div>
                     <Label>Business Model</Label>
                     <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                      style={{
+                        height: 'auto',
+                        minHeight: '6rem',
+                        maxHeight: '20rem'
+                      }}
                       placeholder="How will you make money?"
                       value={data.businessModel || ""}
-                      onChange={(e) => setData(prev => ({ ...prev, businessModel: e.target.value }))}
+                      onChange={(e) => {
+                        const target = e.target;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                        setData(prev => ({ ...prev, businessModel: target.value }));
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                      }}
                     />
                   </div>
                   <div className="flex justify-between items-center pt-4">
@@ -509,18 +664,21 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
         {step === 3 && data.hasIdea && (
           <Card className="animate-fade-in">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Brainstorm</CardTitle>
+              <CardTitle className="text-2xl">Expand your idea with AI</CardTitle>
               <CardDescription>
-                Now let's think through your idea systematically. This is a critical thinking exercise.
+              Let’s explore how your idea fits into the market.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-gradient-machinery rounded-full flex items-center justify-center mx-auto mb-4">
                   <Brain className="h-8 w-8 text-white" />
                 </div>
                 <p className="text-lg text-muted-foreground">
-                  Based on your {data.hasIdea ? 'idea' : 'questionnaire answers'}, let's identify market opportunities and user problems.
+                IvyFactory’s AI will help you uncover opportunities, user problems, and gaps you can solve.
+                </p>
+                <p className="text-lg text-muted-foreground">
+                Review the suggestions below and adjust them to fit your vision.
                 </p>
               </div>
               
@@ -529,33 +687,67 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-center">Market Opportunities</h3>
                   <div className="space-y-3">
-                    <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="What market opportunities do you see based on your problem analysis?"
-                      value={data.marketOpportunities?.[0] || ""}
-                      onChange={(e) => setData(prev => ({ 
-                        ...prev, 
-                        marketOpportunities: [e.target.value, prev.marketOpportunities?.[1] || "", prev.marketOpportunities?.[2] || ""]
-                      }))}
-                    />
-                    <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="What other opportunities exist in this space?"
-                      value={data.marketOpportunities?.[1] || ""}
-                      onChange={(e) => setData(prev => ({ 
-                        ...prev, 
-                        marketOpportunities: [prev.marketOpportunities?.[0] || "", e.target.value, prev.marketOpportunities?.[2] || ""]
-                      }))}
-                    />
-                    <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="What trends or changes create new opportunities?"
-                      value={data.marketOpportunities?.[2] || ""}
-                      onChange={(e) => setData(prev => ({ 
-                        ...prev, 
-                        marketOpportunities: [prev.marketOpportunities?.[0] || "", prev.marketOpportunities?.[1] || "", e.target.value]
-                      }))}
-                    />
+                    <p className="text-xs text-muted-foreground px-1">■ Market Opportunity Example: "Rising interest in sustainable packaging creates room for eco-friendly delivery startups."</p>
+                    {(data.marketOpportunities || []).map((opportunity, index) => (
+                      <div key={index} className="flex gap-2">
+                        <textarea
+                          className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                          style={{
+                            height: 'auto',
+                            minHeight: '6rem',
+                            maxHeight: '20rem'
+                          }}
+                          placeholder={
+                            index === 0 ? "What market opportunities do you see based on your problem analysis?" :
+                            index === 1 ? "What other opportunities exist in this space?" :
+                            index === 2 ? "What trends or changes create new opportunities?" :
+                            "What additional opportunities do you see?"
+                          }
+                          value={opportunity}
+                          onChange={(e) => {
+                            const target = e.target;
+                            target.style.height = 'auto';
+                            target.style.height = Math.min(target.scrollHeight, 320) + 'px'; // 320px = 20rem
+                            setData(prev => ({ 
+                              ...prev, 
+                              marketOpportunities: (prev.marketOpportunities || []).map((opp, i) => i === index ? target.value : opp)
+                            }));
+                          }}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                          }}
+                        />
+                        {index > 2 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="px-3 py-2 min-h-[6rem] self-start"
+                            onClick={() => setData(prev => ({
+                              ...prev,
+                              marketOpportunities: (prev.marketOpportunities || []).filter((_, i) => i !== index)
+                            }))}
+                          >
+                            ×
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <div className="flex">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full py-6 text-base"
+                        onClick={() => setData(prev => ({
+                          ...prev,
+                          marketOpportunities: [...(prev.marketOpportunities || []), ""]
+                        }))}
+                      >
+                        + Add another opportunity
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 
@@ -563,41 +755,95 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-center">User Problems</h3>
                   <div className="space-y-3">
-                    <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="What specific problems do users face?"
-                      value={data.userProblems?.[0] || ""}
-                      onChange={(e) => setData(prev => ({ 
-                        ...prev, 
-                        userProblems: [e.target.value, prev.userProblems?.[1] || "", prev.userProblems?.[2] || ""]
-                      }))}
-                    />
-                    <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="What pain points are most critical?"
-                      value={data.userProblems?.[1] || ""}
-                      onChange={(e) => setData(prev => ({ 
-                        ...prev, 
-                        userProblems: [prev.userProblems?.[0] || "", e.target.value, prev.userProblems?.[2] || ""]
-                      }))}
-                    />
-                    <textarea
-                      className="w-full h-24 p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="What problems are currently underserved?"
-                      value={data.userProblems?.[2] || ""}
-                      onChange={(e) => setData(prev => ({ 
-                        ...prev, 
-                        userProblems: [prev.userProblems?.[0] || "", prev.userProblems?.[1] || "", e.target.value]
-                      }))}
-                    />
+                    <p className="text-xs text-muted-foreground px-1">■ User Problem Example: "Small retailers lack affordable tools to manage online customer reviews."</p>
+                    {(data.userProblems || []).map((problem, index) => (
+                      <div key={index} className="flex gap-2">
+                        <textarea
+                          className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                          style={{
+                            height: 'auto',
+                            minHeight: '6rem',
+                            maxHeight: '20rem'
+                          }}
+                          placeholder={
+                            index === 0 ? "What specific problems do users face?" :
+                            index === 1 ? "What pain points are most critical?" :
+                            index === 2 ? "What problems are currently underserved?" :
+                            "What additional user problems do you see?"
+                          }
+                          value={problem}
+                          onChange={(e) => {
+                            const target = e.target;
+                            target.style.height = 'auto';
+                            target.style.height = Math.min(target.scrollHeight, 320) + 'px'; // 320px = 20rem
+                            setData(prev => ({ 
+                              ...prev, 
+                              userProblems: (prev.userProblems || []).map((prob, i) => i === index ? target.value : prob)
+                            }));
+                          }}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                          }}
+                        />
+                        {index > 2 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="px-3 py-2 min-h-[6rem] self-start"
+                            onClick={() => setData(prev => ({
+                              ...prev,
+                              userProblems: (prev.userProblems || []).filter((_, i) => i !== index)
+                            }))}
+                          >
+                            ×
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <div className="flex">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full py-6 text-base"
+                        onClick={() => setData(prev => ({
+                          ...prev,
+                          userProblems: [...(prev.userProblems || []), ""]
+                        }))}
+                      >
+                        + Add another user problem
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="text-center pt-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
                 <Button 
                   variant="default" 
                   size="lg"
+                  className="bg-gradient-machinery hover:opacity-90"
+                  onClick={async () => {
+                    // Regenerate/pre-fill with AI
+                    try {
+                      const status = await apiClient.get('/team-formation/status/');
+                      const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+                      if (teamId) { try { await apiClient.generateTeamBrainstorming(teamId); } catch {} }
+                    } catch {}
+                    // Trigger the prefill effect by nudging step state
+                    setStep(3);
+                  }}
+                >
+                  Generate with AI
+                  <RefreshCw className="ml-2 h-4 w-4" />
+                </Button>
+
+                <Button 
+                  variant="default" 
+                  size="lg"
+                  className="bg-gradient-machinery hover:opacity-90"
                   onClick={async () => {
                     setIsGenerating(true);
                     try {
@@ -893,6 +1139,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </div>
   );

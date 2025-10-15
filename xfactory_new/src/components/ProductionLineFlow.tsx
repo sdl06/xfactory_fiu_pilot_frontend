@@ -671,16 +671,6 @@ export const ProductionLineFlow = ({
         </ReactFlow>
       </div>
       
-      {/* Viewport Metrics Display - Bottom Right Corner */}
-      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs font-mono p-2 rounded border backdrop-blur-sm">
-        <div className="space-y-1">
-          <div>X: {viewportMetrics.x}</div>
-          <div>Y: {viewportMetrics.y}</div>
-          <div>Zoom: {viewportMetrics.zoom}</div>
-          <div>W: {viewportMetrics.width}</div>
-          <div>H: {viewportMetrics.height}</div>
-        </div>
-      </div>
     </div>
   );
 };

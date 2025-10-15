@@ -304,11 +304,17 @@ export const FactoryDashboard = ({
       setIsUpdatingArchetype(true);
       
       // Update user's preferred archetype
-      await apiClient.put('/auth/user/', {
+      const response = await apiClient.put('/auth/user/', {
         preferred_archetype: newArchetype
       });
       
       setUserArchetype(newArchetype);
+      
+      // Update the user context with the new archetype
+      if (response.data?.user) {
+        // The user context will be updated automatically on next login/profile fetch
+        // For now, just update the local state
+      }
       
       toast({
         title: "Archetype Updated!",
@@ -318,7 +324,7 @@ export const FactoryDashboard = ({
       console.error('Error updating archetype:', error);
       toast({
         title: "Error",
-        description: error?.error || "Failed to update archetype. Please try again.",
+        description: error?.response?.data?.error || error?.error || "Failed to update archetype. Please try again.",
         variant: "destructive",
       });
     } finally {
