@@ -890,42 +890,51 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                         try {
                           const response = await apiClient.post('/ideation/teams/' + teamId + '/concept-card/', brainstormingData);
                           
-                                                  if (response.status >= 200 && response.status < 300) {
-                          // Parse the concept card data and store it
-                          const conceptData = response.data;
-                          setData(prev => ({
-                            ...prev,
-                            conceptCard: {
-                              businessSummary: conceptData.title || "AI-powered startup concept",
-                              problem: conceptData.problem || data.problem || data.questionnaireData?.problem_description || "Problem to be defined",
-                              customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || data.target || data.questionnaireData?.target_who_feels_most || "Target audience based on your analysis",
-                              existingAlternatives: conceptData.current_solutions || data.questionnaireData?.current_solutions || "Current market solutions that your analysis identified as insufficient",
-                              solutionConcept: conceptData.solution || data.solution || data.questionnaireData?.solution_concept || "Solution approach based on your insights",
-                              businessModel: conceptData.business_model || data.businessModel || '',
-                              assumptions: conceptData.assumptions || []
-                            }
-                          }));
-                        } else {
-                          throw new Error(`API returned status ${response.status}`);
-                        }
-                        } catch (apiError) {
-                          console.error('Concept card API failed, using brainstorming data:', apiError);
-                          // Generate concept card from brainstorming data directly
+                          if (response.status >= 200 && response.status < 300 && response.data) {
+                            // Parse the concept card data and store it
+                            const conceptData = response.data;
+                            setData(prev => ({
+                              ...prev,
+                              conceptCard: {
+                                businessSummary: conceptData.title || "AI-powered startup concept",
+                                problem: conceptData.problem || data.problem || data.questionnaireData?.problem_description || "Problem to be defined",
+                                customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || data.target || data.questionnaireData?.target_who_feels_most || "Target audience based on your analysis",
+                                existingAlternatives: conceptData.current_solutions || data.questionnaireData?.current_solutions || "Current market solutions that your analysis identified as insufficient",
+                                solutionConcept: conceptData.solution || data.solution || data.questionnaireData?.solution_concept || "Solution approach based on your insights",
+                                businessModel: conceptData.business_model || data.businessModel || '',
+                                assumptions: conceptData.assumptions || []
+                              }
+                            }));
+                            console.log('Concept card generated successfully via API');
+                          } else {
+                            throw new Error(`API returned status ${response.status}`);
+                          }
+                        } catch (apiError: any) {
+                          console.error('Concept card API failed:', apiError);
+                          // Use frontend fallback
                           const conceptCard = generateConceptCardFromBrainstorming(data);
                           setData(prev => ({
                             ...prev,
                             conceptCard
                           }));
+                          toast({
+                            title: "Concept Card Generated",
+                            description: "Using your brainstorming insights",
+                          });
                         }
                       }
                     } catch (error) {
                       console.error('Failed to generate concept card:', error);
-                      // Generate concept card from brainstorming data as fallback
+                      // Always generate concept card from brainstorming data as ultimate fallback
                       const conceptCard = generateConceptCardFromBrainstorming(data);
                       setData(prev => ({
                         ...prev,
                         conceptCard
                       }));
+                      toast({
+                        title: "Concept Card Generated",
+                        description: "Using your brainstorming insights to create your concept card",
+                      });
                     } finally {
                       setIsGenerating(false);
                       setStep(4);
@@ -1059,24 +1068,98 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                       Ready to Pitch
                       <ArrowRight className="ml-2 h-5 w-4" />
                     </Button>
-                    <Button variant="outline" onClick={async () => {
-                      try {
-                        const el = document.getElementById('onboarding-concept-card-export');
-                        if (!el) return;
-                        const canvas = await html2canvas(el as HTMLElement, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
-                        canvas.toBlob((blob) => {
-                          if (!blob) return;
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `concept-card-${(data.conceptCard?.businessSummary || 'startup').replace(/[^a-z0-9]/gi, '-')}.png`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                        }, 'image/png');
-                      } catch (e) { console.error('Export failed', e); }
-                    }}>Save as Image</Button>
+                    <div className="flex gap-3">
+                      <Button variant="outline" onClick={async () => {
+                        try {
+                          const el = document.getElementById('onboarding-concept-card-export');
+                          if (!el) return;
+                          const canvas = await html2canvas(el as HTMLElement, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+                          canvas.toBlob((blob) => {
+                            if (!blob) return;
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `concept-card-${(data.conceptCard?.businessSummary || 'startup').replace(/[^a-z0-9]/gi, '-')}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          }, 'image/png');
+                        } catch (e) { console.error('Export failed', e); }
+                      }}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Save as Image
+                      </Button>
+                      
+                      <Button 
+                        variant="outline"
+                        onClick={async () => {
+                          setIsGenerating(true);
+                          try {
+                            const status = await apiClient.get('/team-formation/status/');
+                            const teamId = (status as any)?.data?.current_team?.id;
+                            if (teamId) {
+                              // Regenerate concept card with same data
+                              const brainstormingData: any = {
+                                market_opportunities: data.marketOpportunities?.filter(o => o.trim()) || [],
+                                user_problems: data.userProblems?.filter(p => p.trim()) || [],
+                                problem: data.problem || "",
+                                solution: data.solution || "",
+                                target: data.target || "",
+                                business_model: data.businessModel || ""
+                              };
+                              
+                              if (data.questionnaireData) {
+                                Object.assign(brainstormingData, {
+                                  problem: data.questionnaireData.problem_description || data.problem || "",
+                                  solution: data.questionnaireData.solution_concept || data.solution || "",
+                                  target: data.questionnaireData.target_who_feels_most || data.target || "",
+                                  bm_who_pays: data.questionnaireData?.bm_who_pays || data.questionnaireData?.section_7?.bm_who_pays || data.questionnaireData?.section_8?.bm_who_pays || "",
+                                  bm_money_flow: data.questionnaireData?.bm_money_flow || data.questionnaireData?.section_7?.bm_money_flow || data.questionnaireData?.section_8?.bm_money_flow || "",
+                                  bm_costs: data.questionnaireData?.bm_costs || data.questionnaireData?.section_7?.bm_costs || data.questionnaireData?.section_8?.bm_costs || "",
+                                  bm_growth: data.questionnaireData?.bm_growth || data.questionnaireData?.section_7?.bm_growth || data.questionnaireData?.section_8?.bm_growth || ""
+                                });
+                              }
+                              
+                              const response = await apiClient.post('/ideation/teams/' + teamId + '/concept-card/', brainstormingData);
+                              
+                              if (response.status >= 200 && response.status < 300 && response.data) {
+                                const conceptData = response.data;
+                                setData(prev => ({
+                                  ...prev,
+                                  conceptCard: {
+                                    businessSummary: conceptData.title || "AI-powered startup concept",
+                                    problem: conceptData.problem || data.problem || "Problem to be defined",
+                                    customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || data.target || "Target audience",
+                                    existingAlternatives: conceptData.current_solutions || "Current market solutions",
+                                    solutionConcept: conceptData.solution || data.solution || "Solution approach",
+                                    businessModel: conceptData.business_model || data.businessModel || '',
+                                    assumptions: conceptData.assumptions || []
+                                  }
+                                }));
+                                toast({
+                                  title: "Concept Card Regenerated!",
+                                  description: "Your concept card has been refreshed with new AI insights",
+                                });
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Regeneration failed:', error);
+                            toast({
+                              title: "Regeneration Failed",
+                              description: "Unable to regenerate concept card. Your current version is still saved.",
+                              variant: "destructive"
+                            });
+                          } finally {
+                            setIsGenerating(false);
+                          }
+                        }}
+                        disabled={isGenerating}
+                      >
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                        Regenerate
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               )}
