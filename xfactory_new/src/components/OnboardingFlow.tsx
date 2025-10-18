@@ -332,13 +332,13 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
             {/* Centered step indicators */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
               <Badge variant={step >= 1 ? "default" : "secondary"} className={step >= 1 ? "bg-green-600 hover:bg-green-700" : ""}>1</Badge>
-              <div className="w-8 h-0.5 bg-border"></div>
+            <div className="w-8 h-0.5 bg-border"></div>
               <Badge variant={step >= 2 ? "default" : "secondary"} className={step >= 2 ? "bg-green-600 hover:bg-green-700" : ""}>2</Badge>
-              <div className="w-8 h-0.5 bg-border"></div>
+                <div className="w-8 h-0.5 bg-border"></div>
               <Badge variant={step >= 3 ? "default" : "secondary"} className={step >= 3 ? "bg-green-600 hover:bg-green-700" : ""}>3</Badge>
-              <div className="w-8 h-0.5 bg-border"></div>
+                    <div className="w-8 h-0.5 bg-border"></div>
               <Badge variant={step >= 4 ? "default" : "secondary"} className={step >= 4 ? "bg-green-600 hover:bg-green-700" : ""}>4</Badge>
-            </div>
+          </div>
             
             <div className="flex items-center gap-3">
               {/* Logo - bigger and positioned on the right */}
@@ -358,8 +358,8 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                   }
                 }}
               />
-            </div>
           </div>
+        </div>
         </div>
       </header>
 
@@ -619,8 +619,8 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                   const response = await apiClient.post(`/ideation/teams/${teamId}/concept-card/`, payload);
                   if (response.status >= 200 && response.status < 300) {
                     const conceptData: any = response.data || {};
-                    setData(prev => ({
-                      ...prev,
+              setData(prev => ({
+                ...prev,
                       conceptCard: {
                         businessSummary: conceptData.title || 'AI-powered startup concept',
                         problem: conceptData.problem || payload.problem,
@@ -690,7 +690,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                     <p className="text-xs text-muted-foreground px-1">■ Market Opportunity Example: "Rising interest in sustainable packaging creates room for eco-friendly delivery startups."</p>
                     {(data.marketOpportunities || []).map((opportunity, index) => (
                       <div key={index} className="flex gap-2">
-                        <textarea
+                    <textarea
                           className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
                           style={{
                             height: 'auto',
@@ -709,7 +709,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             target.style.height = 'auto';
                             target.style.height = Math.min(target.scrollHeight, 320) + 'px'; // 320px = 20rem
                             setData(prev => ({ 
-                              ...prev, 
+                        ...prev, 
                               marketOpportunities: (prev.marketOpportunities || []).map((opp, i) => i === index ? target.value : opp)
                             }));
                           }}
@@ -726,7 +726,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             size="sm"
                             className="px-3 py-2 min-h-[6rem] self-start"
                             onClick={() => setData(prev => ({
-                              ...prev,
+                        ...prev, 
                               marketOpportunities: (prev.marketOpportunities || []).filter((_, i) => i !== index)
                             }))}
                           >
@@ -741,9 +741,9 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                         variant="outline"
                         className="w-full py-6 text-base"
                         onClick={() => setData(prev => ({
-                          ...prev,
+                        ...prev, 
                           marketOpportunities: [...(prev.marketOpportunities || []), ""]
-                        }))}
+                      }))}
                       >
                         + Add another opportunity
                       </Button>
@@ -758,7 +758,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                     <p className="text-xs text-muted-foreground px-1">■ User Problem Example: "Small retailers lack affordable tools to manage online customer reviews."</p>
                     {(data.userProblems || []).map((problem, index) => (
                       <div key={index} className="flex gap-2">
-                        <textarea
+                    <textarea
                           className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
                           style={{
                             height: 'auto',
@@ -777,7 +777,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             target.style.height = 'auto';
                             target.style.height = Math.min(target.scrollHeight, 320) + 'px'; // 320px = 20rem
                             setData(prev => ({ 
-                              ...prev, 
+                        ...prev, 
                               userProblems: (prev.userProblems || []).map((prob, i) => i === index ? target.value : prob)
                             }));
                           }}
@@ -794,7 +794,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             size="sm"
                             className="px-3 py-2 min-h-[6rem] self-start"
                             onClick={() => setData(prev => ({
-                              ...prev,
+                        ...prev, 
                               userProblems: (prev.userProblems || []).filter((_, i) => i !== index)
                             }))}
                           >
@@ -809,9 +809,9 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                         variant="outline"
                         className="w-full py-6 text-base"
                         onClick={() => setData(prev => ({
-                          ...prev,
+                        ...prev, 
                           userProblems: [...(prev.userProblems || []), ""]
-                        }))}
+                      }))}
                       >
                         + Add another user problem
                       </Button>
@@ -891,24 +891,24 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                           const response = await apiClient.post('/ideation/teams/' + teamId + '/concept-card/', brainstormingData);
                           
                           if (response.status >= 200 && response.status < 300 && response.data) {
-                            // Parse the concept card data and store it
-                            const conceptData = response.data;
-                            setData(prev => ({
-                              ...prev,
-                              conceptCard: {
-                                businessSummary: conceptData.title || "AI-powered startup concept",
-                                problem: conceptData.problem || data.problem || data.questionnaireData?.problem_description || "Problem to be defined",
-                                customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || data.target || data.questionnaireData?.target_who_feels_most || "Target audience based on your analysis",
-                                existingAlternatives: conceptData.current_solutions || data.questionnaireData?.current_solutions || "Current market solutions that your analysis identified as insufficient",
-                                solutionConcept: conceptData.solution || data.solution || data.questionnaireData?.solution_concept || "Solution approach based on your insights",
-                                businessModel: conceptData.business_model || data.businessModel || '',
-                                assumptions: conceptData.assumptions || []
-                              }
-                            }));
+                          // Parse the concept card data and store it
+                          const conceptData = response.data;
+                          setData(prev => ({
+                            ...prev,
+                            conceptCard: {
+                              businessSummary: conceptData.title || "AI-powered startup concept",
+                              problem: conceptData.problem || data.problem || data.questionnaireData?.problem_description || "Problem to be defined",
+                              customerSegment: conceptData.target_audience || conceptData.primary_persona?.brief_description || data.target || data.questionnaireData?.target_who_feels_most || "Target audience based on your analysis",
+                              existingAlternatives: conceptData.current_solutions || data.questionnaireData?.current_solutions || "Current market solutions that your analysis identified as insufficient",
+                              solutionConcept: conceptData.solution || data.solution || data.questionnaireData?.solution_concept || "Solution approach based on your insights",
+                              businessModel: conceptData.business_model || data.businessModel || '',
+                              assumptions: conceptData.assumptions || []
+                            }
+                          }));
                             console.log('Concept card generated successfully via API');
-                          } else {
-                            throw new Error(`API returned status ${response.status}`);
-                          }
+                        } else {
+                          throw new Error(`API returned status ${response.status}`);
+                        }
                         } catch (apiError: any) {
                           console.error('Concept card API failed:', apiError);
                           // Use frontend fallback
@@ -1069,23 +1069,23 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                       <ArrowRight className="ml-2 h-5 w-4" />
                     </Button>
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={async () => {
-                        try {
-                          const el = document.getElementById('onboarding-concept-card-export');
-                          if (!el) return;
-                          const canvas = await html2canvas(el as HTMLElement, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
-                          canvas.toBlob((blob) => {
-                            if (!blob) return;
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `concept-card-${(data.conceptCard?.businessSummary || 'startup').replace(/[^a-z0-9]/gi, '-')}.png`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                          }, 'image/png');
-                        } catch (e) { console.error('Export failed', e); }
+                    <Button variant="outline" onClick={async () => {
+                      try {
+                        const el = document.getElementById('onboarding-concept-card-export');
+                        if (!el) return;
+                        const canvas = await html2canvas(el as HTMLElement, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+                        canvas.toBlob((blob) => {
+                          if (!blob) return;
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `concept-card-${(data.conceptCard?.businessSummary || 'startup').replace(/[^a-z0-9]/gi, '-')}.png`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }, 'image/png');
+                      } catch (e) { console.error('Export failed', e); }
                       }}>
                         <Download className="mr-2 h-4 w-4" />
                         Save as Image

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { SubmitGate } from "@/components/SubmitGate";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Image, Smartphone, Monitor, Palette, Download, ArrowRight, ArrowLeft, Zap, Eye, ExternalLink, CheckCircle2, LayoutDashboard, Sparkles, Timer, AlertTriangle, ZoomIn, ZoomOut, Plus, Minus, Info } from "lucide-react";
+import { Image, Smartphone, Monitor, Palette, Download, ArrowRight, ArrowLeft, Zap, Eye, ExternalLink, CheckCircle2, LayoutDashboard, Sparkles, Timer, AlertTriangle, Info } from "lucide-react";
 import { FactorAI } from "../FactorAI";
 import { v0 } from 'v0-sdk';
 import { createLogger } from "@/lib/logger";
@@ -32,9 +32,9 @@ const getBackendMediaUrl = (mediaPath: string): string => {
     // Fallbacks: pass-through absolute, prefix origin for relative
     const s = String(mediaPath || '');
     if (/^https?:\/\//i.test(s)) return s;
-    const origin = (import.meta as any).env?.VITE_API_URL || 'https://api.ivyfactory.io/api';
+    const origin = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api';
     // derive origin without trailing /api
-    const base = (() => { try { const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return 'https://api.ivyfactory.io'; } })();
+    const base = (() => { try { const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return 'http://localhost:8000'; } })();
     return s.startsWith('/') ? `${base}${s}` : `${base}/${s}`;
   }
 };
@@ -82,8 +82,6 @@ export const MockupStation = ({
   const [selectionMode, setSelectionMode] = useState<'menu' | 'landing' | 'images' | 'service'>('menu');
   const [serviceDoc, setServiceDoc] = useState<any | null>(null);
   const [serviceSection, setServiceSection] = useState<'flowchart'|'journeys'|'timeline'|'milestones'|'phases'>("flowchart");
-  const [journeyZoom, setJourneyZoom] = useState<number>(1.15);
-  const [flowZoom, setFlowZoom] = useState<number>(1.0);
   // Flowchart editing state
   const [flowEditMode, setFlowEditMode] = useState<boolean>(false);
   const [selectedFlowNodeId, setSelectedFlowNodeId] = useState<string | null>(null);
@@ -437,7 +435,7 @@ export const MockupStation = ({
                 <text x={x + 10} y={y + 16} fill="#3730a3" fontSize="12" fontWeight={700}>{label}</text>
                 {/* quick details */}
                 {acts.length > 0 && (
-                  <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">â€¢ {String(acts[0])}</text>
+                  <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">- {String(acts[0])}</text>
                 )}
                 {tps.length > 0 && (
                   <text x={x + 12} y={y + 58} fill="#6b7280" fontSize="11">@ {String(tps[0])}</text>
@@ -1817,10 +1815,11 @@ user problems: ${probsLine}`;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Station Header */}
+      {/* Factory Station Header */}
       <div className="border-b border-border bg-gradient-warning">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
+            {/* Left: Section logo and name */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-warning rounded-lg flex items-center justify-center">
                 <Image className="h-6 w-6 text-accent-foreground" />
@@ -1830,10 +1829,31 @@ user problems: ${probsLine}`;
                 <p className="text-sm text-accent-foreground/80">Visual assets to validate and showcase your idea</p>
               </div>
             </div>
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Factory
-            </Button>
+            
+            {/* Middle: Section/step name */}
+            <div className="flex-1 text-center">
+              <Badge variant="warning">Station 2</Badge>
+            </div>
+            
+            {/* Right: Ivy factory logo */}
+            <div className="flex items-center">
+              <img 
+                src="/logos/prov_logo_white.png" 
+                alt="Ivy Factory Logo" 
+                className="h-12 w-auto object-contain"
+                onError={(e) => {
+                  // Fallback to Factory icon if logo fails to load
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  const parent = imgElement.parentElement;
+                  if (parent) {
+                    const fallbackIcon = document.createElement('div');
+                    fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                    parent.appendChild(fallbackIcon);
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -1845,7 +1865,7 @@ user problems: ${probsLine}`;
             <h2 className="text-2xl font-bold">Mockup Generation</h2>
             <Button variant="outline" onClick={onBack}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Factory
+              Back to Dashboard
             </Button>
           </div>
           <Progress value={isSoftwareIdea() ? (v0Phase === 'preview' ? 100 : (v0Phase === 'generating' ? 66 : 33)) : (step / 2 * 100)} className="h-2" />
@@ -2333,7 +2353,7 @@ user problems: ${probsLine}`;
                             
                             <CardHeader className="pb-2">
                               <div className="flex items-center justify-between">
-                              <Badge variant="secondary" className="w-fit text-xs">{mockup.type}</Badge>
+                                <Badge variant="secondary" className="w-fit text-xs">{mockup.type}</Badge>
                                 {mockup.regeneration_round > 0 && (
                                   <Badge variant="outline" className="text-xs">
                                     Round {mockup.regeneration_round}
@@ -2379,7 +2399,7 @@ user problems: ${probsLine}`;
                                       placeholder="Edit the image prompt..."
                                     />
                                   ) : (
-                                  <div className="whitespace-pre-wrap break-words">{mockup.prompt}</div>
+                                    <div className="whitespace-pre-wrap break-words">{mockup.prompt}</div>
                                   )}
                                 </div>
                               )}
@@ -2561,7 +2581,7 @@ user problems: ${probsLine}`;
                             if (ideaId) {
                               for (const m of selected) {
                                 if (m.url) {
-                                  await apiClient.post('/ideation/physical-mockup/save/', {
+                                  await apiClient.post('/physical-mockup/save/', {
                                     idea_id: ideaId,
                                     image_url: m.url,
                                     image_prompt: m.prompt || '',
@@ -2595,33 +2615,11 @@ user problems: ${probsLine}`;
         {selectionMode === 'service' && (
           <Card className="shadow-machinery">
             <CardHeader>
-              <CardTitle>Service Experience Flowchart</CardTitle>
-              <CardDescription>Solarâ€‘pro2 generated service delivery flow</CardDescription>
+              <CardTitle>Service Flowchart</CardTitle>
+              <CardDescription>AI generated service delivery flow</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-warning/10 px-6 py-4 rounded">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <LayoutDashboard className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-base font-semibold">What we'll generate</div>
-                    <div className="text-xs text-muted-foreground">Personas, journey stages, timeline & milestones</div>
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-3 gap-3 mt-3">
-                  {[
-                    { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: 'Customer personas' },
-                    { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: 'Journey stages & touchpoints' },
-                    { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: 'Timeline & milestones' },
-                  ].map((f, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs bg-muted/40 rounded px-3 py-2">
-                      {f.icon}
-                      <span>{f.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
               {isGenerating && (
                 <div className="w-full">
                   <div className="w-full h-2 bg-muted rounded mt-2">
@@ -2630,7 +2628,7 @@ user problems: ${probsLine}`;
                 </div>
               )}
               {isGenerating && (
-                <div className="text-sm text-muted-foreground">Generating flowâ€¦ this can take a moment.</div>
+                <div className="text-sm text-muted-foreground">Generating flow! this can take a moment.</div>
               )}
               {!isGenerating && serviceDoc && (
             <div className="space-y-6">
@@ -2647,19 +2645,6 @@ user problems: ${probsLine}`;
                       {t.label}
                     </Button>
                   ))}
-                  <div className="ml-auto flex items-center gap-1">
-                    <Button size="icon" variant="outline" onClick={() => {
-                      if (serviceSection === 'flowchart') setFlowZoom(z => Math.max(0.6, Math.round((z - 0.1) * 100) / 100));
-                      else setJourneyZoom(z => Math.max(0.6, Math.round((z - 0.1) * 100) / 100));
-                    }}><Minus className="h-4 w-4" /></Button>
-                    <div className="text-xs w-12 text-center select-none">
-                      {Math.round(100 * (serviceSection === 'flowchart' ? flowZoom : journeyZoom))}%
-                    </div>
-                    <Button size="icon" variant="outline" onClick={() => {
-                      if (serviceSection === 'flowchart') setFlowZoom(z => Math.min(2, Math.round((z + 0.1) * 100) / 100));
-                      else setJourneyZoom(z => Math.min(2, Math.round((z + 0.1) * 100) / 100));
-                    }}><Plus className="h-4 w-4" /></Button>
-                  </div>
                 </div>
                   {(() => {
                     const rd: any = (serviceDoc as any)?.roadmap_data || (serviceDoc as any);
@@ -2718,7 +2703,7 @@ user problems: ${probsLine}`;
                           )}
                           <FlowchartSVG 
                             flow={effective} 
-                            zoom={flowZoom} 
+                            zoom={1.0} 
                             editMode={flowEditMode}
                             selectedNodeId={selectedFlowNodeId}
                             selectedEdgeIndex={selectedFlowEdgeIndex}
@@ -2807,7 +2792,7 @@ user problems: ${probsLine}`;
                                     {Array.isArray(p?.journey_stages) && p.journey_stages.length > 0 ? (
                                       <div className="space-y-3">
                                         {/* Visual flow */}
-                                        <JourneyFlowSVG stages={p.journey_stages} zoom={journeyZoom} />
+                                        <JourneyFlowSVG stages={p.journey_stages} zoom={1.0} />
                                         <div className="flex flex-wrap gap-2">
                                           {p.journey_stages.map((s: any, i: number) => (
                                             <Badge key={i} variant="secondary">{s?.stage || `Stage ${i+1}`}</Badge>
@@ -2852,10 +2837,10 @@ user problems: ${probsLine}`;
                                                           <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(a)} onChange={(e)=>{
                                                             const arr = [...(s.activities||[])]; arr[j] = e.target.value; updateJourneyStageList(idx, i, 'activities', arr as string[]);
                                                           }} />
-                                                          <Button size="xs" variant="outline" onClick={()=>{ const arr = (s.activities||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'activities', arr as string[]); }}>-</Button>
+                                                          <Button size="sm" variant="outline" onClick={()=>{ const arr = (s.activities||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'activities', arr as string[]); }}>-</Button>
                                                         </div>
                                                       ))}
-                                                      <Button size="xs" variant="outline" onClick={()=>{ const arr = [...(s.activities||[]), '']; updateJourneyStageList(idx,i,'activities', arr as string[]); }}>+ Add</Button>
+                                                      <Button size="sm" variant="outline" onClick={()=>{ const arr = [...(s.activities||[]), '']; updateJourneyStageList(idx,i,'activities', arr as string[]); }}>+ Add</Button>
                                                     </div>
                                                   )}
                                                 </div>
@@ -2874,10 +2859,10 @@ user problems: ${probsLine}`;
                                                           <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(t)} onChange={(e)=>{
                                                             const arr = [...(s.touchpoints||[])]; arr[j] = e.target.value; updateJourneyStageList(idx, i, 'touchpoints', arr as string[]);
                                                           }} />
-                                                          <Button size="xs" variant="outline" onClick={()=>{ const arr = (s.touchpoints||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'touchpoints', arr as string[]); }}>-</Button>
+                                                          <Button size="sm" variant="outline" onClick={()=>{ const arr = (s.touchpoints||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'touchpoints', arr as string[]); }}>-</Button>
                                                         </div>
                                                       ))}
-                                                      <Button size="xs" variant="outline" onClick={()=>{ const arr = [...(s.touchpoints||[]), '']; updateJourneyStageList(idx,i,'touchpoints', arr as string[]); }}>+ Add</Button>
+                                                      <Button size="sm" variant="outline" onClick={()=>{ const arr = [...(s.touchpoints||[]), '']; updateJourneyStageList(idx,i,'touchpoints', arr as string[]); }}>+ Add</Button>
                                                     </div>
                                                   )}
                                                 </div>
@@ -2896,10 +2881,10 @@ user problems: ${probsLine}`;
                                                           <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(e)} onChange={(ev)=>{
                                                             const arr = [...(s.emotions||[])]; arr[j] = ev.target.value; updateJourneyStageList(idx, i, 'emotions', arr as string[]);
                                                           }} />
-                                                          <Button size="xs" variant="outline" onClick={()=>{ const arr = (s.emotions||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'emotions', arr as string[]); }}>-</Button>
+                                                          <Button size="sm" variant="outline" onClick={()=>{ const arr = (s.emotions||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'emotions', arr as string[]); }}>-</Button>
                                                         </div>
                                                       ))}
-                                                      <Button size="xs" variant="outline" onClick={()=>{ const arr = [...(s.emotions||[]), '']; updateJourneyStageList(idx,i,'emotions', arr as string[]); }}>+ Add</Button>
+                                                      <Button size="sm" variant="outline" onClick={()=>{ const arr = [...(s.emotions||[]), '']; updateJourneyStageList(idx,i,'emotions', arr as string[]); }}>+ Add</Button>
                                                     </div>
                                                   )}
                                                 </div>
@@ -2918,10 +2903,10 @@ user problems: ${probsLine}`;
                                                           <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(pp)} onChange={(ev)=>{
                                                             const arr = [...(s.pain_points||[])]; arr[j] = ev.target.value; updateJourneyStageList(idx, i, 'pain_points', arr as string[]);
                                                           }} />
-                                                          <Button size="xs" variant="outline" onClick={()=>{ const arr = (s.pain_points||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'pain_points', arr as string[]); }}>-</Button>
+                                                          <Button size="sm" variant="outline" onClick={()=>{ const arr = (s.pain_points||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'pain_points', arr as string[]); }}>-</Button>
                                                         </div>
                                                       ))}
-                                                      <Button size="xs" variant="outline" onClick={()=>{ const arr = [...(s.pain_points||[]), '']; updateJourneyStageList(idx,i,'pain_points', arr as string[]); }}>+ Add</Button>
+                                                      <Button size="sm" variant="outline" onClick={()=>{ const arr = [...(s.pain_points||[]), '']; updateJourneyStageList(idx,i,'pain_points', arr as string[]); }}>+ Add</Button>
                                                     </div>
                                                   )}
                                                 </div>
@@ -2940,10 +2925,10 @@ user problems: ${probsLine}`;
                                                           <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(op)} onChange={(ev)=>{
                                                             const arr = [...(s.opportunities||[])]; arr[j] = ev.target.value; updateJourneyStageList(idx, i, 'opportunities', arr as string[]);
                                                           }} />
-                                                          <Button size="xs" variant="outline" onClick={()=>{ const arr = (s.opportunities||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'opportunities', arr as string[]); }}>-</Button>
+                                                          <Button size="sm" variant="outline" onClick={()=>{ const arr = (s.opportunities||[]).filter((_:any,k:number)=>k!==j); updateJourneyStageList(idx,i,'opportunities', arr as string[]); }}>-</Button>
                                                         </div>
                                                       ))}
-                                                      <Button size="xs" variant="outline" onClick={()=>{ const arr = [...(s.opportunities||[]), '']; updateJourneyStageList(idx,i,'opportunities', arr as string[]); }}>+ Add</Button>
+                                                      <Button size="sm" variant="outline" onClick={()=>{ const arr = [...(s.opportunities||[]), '']; updateJourneyStageList(idx,i,'opportunities', arr as string[]); }}>+ Add</Button>
                                                     </div>
                                                   )}
                                                 </div>
@@ -3011,10 +2996,10 @@ user problems: ${probsLine}`;
                                           {(ph.activities||[]).map((a: any, j: number) => (
                                             <div key={j} className="flex gap-2 items-center">
                                               <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(a)} onChange={(e)=>{ const arr=[...(ph.activities||[])]; arr[j]=e.target.value; updateTimelinePhaseList(i,'activities', arr as string[]); }} />
-                                              <Button size="xs" variant="outline" onClick={()=>{ const arr=(ph.activities||[]).filter((_:any,k:number)=>k!==j); updateTimelinePhaseList(i,'activities', arr as string[]); }}>-</Button>
+                                              <Button size="sm" variant="outline" onClick={()=>{ const arr=(ph.activities||[]).filter((_:any,k:number)=>k!==j); updateTimelinePhaseList(i,'activities', arr as string[]); }}>-</Button>
                                             </div>
                                           ))}
-                                          <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(ph.activities||[]), '']; updateTimelinePhaseList(i,'activities', arr as string[]); }}>+ Add</Button>
+                                          <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(ph.activities||[]), '']; updateTimelinePhaseList(i,'activities', arr as string[]); }}>+ Add</Button>
                                         </div>
                                       )}
                                     </div>
@@ -3029,10 +3014,10 @@ user problems: ${probsLine}`;
                                           {(ph.deliverables||[]).map((d: any, j: number) => (
                                             <div key={j} className="flex gap-2 items-center">
                                               <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(d)} onChange={(e)=>{ const arr=[...(ph.deliverables||[])]; arr[j]=e.target.value; updateTimelinePhaseList(i,'deliverables', arr as string[]); }} />
-                                              <Button size="xs" variant="outline" onClick={()=>{ const arr=(ph.deliverables||[]).filter((_:any,k:number)=>k!==j); updateTimelinePhaseList(i,'deliverables', arr as string[]); }}>-</Button>
+                                              <Button size="sm" variant="outline" onClick={()=>{ const arr=(ph.deliverables||[]).filter((_:any,k:number)=>k!==j); updateTimelinePhaseList(i,'deliverables', arr as string[]); }}>-</Button>
                                             </div>
                                           ))}
-                                          <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(ph.deliverables||[]), '']; updateTimelinePhaseList(i,'deliverables', arr as string[]); }}>+ Add</Button>
+                                          <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(ph.deliverables||[]), '']; updateTimelinePhaseList(i,'deliverables', arr as string[]); }}>+ Add</Button>
                                         </div>
                                       )}
                                     </div>
@@ -3047,10 +3032,10 @@ user problems: ${probsLine}`;
                                           {(ph.resources||[]).map((r: any, j: number) => (
                                             <div key={j} className="flex gap-2 items-center">
                                               <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(r)} onChange={(e)=>{ const arr=[...(ph.resources||[])]; arr[j]=e.target.value; updateTimelinePhaseList(i,'resources', arr as string[]); }} />
-                                              <Button size="xs" variant="outline" onClick={()=>{ const arr=(ph.resources||[]).filter((_:any,k:number)=>k!==j); updateTimelinePhaseList(i,'resources', arr as string[]); }}>-</Button>
+                                              <Button size="sm" variant="outline" onClick={()=>{ const arr=(ph.resources||[]).filter((_:any,k:number)=>k!==j); updateTimelinePhaseList(i,'resources', arr as string[]); }}>-</Button>
                                             </div>
                                           ))}
-                                          <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(ph.resources||[]), '']; updateTimelinePhaseList(i,'resources', arr as string[]); }}>+ Add</Button>
+                                          <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(ph.resources||[]), '']; updateTimelinePhaseList(i,'resources', arr as string[]); }}>+ Add</Button>
                                         </div>
                                       )}
                                     </div>
@@ -3107,10 +3092,10 @@ user problems: ${probsLine}`;
                                         {(m.success_criteria||[]).map((sc: any, j: number) => (
                                           <div key={j} className="flex gap-2 items-center">
                                             <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(sc)} onChange={(e)=>{ const arr=[...(m.success_criteria||[])]; arr[j]=e.target.value; updateMilestoneList(i,'success_criteria', arr as string[]); }} />
-                                            <Button size="xs" variant="outline" onClick={()=>{ const arr=(m.success_criteria||[]).filter((_:any,k:number)=>k!==j); updateMilestoneList(i,'success_criteria', arr as string[]); }}>-</Button>
+                                            <Button size="sm" variant="outline" onClick={()=>{ const arr=(m.success_criteria||[]).filter((_:any,k:number)=>k!==j); updateMilestoneList(i,'success_criteria', arr as string[]); }}>-</Button>
                                           </div>
                                         ))}
-                                        <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(m.success_criteria||[]), '']; updateMilestoneList(i,'success_criteria', arr as string[]); }}>+ Add</Button>
+                                        <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(m.success_criteria||[]), '']; updateMilestoneList(i,'success_criteria', arr as string[]); }}>+ Add</Button>
                                       </div>
                                     )}
                                   </div>
@@ -3166,10 +3151,10 @@ user problems: ${probsLine}`;
                                           {(ph.activities||[]).map((a: any, j: number) => (
                                             <div key={j} className="flex gap-2 items-center">
                                               <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(a)} onChange={(e)=>{ const arr=[...(ph.activities||[])]; arr[j]=e.target.value; updatePhaseList(i,'activities', arr as string[]); }} />
-                                              <Button size="xs" variant="outline" onClick={()=>{ const arr=(ph.activities||[]).filter((_:any,k:number)=>k!==j); updatePhaseList(i,'activities', arr as string[]); }}>-</Button>
+                                              <Button size="sm" variant="outline" onClick={()=>{ const arr=(ph.activities||[]).filter((_:any,k:number)=>k!==j); updatePhaseList(i,'activities', arr as string[]); }}>-</Button>
                                             </div>
                                           ))}
-                                          <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(ph.activities||[]), '']; updatePhaseList(i,'activities', arr as string[]); }}>+ Add</Button>
+                                          <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(ph.activities||[]), '']; updatePhaseList(i,'activities', arr as string[]); }}>+ Add</Button>
                                         </div>
                                       )}
                                     </div>
@@ -3184,10 +3169,10 @@ user problems: ${probsLine}`;
                                           {(ph.deliverables||[]).map((d: any, j: number) => (
                                             <div key={j} className="flex gap-2 items-center">
                                               <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(d)} onChange={(e)=>{ const arr=[...(ph.deliverables||[])]; arr[j]=e.target.value; updatePhaseList(i,'deliverables', arr as string[]); }} />
-                                              <Button size="xs" variant="outline" onClick={()=>{ const arr=(ph.deliverables||[]).filter((_:any,k:number)=>k!==j); updatePhaseList(i,'deliverables', arr as string[]); }}>-</Button>
+                                              <Button size="sm" variant="outline" onClick={()=>{ const arr=(ph.deliverables||[]).filter((_:any,k:number)=>k!==j); updatePhaseList(i,'deliverables', arr as string[]); }}>-</Button>
                                             </div>
                                           ))}
-                                          <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(ph.deliverables||[]), '']; updatePhaseList(i,'deliverables', arr as string[]); }}>+ Add</Button>
+                                          <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(ph.deliverables||[]), '']; updatePhaseList(i,'deliverables', arr as string[]); }}>+ Add</Button>
                                         </div>
                                       )}
                                     </div>
@@ -3202,10 +3187,10 @@ user problems: ${probsLine}`;
                                           {(ph.resources||[]).map((r: any, j: number) => (
                                             <div key={j} className="flex gap-2 items-center">
                                               <input className="px-2 py-1 border rounded text-xs bg-background text-foreground flex-1" value={String(r)} onChange={(e)=>{ const arr=[...(ph.resources||[])]; arr[j]=e.target.value; updatePhaseList(i,'resources', arr as string[]); }} />
-                                              <Button size="xs" variant="outline" onClick={()=>{ const arr=(ph.resources||[]).filter((_:any,k:number)=>k!==j); updatePhaseList(i,'resources', arr as string[]); }}>-</Button>
+                                              <Button size="sm" variant="outline" onClick={()=>{ const arr=(ph.resources||[]).filter((_:any,k:number)=>k!==j); updatePhaseList(i,'resources', arr as string[]); }}>-</Button>
                                             </div>
                                           ))}
-                                          <Button size="xs" variant="outline" onClick={()=>{ const arr=[...(ph.resources||[]), '']; updatePhaseList(i,'resources', arr as string[]); }}>+ Add</Button>
+                                          <Button size="sm" variant="outline" onClick={()=>{ const arr=[...(ph.resources||[]), '']; updatePhaseList(i,'resources', arr as string[]); }}>+ Add</Button>
                                         </div>
                                       )}
                                     </div>
@@ -3377,4 +3362,9 @@ user problems: ${probsLine}`;
     </div>
   );
 };
+
+
+
+
+
 
