@@ -187,7 +187,7 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
                   console.log('Forgot password clicked');
                 }}
               >
-                Forgot Password?
+                Forgot Password? - Under development
               </Button>
               
               <div>
