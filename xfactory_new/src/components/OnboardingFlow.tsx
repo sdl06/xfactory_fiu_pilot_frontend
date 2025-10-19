@@ -371,7 +371,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-          </div>
+        </div>
 
         {/* Loading Screen for No Idea Path */}
         {isGenerating && (

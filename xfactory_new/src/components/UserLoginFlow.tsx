@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Factory, LogIn, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
@@ -54,20 +55,45 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Factory Header */}
-      <div className="border-b border-border bg-gradient-conveyor">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
-              <Factory className="h-6 w-6 text-primary-foreground" />
+      {/* Factory Station Header */}
+      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
+        <div className="w-full px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            {/* Left: Section logo and name */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
+                <Factory className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">xFactory</h1>
+                <p className="text-sm text-white/80">User Portal</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">xFactory</h1>
-              <p className="text-sm text-muted-foreground">User Portal</p>
+            
+            {/* Middle: Section/step name */}
+            <div className="flex-1 text-center">
+              <Badge variant="warning">Login</Badge>
+            </div>
+            
+            {/* Right: Ivy factory logo */}
+            <div className="flex items-center">
+              <img 
+                src="/logos/prov_logo_white.png" 
+                alt="Ivy Factory Logo" 
+                className="h-12 w-auto object-contain"
+                onError={(e) => {
+                  // Fallback to SVG icon if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <div className="hidden w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center">
+                <Factory className="h-6 w-6 text-white" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="max-w-md mx-auto px-6 py-12">
         <Card className="shadow-industrial">
