@@ -1818,9 +1818,57 @@ user problems: ${probsLine}`;
   return (
     <div className="min-h-screen bg-background">
       {/* Station Header */}
-      <div className="border-b border-border bg-gradient-warning">
+      <div className="border-b border-border bg-gradient-warning relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackIcon = document.createElement('div');
+                fallbackIcon.innerHTML = '<svg class="h-8 w-8 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                parent.appendChild(fallbackIcon);
+              }
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackText = document.createElement('span');
+                fallbackText.textContent = 'FIU';
+                fallbackText.className = 'text-white font-bold text-lg';
+                parent.appendChild(fallbackText);
+              }
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
         <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-warning rounded-lg flex items-center justify-center">
                 <Image className="h-6 w-6 text-accent-foreground" />
@@ -1830,10 +1878,6 @@ user problems: ${probsLine}`;
                 <p className="text-sm text-accent-foreground/80">Visual assets to validate and showcase your idea</p>
               </div>
             </div>
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Factory
-            </Button>
           </div>
         </div>
       </div>
@@ -1843,10 +1887,6 @@ user problems: ${probsLine}`;
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Mockup Generation</h2>
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Factory
-            </Button>
           </div>
           <Progress value={isSoftwareIdea() ? (v0Phase === 'preview' ? 100 : (v0Phase === 'generating' ? 66 : 33)) : (step / 2 * 100)} className="h-2" />
         </div>
