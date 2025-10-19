@@ -111,7 +111,7 @@ export const B2BConfigFlow = ({ onComplete }: B2BConfigFlowProps) => {
               <Factory className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">xFactory Configuration</h1>
+              <h1 className="text-xl font-bold text-foreground">Ivy Factory Configuration</h1>
               <p className="text-sm text-muted-foreground">Customize your startup factory for B2B clients</p>
             </div>
           </div>
@@ -139,7 +139,7 @@ export const B2BConfigFlow = ({ onComplete }: B2BConfigFlowProps) => {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Select Your Client Type</CardTitle>
               <CardDescription>
-                Choose the type of organization that will use your xFactory instance
+                Choose the type of organization that will use your Ivy Factory instance
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

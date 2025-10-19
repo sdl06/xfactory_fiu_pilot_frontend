@@ -76,7 +76,7 @@ export const AdminLoginFlow = ({ onLogin, onBack }: AdminLoginFlowProps) => {
               <Factory className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">xFactory Admin</h1>
+              <h1 className="text-xl font-bold text-foreground">Ivy Factory Admin</h1>
               <p className="text-sm text-muted-foreground">Administrator Portal</p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export const AdminLoginFlow = ({ onLogin, onBack }: AdminLoginFlowProps) => {
             </div>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
             <CardDescription>
-              Access the xFactory administration panel
+              Access the Ivy Factory administration panel
             </CardDescription>
           </CardHeader>
           <CardContent>

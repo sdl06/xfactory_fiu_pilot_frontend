@@ -128,7 +128,7 @@ export const CompletionCelebration = ({ onClose }: CompletionCelebrationProps) =
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Heart className="h-5 w-5 text-red-500" />
-              Help us improve xFactory
+              Help us improve Ivy Factory
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
               Your feedback helps us make the platform better for future entrepreneurs. 
@@ -136,7 +136,7 @@ export const CompletionCelebration = ({ onClose }: CompletionCelebrationProps) =
             </p>
             
             <Textarea
-              placeholder="Share your thoughts about the xFactory journey, what worked well, and what could be improved..."
+              placeholder="Share your thoughts about the Ivy Factory journey, what worked well, and what could be improved..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={4}

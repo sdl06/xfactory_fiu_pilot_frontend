@@ -103,7 +103,7 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
             </div>
             <CardTitle className="text-2xl">User Login</CardTitle>
             <CardDescription>
-              Access your xFactory dashboard
+              Access your Ivy Factory dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>

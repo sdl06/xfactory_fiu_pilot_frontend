@@ -134,7 +134,7 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
         
         toast({
           title: "Account Created Successfully!",
-          description: "Welcome to xFactory. You are now logged in. Let's set up your team.",
+          description: "Welcome to Ivy Factory. You are now logged in. Let's set up your team.",
         });
         
         // Load available teams for step 2
@@ -558,7 +558,7 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
               </div>
               <CardTitle className="text-2xl">Create Your Account</CardTitle>
               <CardDescription className="text-lg">
-                Join the xFactory community and start building your startup
+                Join the Ivy Factory community and start building your startup
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
