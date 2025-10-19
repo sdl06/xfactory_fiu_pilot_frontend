@@ -64,7 +64,6 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
       key_skills: string;
     }>
   });
-  const [currentKeywordInputs, setCurrentKeywordInputs] = useState<{[key: number]: string}>({});
   const [joinRequest, setJoinRequest] = useState({
     message: "",
     preferred_archetype: ""
@@ -84,13 +83,13 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
 
 
   const fundingOptions = [
-    "Self-funded - Using your own money",
-    "Seeking angel investment - Rich individuals invest in your idea",
-    "Preparing for VC - Professional investors give larger amounts",
-    "Government grants - Free money from government programs",
-    "Crowdfunding - Many people donate small amounts online",
-    "Already funded - You already have money for your business",
-    "I don't know - Not sure about funding options yet"
+    "Self-funded",
+    "Seeking angel investment",
+    "Preparing for VC",
+    "Government grants",
+    "Crowdfunding",
+    "Already funded",
+    "I don't know"
   ];
 
   const techLevels = [
@@ -134,7 +133,7 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
         
         toast({
           title: "Account Created Successfully!",
-          description: "Welcome to Ivy Factory. You are now logged in. Let's set up your team.",
+          description: "Welcome to xFactory. You are now logged in. Let's set up your team.",
         });
         
         // Load available teams for step 2
@@ -486,68 +485,22 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Full-width header for step 2 */}
-      {step === 2 && (
-        <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
-          <div className="w-full px-6 py-4">
-            <div className="max-w-2xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
-                  <Users className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">Team Formation</h1>
-                  <p className="text-sm text-white/80">Build your dream team</p>
-                </div>
-              </div>
-              
-              {/* Centered step indicators */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
-                <Badge variant={step >= 1 ? "default" : "secondary"}>1</Badge>
-                <div className="w-8 h-0.5 bg-border"></div>
-                <Badge variant={step >= 2 ? "default" : "secondary"}>2</Badge>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                {/* Logo - bigger and positioned on the right */}
-                <img 
-                  src="/logos/prov_logo_white.png" 
-                  alt="Ivy Factory Logo" 
-                  className="h-12 w-auto object-contain"
-                  onError={(e) => {
-                    // Fallback to Factory icon if logo fails to load
-                    const imgElement = e.target as HTMLImageElement;
-                    imgElement.style.display = 'none';
-                    const parent = imgElement.parentElement;
-                    if (parent) {
-                      const fallbackIcon = document.createElement('div');
-                      fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
-                      parent.appendChild(fallbackIcon);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </header>
-      )}
-
-      <div className="max-w-2xl mx-auto p-6">
-        {/* Header for step 1 only */}
-        {step === 1 && (
-          <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          {step === 1 && (
             <Button variant="ghost" onClick={onBack}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div className="flex items-center gap-2">
-              <Badge variant={step >= 1 ? "default" : "secondary"}>1</Badge>
-              <div className="w-8 h-0.5 bg-border"></div>
-              <Badge variant={step >= 2 ? "default" : "secondary"}>2</Badge>
-            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Badge variant={step >= 1 ? "default" : "secondary"}>1</Badge>
+            <div className="w-8 h-0.5 bg-border"></div>
+            <Badge variant={step >= 2 ? "default" : "secondary"}>2</Badge>
           </div>
-        )}
+        </div>
 
         {/* Step 1: Account Creation */}
         {step === 1 && (
@@ -558,7 +511,7 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
               </div>
               <CardTitle className="text-2xl">Create Your Account</CardTitle>
               <CardDescription className="text-lg">
-                Join the Ivy Factory community and start building your startup
+                Join the xFactory community and start building your startup
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -750,23 +703,7 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="fundingAccess">Funding Access</Label>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => {
-                          toast({
-                            title: "What is Funding? 💰",
-                            description: "Funding is money to start your business. It can come from your own savings, investors (people who give money for a share of your company), government programs, or crowdfunding (many people giving small amounts).",
-                            duration: 8000,
-                          });
-                        }}
-                      >
-                        <Info className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Label htmlFor="fundingAccess">Funding Access</Label>
                     <Select onValueChange={(value) => setNewTeam(prev => ({ ...prev, funding_access: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your funding situation" />
@@ -849,6 +786,20 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                         
                         <div className="grid grid-cols-2 gap-3">
                           <div>
+                            <Label htmlFor={`keywords-${index}`}>Keywords</Label>
+                            <Input
+                              id={`keywords-${index}`}
+                              placeholder="e.g., React, Python, Marketing"
+                              value={position.keywords}
+                              onChange={(e) => setNewTeam(prev => ({
+                                ...prev,
+                                looking_for: prev.looking_for.map((p, i) => 
+                                  i === index ? { ...p, keywords: e.target.value } : p
+                                )
+                              }))}
+                            />
+                          </div>
+                          <div>
                             <Label htmlFor={`jobRole-${index}`}>Job Role</Label>
                             <Input
                               id={`jobRole-${index}`}
@@ -861,94 +812,6 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                                 )
                               }))}
                             />
-                          </div>
-                          <div>
-                            <Label htmlFor={`keywords-${index}`}>Keywords</Label>
-                            <div className="relative">
-                              <div className="flex flex-wrap gap-1 p-2 min-h-[40px] border border-input bg-background rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                {position.keywords && position.keywords.split(',').map((keyword: string, keyIndex: number) => {
-                                  const trimmedKeyword = keyword.trim();
-                                  if (!trimmedKeyword) return null;
-                                  return (
-                                    <Badge key={keyIndex} variant="secondary" className="text-xs">
-                                      {trimmedKeyword}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const keywordsArray = position.keywords.split(',');
-                                          keywordsArray.splice(keyIndex, 1);
-                                          const newKeywords = keywordsArray.join(',');
-                                          setNewTeam(prev => ({
-                                            ...prev,
-                                            looking_for: prev.looking_for.map((p, i) => 
-                                              i === index ? { ...p, keywords: newKeywords } : p
-                                            )
-                                          }));
-                                        }}
-                                        className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </button>
-                                    </Badge>
-                                  );
-                                })}
-                                <input
-                                  id={`keywords-${index}`}
-                                  type="text"
-                                  placeholder={position.keywords ? "" : "e.g., React, Python, Marketing"}
-                                  value={currentKeywordInputs[index] || ""}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    setCurrentKeywordInputs(prev => ({
-                                      ...prev,
-                                      [index]: value
-                                    }));
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ',') {
-                                      e.preventDefault();
-                                      const value = e.currentTarget.value.trim();
-                                      if (value) {
-                                        const newKeywords = position.keywords ? `${position.keywords},${value}` : value;
-                                        setNewTeam(prev => ({
-                                          ...prev,
-                                          looking_for: prev.looking_for.map((p, i) => 
-                                            i === index ? { ...p, keywords: newKeywords } : p
-                                          )
-                                        }));
-                                        setCurrentKeywordInputs(prev => ({
-                                          ...prev,
-                                          [index]: ''
-                                        }));
-                                      }
-                                    }
-                                  }}
-                                  onPaste={(e) => {
-                                    e.preventDefault();
-                                    const pastedText = e.clipboardData.getData('text');
-                                    const keywords = pastedText.split(',').map(k => k.trim()).filter(k => k);
-                                    
-                                    if (keywords.length > 0) {
-                                      const existingKeywords = position.keywords ? position.keywords.split(',').map(k => k.trim()).filter(k => k) : [];
-                                      const allKeywords = [...existingKeywords, ...keywords];
-                                      const uniqueKeywords = [...new Set(allKeywords)]; // Remove duplicates
-                                      
-                                      setNewTeam(prev => ({
-                                        ...prev,
-                                        looking_for: prev.looking_for.map((p, i) => 
-                                          i === index ? { ...p, keywords: uniqueKeywords.join(',') } : p
-                                        )
-                                      }));
-                                      setCurrentKeywordInputs(prev => ({
-                                        ...prev,
-                                        [index]: ''
-                                      }));
-                                    }
-                                  }}
-                                  className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-sm"
-                                />
-                              </div>
-                            </div>
                           </div>
                         </div>
                         
@@ -1326,165 +1189,12 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                               <div className="space-y-2">
                                 {team.looking_for.map((role: any, index: number) => (
                                   <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
-                                    {role.keywords && (
-                                      <div className="flex flex-wrap gap-1 mb-2">
-                                        {role.keywords.split(',').map((keyword: string, keyIndex: number) => {
-                                          const trimmedKeyword = keyword.trim();
-                                          if (!trimmedKeyword) return null;
-                                          return (
-                                            <Badge key={keyIndex} variant="secondary" className="text-xs">
-                                              {trimmedKeyword}
-                                            </Badge>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
                                     <div className="font-medium text-sm">{role.job_role || "Team Member"}</div>
-                                    {role.job_description && (
+                                    {role.keywords && (
                                       <div className="text-xs text-muted-foreground mt-1">
-                                        {role.job_description}
+                                        Skills: {role.keywords}
                                       </div>
                                     )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="text-xs text-muted-foreground">
-                            <div className="font-medium">Led by: {team.created_by_name}</div>
-                            {team.needed_archetypes && team.needed_archetypes.length > 0 && (
-                              <div>Archetypes needed: {team.needed_archetypes.join(", ")}</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="font-semibold mb-2">No teams available</h3>
-                      <p className="text-muted-foreground">Be the first to create a team!</p>
-                    </div>
-                  )}
-                  
-                  {selectedTeam && (
-                    <div className="space-y-3 border-t pt-4">
-                      <div>
-                        <Label htmlFor="joinMessage">Message to Team (Optional)</Label>
-                        <Textarea
-                          id="joinMessage"
-                          placeholder="Tell the team why you'd like to join..."
-                          value={joinRequest.message}
-                          onChange={(e) => setJoinRequest(prev => ({ ...prev, message: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="preferredArchetype">Preferred Role</Label>
-                        <Select 
-                          value={joinRequest.preferred_archetype} 
-                          onValueChange={(value) => setJoinRequest(prev => ({ ...prev, preferred_archetype: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your preferred role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Strategist">Strategist (The Dreamer & Strategist)</SelectItem>
-                            <SelectItem value="Builder">Builder (The Technical Architect)</SelectItem>
-                            <SelectItem value="Seller">Seller (The Sales & Growth Operator)</SelectItem>
-                            <SelectItem value="Designer">Designer (The User Experience Guardian)</SelectItem>
-                            <SelectItem value="Operator">Operator (The Execution Backbone)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-                  
-
-                </TabsContent>
-              </Tabs>
-
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleTeamComplete}
-                  disabled={
-                    isLoading || 
-                    !teamChoice || 
-                    (teamChoice === "create" && !newTeam.name.trim()) || 
-                    (teamChoice === "join" && !selectedTeam)
-                  }
-                  size="lg"
-                  className="flex-1"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {teamChoice === "create" ? "Creating..." : "Joining..."}
-                    </>
-                  ) : (
-                    <>
-                      {teamChoice === "create" ? "Create Team" : teamChoice === "join" ? "Send Request" : "Complete Setup"}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
-  );
-};
-
-                      {/* Regular available teams - shown below */}
-                      {availableTeams
-                        .filter(team => !additionRequests.some(req => String(req.team) === String(team.id)))
-                        .map((team) => (
-                        <div
-                          key={team.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                            selectedTeam === team.id ? 'border-primary bg-primary/5' : 'border-border'
-                          }`}
-                          onClick={() => setSelectedTeam(team.id)}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold">{team.name}</h3>
-                            <Badge variant="secondary">{team.current_member_count} members</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3">{team.description || "No description provided"}</p>
-                          
-                          {team.needed_archetypes && team.needed_archetypes.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {team.needed_archetypes.map((archetype: string) => (
-                                <Badge key={archetype} variant="outline" className="text-xs">
-                                  {archetype}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* Looking For Section */}
-                          {team.looking_for && team.looking_for.length > 0 && (
-                            <div className="mb-3">
-                              <div className="text-xs font-medium text-muted-foreground mb-2">Looking For:</div>
-                              <div className="space-y-2">
-                                {team.looking_for.map((role: any, index: number) => (
-                                  <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
-                                    {role.keywords && (
-                                      <div className="flex flex-wrap gap-1 mb-2">
-                                        {role.keywords.split(',').map((keyword: string, keyIndex: number) => {
-                                          const trimmedKeyword = keyword.trim();
-                                          if (!trimmedKeyword) return null;
-                                          return (
-                                            <Badge key={keyIndex} variant="secondary" className="text-xs">
-                                              {trimmedKeyword}
-                                            </Badge>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                    <div className="font-medium text-sm">{role.job_role || "Team Member"}</div>
                                     {role.job_description && (
                                       <div className="text-xs text-muted-foreground mt-1">
                                         {role.job_description}

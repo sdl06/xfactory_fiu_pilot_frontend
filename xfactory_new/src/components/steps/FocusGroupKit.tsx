@@ -110,47 +110,13 @@ export const FocusGroupKit: React.FC<FocusGroupKitProps> = ({
           setPersonas(personaKit.user_personas);
         }
 
-        // 2) Load focus group guide (team-scoped); if missing, auto-generate then re-fetch
-        let hasData = false;
+        // 2) Load focus group guide (team-scoped)
         try {
           const fgRes = await apiClient.get(`/validation/teams/${teamId}/focus-group/`);
           if (fgRes?.data?.success && fgRes.data.data) {
             setFocusGroupData(fgRes.data.data);
-            hasData = true;
           }
         } catch {}
-        if (!hasData) {
-          try {
-            const contextData = {
-              idea_info: {
-                problem: ideaCard?.problem || '',
-                solution: ideaCard?.solution || '',
-                target_audience: ideaCard?.targetAudience || '',
-                pain_point: ideaCard?.painPoint || ''
-              },
-              secondary_research: deepResearch ? {
-                market_insights: deepResearch.market_insights || '',
-                competitor_analysis: deepResearch.competitor_analysis || '',
-                trends: deepResearch.trends || ''
-              } : null
-            };
-            const genRes = await apiClient.post(`/validation/teams/${teamId}/focus-group/generate/`, contextData);
-            const payload = (genRes as any)?.data?.data || {};
-            if (payload?.focus_group) setFocusGroupData(payload.focus_group);
-            else {
-              try {
-                const fgRes2 = await apiClient.get(`/validation/teams/${teamId}/focus-group/`);
-                if (fgRes2?.data?.success) setFocusGroupData(fgRes2.data.data || null);
-              } catch {}
-            }
-            if (payload?.persona) {
-              const mappedPersona = mapInterviewKit({ data: payload.persona });
-              if (mappedPersona?.user_personas) setPersonas(mappedPersona.user_personas);
-            }
-          } catch (e) {
-            console.error('Auto-generate focus group failed:', e);
-          }
-        }
 
         // 3) Load saved focus group insights
         try {
@@ -619,105 +585,3 @@ export const FocusGroupKit: React.FC<FocusGroupKitProps> = ({
     </Card>
   );
 };
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"Let's start by going around the room. Please share your name and what you do for work."</p>
-                    <p>"What's one tool or app you use daily that makes your work easier?"</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-primary mb-2">Problem Discussion (15 minutes)</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"Now I'd like to talk about {ideaCard?.problem || 'the problem area'}..."</p>
-                    <p>"How do you currently handle {ideaCard?.problem || 'this specific problem'}?"</p>
-                    <p>"What frustrates you most about existing solutions?"</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-primary mb-2">Solution Presentation (20 minutes)</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"I'd like to show you a concept we're working on..."</p>
-                    <p>"What's your first impression?"</p>
-                    <p>"How would this fit into your current workflow?"</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Focus Group insights are saved automatically as user types */}
-      </CardContent>
-    </Card>
-  );
-};
-
-
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"Let's start by going around the room. Please share your name and what you do for work."</p>
-                    <p>"What's one tool or app you use daily that makes your work easier?"</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-primary mb-2">Problem Discussion (15 minutes)</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"Now I'd like to talk about {ideaCard?.problem || 'the problem area'}..."</p>
-                    <p>"How do you currently handle {ideaCard?.problem || 'this specific problem'}?"</p>
-                    <p>"What frustrates you most about existing solutions?"</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-primary mb-2">Solution Presentation (20 minutes)</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"I'd like to show you a concept we're working on..."</p>
-                    <p>"What's your first impression?"</p>
-                    <p>"How would this fit into your current workflow?"</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Focus Group insights are saved automatically as user types */}
-      </CardContent>
-    </Card>
-  );
-};
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"Let's start by going around the room. Please share your name and what you do for work."</p>
-                    <p>"What's one tool or app you use daily that makes your work easier?"</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-primary mb-2">Problem Discussion (15 minutes)</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"Now I'd like to talk about {ideaCard?.problem || 'the problem area'}..."</p>
-                    <p>"How do you currently handle {ideaCard?.problem || 'this specific problem'}?"</p>
-                    <p>"What frustrates you most about existing solutions?"</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-primary mb-2">Solution Presentation (20 minutes)</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>"I'd like to show you a concept we're working on..."</p>
-                    <p>"What's your first impression?"</p>
-                    <p>"How would this fit into your current workflow?"</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Focus Group insights are saved automatically as user types */}
-      </CardContent>
-    </Card>
-  );
-};
-

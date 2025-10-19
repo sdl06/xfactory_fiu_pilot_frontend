@@ -1221,10 +1221,9 @@ const Index = () => {
   const isPreMvpMentorshipDone = !!(trcSnapshot?.mentorship?.pre_mvp_completed);
   const isMvpDone = !!(trcSnapshot?.mvp?.task_plan_generated || trcSnapshot?.mvp?.prototype_built);
 
-  // Do not gate in deployment frontend; admin locks control access
-  const canEnterPreMvp = true; // station 5
-  const canEnterMvp = true; // station 6
-  const canEnterPostMvpMentorship = true; // station 7
+  const canEnterPreMvp = isPitchDeckDone; // station 5
+  const canEnterMvp = isPitchDeckDone && isPreMvpMentorshipDone; // station 6
+  const canEnterPostMvpMentorship = true; // Always allow post-MVP mentorship if user navigates back
 
   if (appState === "landing") {
     return (
@@ -1360,7 +1359,7 @@ const Index = () => {
               onClick={() => setShowIdeaReview(false)}
             />
           )}
-          <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto z-50 relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto z-50 relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between w-full">
                 <span>Idea Review</span>
@@ -1411,9 +1410,8 @@ const Index = () => {
                               </Button>
                             </div>
                           </div>
-                          <div className="grid grid-cols-[1fr_1fr_1.5fr] gap-8">
-                            {/* Left Column: Problem, Target market */}
-                            <div className="space-y-8">
+                          <div className="grid md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
                               <div className="group">
                                 <h4 className="text-lg font-bold text-slate-700 mb-3">🎯 The Problem</h4>
                                 <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -1444,12 +1442,26 @@ const Index = () => {
                                   ) : (
                                     <p className="text-slate-700 leading-relaxed">{ideaReviewData?.card?.target_audience || 'Target audience based on AI analysis'}</p>
                                   )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Middle Column: Solutions, Existing solutions */}
-                            <div className="space-y-8">
+                          </div>
+                        </div>
+                      </div>
+                      <div className="group">
+                        <h4 className="text-lg font-bold text-slate-700 mb-3">💵 Business Model</h4>
+                        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                          {isEditingConcept ? (
+                            <textarea
+                              value={editableConcept.business_model || ''}
+                              onChange={(e) => setEditableConcept(prev => ({ ...prev, business_model: e.target.value }))}
+                              className="w-full px-3 py-2 rounded border bg-white text-slate-700 resize-none"
+                              rows={3}
+                              placeholder="How this makes money, key costs, and growth path"
+                            />
+                          ) : (
+                            <p className="text-slate-700 leading-relaxed">{(ideaReviewData?.card as any)?.business_model || 'How this makes money, key costs, and growth path'}</p>
+                          )}
+                        </div>
+                      </div>
+                            <div className="space-y-6">
                               <div className="group">
                                 <h4 className="text-lg font-bold text-slate-700 mb-3">💡 The Solution</h4>
                                 <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -1483,58 +1495,39 @@ const Index = () => {
                                 </div>
                               </div>
                             </div>
-
-                            {/* Right Column: Assumptions (wider) */}
-                            <div className="space-y-8">
-                              {ideaReviewData?.card?.assumptions && Array.isArray(ideaReviewData.card.assumptions) && ideaReviewData.card.assumptions.length > 0 ? (
-                                ideaReviewData.card.assumptions.slice(0,3).map((a: any, idx: number) => (
-                                  <div key={idx} className="group">
-                                    <h4 className="text-lg font-bold text-slate-700 mb-3">🔬 Assumption {idx + 1}</h4>
-                                    <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-                                      <p className="text-slate-700 leading-relaxed">{typeof a === 'string' ? a : (a?.text || '')}</p>
-                                      {typeof a !== 'string' && (a?.confidence || a?.testing_plan) && (
-                                        <div className="mt-3 pt-3 border-t border-slate-100">
-                                          <div className="flex items-center gap-4 text-sm">
-                                            {typeof a?.confidence === 'number' && (
-                                              <span className="inline-flex items-center gap-1">
-                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                {a.confidence}% confidence
-                                              </span>
-                                            )}
-                                            {a?.testing_plan && (
-                                              <span className="text-slate-500">{a.testing_plan}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <>
-                                  <div className="group">
-                                    <h4 className="text-lg font-bold text-slate-700 mb-3">🔬 Assumption 1</h4>
-                                    <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-                                      <p className="text-slate-700 leading-relaxed">Key assumption to be validated</p>
-                                    </div>
-                                  </div>
-                                  <div className="group">
-                                    <h4 className="text-lg font-bold text-slate-700 mb-3">🔬 Assumption 2</h4>
-                                    <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-                                      <p className="text-slate-700 leading-relaxed">Key assumption to be validated</p>
-                                    </div>
-                                  </div>
-                                  <div className="group">
-                                    <h4 className="text-lg font-bold text-slate-700 mb-3">🔬 Assumption 3</h4>
-                                    <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-                                      <p className="text-slate-700 leading-relaxed">Key assumption to be validated</p>
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
                           </div>
                         </div>
+                        {/* Assumptions */}
+                        {ideaReviewData?.card?.assumptions && Array.isArray(ideaReviewData.card.assumptions) && ideaReviewData.card.assumptions.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-lg font-bold text-slate-700">🔬 Key Assumptions</h4>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {ideaReviewData.card.assumptions.slice(0,3).map((a: any, idx: number) => (
+                                <div key={idx} className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1">
+                                      {idx + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="text-slate-700 font-medium mb-2">{typeof a === 'string' ? a : (a?.text || '')}</p>
+                                      <div className="flex items-center gap-4 text-sm">
+                                        {typeof a !== 'string' && typeof a?.confidence === 'number' && (
+                                          <span className="inline-flex items-center gap-1">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            {a.confidence}% confidence
+                                          </span>
+                                        )}
+                                        {typeof a !== 'string' && (a?.testing_plan) && (
+                                          <span className="text-slate-500">{a.testing_plan}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {isEditingConcept && (
                           <div className="flex justify-end gap-2 pt-2">
                             <Button variant="outline" onClick={() => setIsEditingConcept(false)}>Cancel</Button>
@@ -1657,6 +1650,7 @@ const Index = () => {
     }
     
     if (currentStation === 5) {
+      if (!canEnterPreMvp) return <div className="p-6 text-sm text-muted-foreground">Complete the Investor Pitch Deck first to unlock this station.</div>;
       return (
         <MentorshipStation 
           sessionType="pre-mvp"
@@ -1668,6 +1662,7 @@ const Index = () => {
     }
     
     if (currentStation === 6) {
+      if (!canEnterMvp) return <div className="p-6 text-sm text-muted-foreground">Complete the Pre‑MVP Mentorship Session to unlock this station.</div>;
       return (
         <MVPDevelopmentStation 
           mentorshipData={null}
@@ -1832,18 +1827,4 @@ const Index = () => {
   return null;
 };
 
-export default Index;  return null;
-};
-
 export default Index;
-
-
-
-  return null;
-};
-
-export default Index;  return null;
-};
-
-export default Index;
-

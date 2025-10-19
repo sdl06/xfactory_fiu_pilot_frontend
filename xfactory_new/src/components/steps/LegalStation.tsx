@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Scale, ArrowLeft, CheckCircle, Search, HelpCircle, Loader2, Brain, BookOpen } from "lucide-react";
 import { StationFlowManager } from "@/lib/stationFlow";
-import apiClient from "@/lib/api";
 
 interface LegalStationProps {
   onComplete: (data: any) => void;
@@ -24,7 +23,6 @@ export const LegalStation = ({
   businessType,
   mvpData 
 }: LegalStationProps) => {
-  const [teamId, setTeamId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("trademark");
   
   // Trademark Checker State
@@ -61,130 +59,62 @@ export const LegalStation = ({
     }
   }, [mvpData]);
 
-  // Resolve team and load existing legal artifacts (strategy)
-  useEffect(() => {
-    const loadTeamAndStrategy = async () => {
-      try {
-        // Resolve team id
-        let tid: number | null = null;
-        const cached = localStorage.getItem('xfactoryTeamId');
-        tid = cached ? Number(cached) : null;
-        if (!tid) {
-          const status = await apiClient.get('/team-formation/status/');
-          tid = (status as any)?.data?.current_team?.id || null;
-          if (tid) { try { localStorage.setItem('xfactoryTeamId', String(tid)); } catch {}
-          }
-        }
-        if (!tid) return;
-        setTeamId(tid);
-
-        // Load latest strategy artifacts
-        const strat = await apiClient.legalGetStrategyTeam(tid);
-        const sdata: any = (strat as any)?.data || {};
-        // Prefill implementation
-        const impl = sdata?.implementation_guide;
-        if (impl) {
-          setImplementationData(prev => ({
-            ...prev,
-            businessEntity: impl.business_entity || prev.businessEntity,
-            headquartersCity: impl.headquarters_city || prev.headquartersCity,
-            employeeCount: impl.employee_count || prev.employeeCount,
-            industryType: impl.industry_type || prev.industryType,
-            timeline: impl.timeline || prev.timeline,
-            checklist: impl.guidance ? {
-              entity: impl.business_entity || '',
-              headquarters: impl.headquarters_city || '',
-              employees: impl.employee_count || '',
-              industry: impl.industry_type || '',
-              timeline: impl.timeline || '',
-              entityRequirements: (impl.guidance?.entity_requirements) || [],
-              employmentRequirements: (impl.guidance?.employment_actions) || [],
-              industryCompliance: (impl.guidance?.industry_compliance) || [],
-              locationRequirements: (impl.guidance?.location_requirements) || [],
-              milestones: (impl.guidance?.milestones) || []
-            } : prev.checklist
-          }));
-        }
-        // Prefill feasibility
-        const feas = sdata?.feasibility_report;
-        if (feas) {
-          setFeasibilityData(prev => ({
-            ...prev,
-            report: feas.report || prev.report,
-            confidence: typeof feas.confidence === 'number' ? feas.confidence : prev.confidence,
-          }));
-        }
-        // Prefill trademark
-        const tm = sdata?.trademark;
-        if (tm && tm.business_name) {
-          setTrademarkData(prev => ({
-            ...prev,
-            businessName: tm.business_name,
-            searchResults: [{
-              name: tm.business_name,
-              status: 'Analyzed',
-              similarity: 0,
-              type: `Class ${tm.nice_classification || '—'}`,
-            }],
-            searchCompleted: true
-          }));
-        }
-      } catch {}
-    };
-    loadTeamAndStrategy();
-  }, []);
-
   // Trademark Search Logic
   const searchTrademarks = async () => {
-    if (!trademarkData.businessName.trim() || !teamId) return;
+    if (!trademarkData.businessName.trim()) return;
+    
     setTrademarkData(prev => ({ ...prev, isSearching: true }));
-    try {
-      const res = await apiClient.legalTrademarkCheckTeam(teamId, trademarkData.businessName.trim());
-      const data: any = (res as any)?.data || {};
-      const tm = data?.trademark || {};
-      setTrademarkData(prev => ({
-        ...prev,
-        searchResults: [{
-          name: tm.business_name || trademarkData.businessName,
-          status: 'Analyzed',
-          similarity: 0,
-          type: tm.nice_classification ? `Class ${tm.nice_classification}` : 'Trademark analysis'
-        }],
-        isSearching: false,
-        searchCompleted: true
-      }));
-    } catch (e) {
-      setTrademarkData(prev => ({ ...prev, isSearching: false }));
-    }
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Mock results for demonstration
+    const mockResults = [
+      { name: trademarkData.businessName, status: 'Available', similarity: 0, type: 'Exact Match' },
+      { name: trademarkData.businessName + ' Inc', status: 'Taken', similarity: 85, type: 'Similar' },
+      { name: trademarkData.businessName.slice(0, -1), status: 'Taken', similarity: 90, type: 'Similar' },
+      { name: trademarkData.businessName + ' Solutions', status: 'Pending', similarity: 75, type: 'Similar' }
+    ];
+    
+    setTrademarkData(prev => ({
+      ...prev,
+      searchResults: mockResults,
+      isSearching: false,
+      searchCompleted: true
+    }));
   };
 
   // Implementation Guide Generator
   const generateImplementationGuide = async () => {
-    if (!teamId) return;
     setImplementationData(prev => ({ ...prev, isGenerating: true }));
-    try {
-      const payload: any = {};
-      if (implementationData.headquartersCity) payload.headquarters_city = implementationData.headquartersCity;
-      const res = await apiClient.legalGenerateInsightsTeam(teamId, payload);
-      const data: any = (res as any)?.data || {};
-      const impl = data?.implementation_guide || {};
-      const guidance = impl?.guidance || {};
-      const checklist = {
-        entity: impl.business_entity || implementationData.businessEntity,
-        headquarters: impl.headquarters_city || implementationData.headquartersCity,
-        employees: impl.employee_count || implementationData.employeeCount,
-        industry: impl.industry_type || implementationData.industryType,
-        timeline: impl.timeline || implementationData.timeline,
-        entityRequirements: guidance.entity_requirements || [],
-        employmentRequirements: guidance.employment_actions || [],
-        industryCompliance: guidance.industry_compliance || [],
-        locationRequirements: guidance.location_requirements || [],
-        milestones: guidance.milestones || []
-      };
-      setImplementationData(prev => ({ ...prev, checklist, isGenerating: false }));
-    } catch (e) {
-      setImplementationData(prev => ({ ...prev, isGenerating: false }));
-    }
+    
+    // Simulate AI generation
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const checklist = {
+      entity: implementationData.businessEntity,
+      headquarters: implementationData.headquartersCity,
+      employees: implementationData.employeeCount,
+      industry: implementationData.industryType,
+      timeline: implementationData.timeline,
+      
+      // Legal requirements based on entity type
+      entityRequirements: getEntityRequirements(implementationData.businessEntity),
+      
+      // Employment law requirements based on employee count
+      employmentRequirements: getEmploymentRequirements(implementationData.employeeCount),
+      
+      // Industry-specific compliance
+      industryCompliance: getIndustryCompliance(implementationData.industryType),
+      
+      // Location-specific requirements
+      locationRequirements: getLocationRequirements(implementationData.headquartersCity),
+      
+      // Timeline-based milestones
+      milestones: getTimelineMilestones(implementationData.timeline)
+    };
+    
+    setImplementationData(prev => ({ ...prev, checklist, isGenerating: false }));
   };
 
   // Helper functions for generating legal requirements
@@ -353,21 +283,40 @@ export const LegalStation = ({
 
   // Feasibility Report Generator
   const generateFeasibilityReport = async () => {
-    if (!teamId) return;
+    if (!feasibilityData.ideaSummary.trim()) return;
+    
     setFeasibilityData(prev => ({ ...prev, isGenerating: true }));
-    try {
-      const res = await apiClient.legalGenerateFeasibilityTeam(teamId);
-      const data: any = (res as any)?.data || {};
-      const fr = data?.feasibility_report || {};
-      setFeasibilityData(prev => ({
-        ...prev,
-        report: fr.report || fr.report_text || prev.report,
-        isGenerating: false,
-        confidence: typeof fr.confidence === 'number' ? fr.confidence : prev.confidence
-      }));
-    } catch (e) {
-      setFeasibilityData(prev => ({ ...prev, isGenerating: false }));
-    }
+    
+    // Simulate deep research model delay
+    await new Promise(resolve => setTimeout(resolve, 8000));
+    
+    const report = {
+      viabilityScore: Math.floor(Math.random() * 30) + 70, // 70-100%
+      marketSize: `$${(Math.random() * 50 + 10).toFixed(1)}B global market`,
+      competition: 'Moderate to High',
+      barriers: ['Technical complexity', 'Regulatory requirements', 'Capital requirements'],
+      opportunities: ['Growing market demand', 'Technological advancement', 'Underserved segments'],
+      risks: ['Market saturation', 'Regulatory changes', 'Technology disruption'],
+      recommendations: [
+        'Focus on unique value proposition',
+        'Build strong team with relevant expertise',
+        'Start with MVP to validate assumptions',
+        'Consider strategic partnerships'
+      ],
+      nextSteps: [
+        'Conduct detailed market research',
+        'Develop prototype/MVP',
+        'Validate with target customers',
+        'Secure initial funding'
+      ]
+    };
+    
+    setFeasibilityData(prev => ({ 
+      ...prev, 
+      report, 
+      isGenerating: false,
+      confidence: report.viabilityScore
+    }));
   };
 
   const handleComplete = () => {
@@ -715,90 +664,15 @@ export const LegalStation = ({
                     onChange={(e) => setFeasibilityData(prev => ({ ...prev, ideaSummary: e.target.value }))}
                   />
                 </div>
-                {feasibilityData.report ? (
-                  <div className="p-4 rounded-md border bg-muted/30 text-sm whitespace-pre-wrap break-words">
-                    {typeof feasibilityData.report === 'string' ? feasibilityData.report : JSON.stringify(feasibilityData.report, null, 2)}
+                <div className="p-4 rounded-md border bg-muted/30">
+                  <div className="text-sm text-muted-foreground">
+                    Placeholder: Flowise Legal Deep Research report will render here.
                   </div>
-                ) : (
-                  <div className="p-4 rounded-md border bg-muted/30">
-                    <div className="text-sm text-muted-foreground">
-                      Run AI legal feasibility to generate a tailored report for your idea.
-                    </div>
-                  </div>
-                )}
-                <div className="flex justify-end">
-                  <Button onClick={generateFeasibilityReport} disabled={feasibilityData.isGenerating || !teamId}>
-                    {feasibilityData.isGenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate Report'
-                    )}
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Navigation */}
-          <div className="flex justify-between pt-6">
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <Button 
-              onClick={handleComplete}
-              disabled={!trademarkData.searchCompleted && !implementationData.checklist && !feasibilityData.report}
-            >
-              Complete Legal Research
-              <CheckCircle className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
-        </Tabs>
-      </div>
-    </div>
-  );
-};
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5" />
-                  Legal Feasibility Deep Research
-                </CardTitle>
-                <CardDescription>
-                  This section will display the Flowise-powered legal deep research report tailored to your business idea.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Idea Summary</Label>
-                  <Textarea
-                    placeholder="Briefly summarize your idea to guide the legal deep research"
-                    value={feasibilityData.ideaSummary}
-                    onChange={(e) => setFeasibilityData(prev => ({ ...prev, ideaSummary: e.target.value }))}
-                  />
-                </div>
-                {feasibilityData.report ? (
-                  <div className="p-4 rounded-md border bg-muted/30 text-sm whitespace-pre-wrap break-words">
-                    {typeof feasibilityData.report === 'string' ? feasibilityData.report : JSON.stringify(feasibilityData.report, null, 2)}
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-md border bg-muted/30">
-                    <div className="text-sm text-muted-foreground">
-                      Run AI legal feasibility to generate a tailored report for your idea.
-                    </div>
-                  </div>
-                )}
                 <div className="flex justify-end">
-                  <Button onClick={generateFeasibilityReport} disabled={feasibilityData.isGenerating || !teamId}>
-                    {feasibilityData.isGenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate Report'
-                    )}
+                  <Button disabled>
+                    <Loader2 className="h-4 w-4 mr-2" />
+                    Generating Report...
                   </Button>
                 </div>
               </CardContent>
