@@ -1436,3 +1436,148 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
     </div>
   );
 };
+
+                      {/* Regular available teams - shown below */}
+                      {availableTeams
+                        .filter(team => !additionRequests.some(req => String(req.team) === String(team.id)))
+                        .map((team) => (
+                        <div
+                          key={team.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                            selectedTeam === team.id ? 'border-primary bg-primary/5' : 'border-border'
+                          }`}
+                          onClick={() => setSelectedTeam(team.id)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-semibold">{team.name}</h3>
+                            <Badge variant="secondary">{team.current_member_count} members</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{team.description || "No description provided"}</p>
+                          
+                          {team.needed_archetypes && team.needed_archetypes.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {team.needed_archetypes.map((archetype: string) => (
+                                <Badge key={archetype} variant="outline" className="text-xs">
+                                  {archetype}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Looking For Section */}
+                          {team.looking_for && team.looking_for.length > 0 && (
+                            <div className="mb-3">
+                              <div className="text-xs font-medium text-muted-foreground mb-2">Looking For:</div>
+                              <div className="space-y-2">
+                                {team.looking_for.map((role: any, index: number) => (
+                                  <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
+                                    {role.keywords && (
+                                      <div className="flex flex-wrap gap-1 mb-2">
+                                        {role.keywords.split(',').map((keyword: string, keyIndex: number) => {
+                                          const trimmedKeyword = keyword.trim();
+                                          if (!trimmedKeyword) return null;
+                                          return (
+                                            <Badge key={keyIndex} variant="secondary" className="text-xs">
+                                              {trimmedKeyword}
+                                            </Badge>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    <div className="font-medium text-sm">{role.job_role || "Team Member"}</div>
+                                    {role.job_description && (
+                                      <div className="text-xs text-muted-foreground mt-1">
+                                        {role.job_description}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="text-xs text-muted-foreground">
+                            <div className="font-medium">Led by: {team.created_by_name}</div>
+                            {team.needed_archetypes && team.needed_archetypes.length > 0 && (
+                              <div>Archetypes needed: {team.needed_archetypes.join(", ")}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="font-semibold mb-2">No teams available</h3>
+                      <p className="text-muted-foreground">Be the first to create a team!</p>
+                    </div>
+                  )}
+                  
+                  {selectedTeam && (
+                    <div className="space-y-3 border-t pt-4">
+                      <div>
+                        <Label htmlFor="joinMessage">Message to Team (Optional)</Label>
+                        <Textarea
+                          id="joinMessage"
+                          placeholder="Tell the team why you'd like to join..."
+                          value={joinRequest.message}
+                          onChange={(e) => setJoinRequest(prev => ({ ...prev, message: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="preferredArchetype">Preferred Role</Label>
+                        <Select 
+                          value={joinRequest.preferred_archetype} 
+                          onValueChange={(value) => setJoinRequest(prev => ({ ...prev, preferred_archetype: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your preferred role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Strategist">Strategist (The Dreamer & Strategist)</SelectItem>
+                            <SelectItem value="Builder">Builder (The Technical Architect)</SelectItem>
+                            <SelectItem value="Seller">Seller (The Sales & Growth Operator)</SelectItem>
+                            <SelectItem value="Designer">Designer (The User Experience Guardian)</SelectItem>
+                            <SelectItem value="Operator">Operator (The Execution Backbone)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                  
+
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleTeamComplete}
+                  disabled={
+                    isLoading || 
+                    !teamChoice || 
+                    (teamChoice === "create" && !newTeam.name.trim()) || 
+                    (teamChoice === "join" && !selectedTeam)
+                  }
+                  size="lg"
+                  className="flex-1"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {teamChoice === "create" ? "Creating..." : "Joining..."}
+                    </>
+                  ) : (
+                    <>
+                      {teamChoice === "create" ? "Create Team" : teamChoice === "join" ? "Send Request" : "Complete Setup"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};

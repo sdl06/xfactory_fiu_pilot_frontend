@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Factory, LogIn, ArrowLeft } from "lucide-react";
+import { Factory, LogIn, ArrowLeft, User, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
 
@@ -56,10 +56,71 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Factory Station Header */}
-      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
-        <div className="w-full px-6 py-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            {/* Left: Section logo and name */}
+      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackIcon = document.createElement('div');
+                fallbackIcon.innerHTML = '<svg class="h-8 w-8 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                parent.appendChild(fallbackIcon);
+              }
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackText = document.createElement('span');
+                fallbackText.textContent = 'FIU';
+                fallbackText.className = 'text-white font-bold text-lg';
+                parent.appendChild(fallbackText);
+              }
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+          >
+            <User className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+            onClick={onBack}
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
                 <Factory className="h-6 w-6 text-primary-foreground" />
@@ -67,28 +128,6 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
               <div>
                 <h1 className="text-xl font-bold text-white">Ivy Factory</h1>
                 <p className="text-sm text-white/80">User Portal</p>
-              </div>
-            </div>
-            
-            {/* Middle: Section/step name */}
-            <div className="flex-1 text-center">
-              <Badge variant="warning">Login</Badge>
-            </div>
-            
-            {/* Right: Ivy factory logo */}
-            <div className="flex items-center">
-              <img 
-                src="/logos/prov_logo_white.png" 
-                alt="Ivy Factory Logo" 
-                className="h-12 w-auto object-contain"
-                onError={(e) => {
-                  // Fallback to SVG icon if image fails to load
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="hidden w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center">
-                <Factory className="h-6 w-6 text-white" />
               </div>
             </div>
           </div>

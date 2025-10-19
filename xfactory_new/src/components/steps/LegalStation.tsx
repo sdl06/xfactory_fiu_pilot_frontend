@@ -761,3 +761,66 @@ export const LegalStation = ({
     </div>
   );
 };
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Legal Feasibility Deep Research
+                </CardTitle>
+                <CardDescription>
+                  This section will display the Flowise-powered legal deep research report tailored to your business idea.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Idea Summary</Label>
+                  <Textarea
+                    placeholder="Briefly summarize your idea to guide the legal deep research"
+                    value={feasibilityData.ideaSummary}
+                    onChange={(e) => setFeasibilityData(prev => ({ ...prev, ideaSummary: e.target.value }))}
+                  />
+                </div>
+                {feasibilityData.report ? (
+                  <div className="p-4 rounded-md border bg-muted/30 text-sm whitespace-pre-wrap break-words">
+                    {typeof feasibilityData.report === 'string' ? feasibilityData.report : JSON.stringify(feasibilityData.report, null, 2)}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-md border bg-muted/30">
+                    <div className="text-sm text-muted-foreground">
+                      Run AI legal feasibility to generate a tailored report for your idea.
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <Button onClick={generateFeasibilityReport} disabled={feasibilityData.isGenerating || !teamId}>
+                    {feasibilityData.isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate Report'
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Navigation */}
+          <div className="flex justify-between pt-6">
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            <Button 
+              onClick={handleComplete}
+              disabled={!trademarkData.searchCompleted && !implementationData.checklist && !feasibilityData.report}
+            >
+              Complete Legal Research
+              <CheckCircle className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </Tabs>
+      </div>
+    </div>
+  );
+};

@@ -699,3 +699,720 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
     </div>
   );
 };
+
+  };
+
+  const getSectionColor = (sectionNumber: number) => {
+    const section = sections[sectionNumber - 1];
+    if (!section) return 'text-primary';
+    return section.color;
+  };
+
+  return (
+    <div className="min-h-screen bg-background w-full">
+      {/* Header */}
+      <div className="border-b border-border bg-primary w-full">
+        <div className="w-full px-1 sm:px-2 lg:px-4 xl:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-primary-foreground">Idea Questionnaire</h1>
+                <p className="text-sm text-primary-foreground/80">Structured idea development</p>
+              </div>
+            </div>
+            <Badge variant="warning">Question {currentQuestionNumber} of {totalQuestions}</Badge>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full py-4 sm:py-6 lg:py-8">
+        {/* Progress Bar */}
+        <div className="mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Progress: {currentQuestionNumber} of {totalQuestions}
+            </span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {Math.round(progressPercentage)}%
+            </span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {/* Section Progress Indicator (icons clickable to jump to first question) */}
+        <div className="mb-6 sm:mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-4">
+            {sections.map((section, index) => {
+              const isActive = currentSection === index + 1;
+              const isCompleted = currentSection > index + 1;
+              const Icon = section.icon;
+              
+              return (
+                <button
+                  type="button"
+                  onClick={() => { 
+                    // Only allow navigation to accessible sections
+                    if (!isSectionAccessible(index + 1)) {
+                      toast({
+                        title: "Section Locked",
+                        description: "Complete the current section before accessing this one.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    setCurrentSection(index + 1); 
+                    setCurrentQuestion(0);
+                    
+                    // Save progress when jumping to different section
+                    if (!teamId) {
+                      const saveProgress = async () => {
+                        try {
+                          await apiClient.post('/ideation/user-questionnaire-progress/', {
+                            answers,
+                            current_section: index + 1,
+                            current_question: 0
+                          });
+                        } catch (error) {
+                          console.error('Failed to save progress:', error);
+                        }
+                      };
+                      saveProgress();
+                      
+                      // Also save locally as fallback
+                      try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection: index + 1, currentQuestion: 0, updatedAt: Date.now() })); } catch {}
+                    }
+                  }}
+                  key={section.key}
+                  className={`flex flex-col items-center gap-2 flex-1 focus:outline-none ${
+                    !isSectionAccessible(index + 1) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transition-transform'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                    isActive 
+                      ? 'border-primary bg-primary text-primary-foreground' 
+                      : isCompleted 
+                        ? 'border-green-500 bg-green-500 text-white'
+                        : isSectionCompleted(index + 1)
+                          ? 'border-green-500 bg-green-500 text-white'
+                          : !isSectionAccessible(index + 1)
+                            ? 'border-gray-300 bg-gray-100 text-gray-400'
+                            : 'border-muted bg-muted text-muted-foreground'
+                  }`}>
+                    {isCompleted || isSectionCompleted(index + 1) ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : !isSectionAccessible(index + 1) ? (
+                      <Lock className="h-5 w-5" />
+                    ) : (
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-primary-foreground' : section.color}`} />
+                    )}
+                  </div>
+                  <span
+                    title={section.title}
+                    className={`text-xs font-medium text-center px-1 leading-tight whitespace-normal overflow-hidden h-10 ${
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
+                  }`}>
+                    {section.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Question Card */}
+        <Card className="w-full shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+          <CardHeader className="text-center pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                getSectionColor(currentSection).replace('text-', 'bg-') + '/10'
+              }`}>
+                {(() => {
+                  const Icon = getSectionIcon(currentSection);
+                  return <Icon className={`h-6 w-6 ${getSectionColor(currentSection)}`} />;
+                })()}
+              </div>
+              <div className="text-center sm:text-left">
+                <CardTitle className="text-xl sm:text-2xl">
+                  Section {currentSection}: {currentSectionData.title}
+                </CardTitle>
+                <CardDescription className="text-base sm:text-lg mt-2">
+                  {currentSectionData.description}
+                </CardDescription>
+              </div>
+            </div>
+            
+            {/* What to think about */}
+            <div className="bg-muted/50 rounded-lg p-4 border border-muted">
+              <div className="flex items-start gap-3">
+                <Brain className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">What to think about:</p>
+                  <p className="text-sm text-muted-foreground">{currentSectionData.what_to_think_about}</p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8">
+            {/* Question */}
+            <div className="text-center">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-4 sm:mb-6">
+                Question {currentQuestion + 1}:
+              </h3>
+              <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed w-full">
+                {currentQuestionData.text}
+              </p>
+            </div>
+
+            {/* Answer Input */}
+            <div className="w-full">
+              <Textarea
+                placeholder="Type your answer here..."
+                value={answers[currentQuestionData.id] || ''}
+                onChange={(e) => handleAnswerChange(e.target.value)}
+                className="min-h-[150px] sm:min-h-[200px] lg:min-h-[250px] text-base sm:text-lg lg:text-xl resize-none w-full"
+                disabled={isSubmitting}
+              />
+              {currentQuestionData.required && (
+                <p className="text-sm sm:text-base text-muted-foreground mt-3 text-center">
+                  * This question is required
+                </p>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center pt-6">
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={currentSection === 1 && currentQuestion === 0}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {currentQuestionNumber} of {totalQuestions}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleNext}
+                disabled={!canContinue() || isSubmitting}
+                className="flex items-center gap-2 px-6"
+              >
+                {currentSection === 8 && currentQuestion === currentSectionData.questions.length - 1 ? (
+                  <>
+                    {isSubmitting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    {isSubmitting ? 'Saving...' : 'Complete'}
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Back to Factory Button */}
+        <div className="mt-8 text-center">
+          <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Factory
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  };
+
+  const getSectionColor = (sectionNumber: number) => {
+    const section = sections[sectionNumber - 1];
+    if (!section) return 'text-primary';
+    return section.color;
+  };
+
+  return (
+    <div className="min-h-screen bg-background w-full">
+      {/* Header */}
+      <div className="border-b border-border bg-primary w-full">
+        <div className="w-full px-1 sm:px-2 lg:px-4 xl:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-primary-foreground">Idea Questionnaire</h1>
+                <p className="text-sm text-primary-foreground/80">Structured idea development</p>
+              </div>
+            </div>
+            <Badge variant="warning">Question {currentQuestionNumber} of {totalQuestions}</Badge>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full py-4 sm:py-6 lg:py-8">
+        {/* Progress Bar */}
+        <div className="mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Progress: {currentQuestionNumber} of {totalQuestions}
+            </span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {Math.round(progressPercentage)}%
+            </span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {/* Section Progress Indicator (icons clickable to jump to first question) */}
+        <div className="mb-6 sm:mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-4">
+            {sections.map((section, index) => {
+              const isActive = currentSection === index + 1;
+              const isCompleted = currentSection > index + 1;
+              const Icon = section.icon;
+              
+              return (
+                <button
+                  type="button"
+                  onClick={() => { 
+                    // Only allow navigation to accessible sections
+                    if (!isSectionAccessible(index + 1)) {
+                      toast({
+                        title: "Section Locked",
+                        description: "Complete the current section before accessing this one.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    setCurrentSection(index + 1); 
+                    setCurrentQuestion(0);
+                    
+                    // Save progress when jumping to different section
+                    if (!teamId) {
+                      const saveProgress = async () => {
+                        try {
+                          await apiClient.post('/ideation/user-questionnaire-progress/', {
+                            answers,
+                            current_section: index + 1,
+                            current_question: 0
+                          });
+                        } catch (error) {
+                          console.error('Failed to save progress:', error);
+                        }
+                      };
+                      saveProgress();
+                      
+                      // Also save locally as fallback
+                      try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection: index + 1, currentQuestion: 0, updatedAt: Date.now() })); } catch {}
+                    }
+                  }}
+                  key={section.key}
+                  className={`flex flex-col items-center gap-2 flex-1 focus:outline-none ${
+                    !isSectionAccessible(index + 1) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transition-transform'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                    isActive 
+                      ? 'border-primary bg-primary text-primary-foreground' 
+                      : isCompleted 
+                        ? 'border-green-500 bg-green-500 text-white'
+                        : isSectionCompleted(index + 1)
+                          ? 'border-green-500 bg-green-500 text-white'
+                          : !isSectionAccessible(index + 1)
+                            ? 'border-gray-300 bg-gray-100 text-gray-400'
+                            : 'border-muted bg-muted text-muted-foreground'
+                  }`}>
+                    {isCompleted || isSectionCompleted(index + 1) ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : !isSectionAccessible(index + 1) ? (
+                      <Lock className="h-5 w-5" />
+                    ) : (
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-primary-foreground' : section.color}`} />
+                    )}
+                  </div>
+                  <span
+                    title={section.title}
+                    className={`text-xs font-medium text-center px-1 leading-tight whitespace-normal overflow-hidden h-10 ${
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
+                  }`}>
+                    {section.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Question Card */}
+        <Card className="w-full shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+          <CardHeader className="text-center pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                getSectionColor(currentSection).replace('text-', 'bg-') + '/10'
+              }`}>
+                {(() => {
+                  const Icon = getSectionIcon(currentSection);
+                  return <Icon className={`h-6 w-6 ${getSectionColor(currentSection)}`} />;
+                })()}
+              </div>
+              <div className="text-center sm:text-left">
+                <CardTitle className="text-xl sm:text-2xl">
+                  Section {currentSection}: {currentSectionData.title}
+                </CardTitle>
+                <CardDescription className="text-base sm:text-lg mt-2">
+                  {currentSectionData.description}
+                </CardDescription>
+              </div>
+            </div>
+            
+            {/* What to think about */}
+            <div className="bg-muted/50 rounded-lg p-4 border border-muted">
+              <div className="flex items-start gap-3">
+                <Brain className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">What to think about:</p>
+                  <p className="text-sm text-muted-foreground">{currentSectionData.what_to_think_about}</p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8">
+            {/* Question */}
+            <div className="text-center">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-4 sm:mb-6">
+                Question {currentQuestion + 1}:
+              </h3>
+              <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed w-full">
+                {currentQuestionData.text}
+              </p>
+            </div>
+
+            {/* Answer Input */}
+            <div className="w-full">
+              <Textarea
+                placeholder="Type your answer here..."
+                value={answers[currentQuestionData.id] || ''}
+                onChange={(e) => handleAnswerChange(e.target.value)}
+                className="min-h-[150px] sm:min-h-[200px] lg:min-h-[250px] text-base sm:text-lg lg:text-xl resize-none w-full"
+                disabled={isSubmitting}
+              />
+              {currentQuestionData.required && (
+                <p className="text-sm sm:text-base text-muted-foreground mt-3 text-center">
+                  * This question is required
+                </p>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center pt-6">
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={currentSection === 1 && currentQuestion === 0}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {currentQuestionNumber} of {totalQuestions}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleNext}
+                disabled={!canContinue() || isSubmitting}
+                className="flex items-center gap-2 px-6"
+              >
+                {currentSection === 8 && currentQuestion === currentSectionData.questions.length - 1 ? (
+                  <>
+                    {isSubmitting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    {isSubmitting ? 'Saving...' : 'Complete'}
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Back to Factory Button */}
+        <div className="mt-8 text-center">
+          <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Factory
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  };
+
+  const getSectionColor = (sectionNumber: number) => {
+    const section = sections[sectionNumber - 1];
+    if (!section) return 'text-primary';
+    return section.color;
+  };
+
+  return (
+    <div className="min-h-screen bg-background w-full">
+      {/* Header */}
+      <div className="border-b border-border bg-primary w-full">
+        <div className="w-full px-1 sm:px-2 lg:px-4 xl:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-primary-foreground">Idea Questionnaire</h1>
+                <p className="text-sm text-primary-foreground/80">Structured idea development</p>
+              </div>
+            </div>
+            <Badge variant="warning">Question {currentQuestionNumber} of {totalQuestions}</Badge>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full py-4 sm:py-6 lg:py-8">
+        {/* Progress Bar */}
+        <div className="mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Progress: {currentQuestionNumber} of {totalQuestions}
+            </span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {Math.round(progressPercentage)}%
+            </span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {/* Section Progress Indicator (icons clickable to jump to first question) */}
+        <div className="mb-6 sm:mb-8 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-4">
+            {sections.map((section, index) => {
+              const isActive = currentSection === index + 1;
+              const isCompleted = currentSection > index + 1;
+              const Icon = section.icon;
+              
+              return (
+                <button
+                  type="button"
+                  onClick={() => { 
+                    // Only allow navigation to accessible sections
+                    if (!isSectionAccessible(index + 1)) {
+                      toast({
+                        title: "Section Locked",
+                        description: "Complete the current section before accessing this one.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    setCurrentSection(index + 1); 
+                    setCurrentQuestion(0);
+                    
+                    // Save progress when jumping to different section
+                    if (!teamId) {
+                      const saveProgress = async () => {
+                        try {
+                          await apiClient.post('/ideation/user-questionnaire-progress/', {
+                            answers,
+                            current_section: index + 1,
+                            current_question: 0
+                          });
+                        } catch (error) {
+                          console.error('Failed to save progress:', error);
+                        }
+                      };
+                      saveProgress();
+                      
+                      // Also save locally as fallback
+                      try { localStorage.setItem(localKey, JSON.stringify({ answers, currentSection: index + 1, currentQuestion: 0, updatedAt: Date.now() })); } catch {}
+                    }
+                  }}
+                  key={section.key}
+                  className={`flex flex-col items-center gap-2 flex-1 focus:outline-none ${
+                    !isSectionAccessible(index + 1) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transition-transform'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                    isActive 
+                      ? 'border-primary bg-primary text-primary-foreground' 
+                      : isCompleted 
+                        ? 'border-green-500 bg-green-500 text-white'
+                        : isSectionCompleted(index + 1)
+                          ? 'border-green-500 bg-green-500 text-white'
+                          : !isSectionAccessible(index + 1)
+                            ? 'border-gray-300 bg-gray-100 text-gray-400'
+                            : 'border-muted bg-muted text-muted-foreground'
+                  }`}>
+                    {isCompleted || isSectionCompleted(index + 1) ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : !isSectionAccessible(index + 1) ? (
+                      <Lock className="h-5 w-5" />
+                    ) : (
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-primary-foreground' : section.color}`} />
+                    )}
+                  </div>
+                  <span
+                    title={section.title}
+                    className={`text-xs font-medium text-center px-1 leading-tight whitespace-normal overflow-hidden h-10 ${
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground'
+                  }`}>
+                    {section.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Question Card */}
+        <Card className="w-full shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+          <CardHeader className="text-center pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                getSectionColor(currentSection).replace('text-', 'bg-') + '/10'
+              }`}>
+                {(() => {
+                  const Icon = getSectionIcon(currentSection);
+                  return <Icon className={`h-6 w-6 ${getSectionColor(currentSection)}`} />;
+                })()}
+              </div>
+              <div className="text-center sm:text-left">
+                <CardTitle className="text-xl sm:text-2xl">
+                  Section {currentSection}: {currentSectionData.title}
+                </CardTitle>
+                <CardDescription className="text-base sm:text-lg mt-2">
+                  {currentSectionData.description}
+                </CardDescription>
+              </div>
+            </div>
+            
+            {/* What to think about */}
+            <div className="bg-muted/50 rounded-lg p-4 border border-muted">
+              <div className="flex items-start gap-3">
+                <Brain className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">What to think about:</p>
+                  <p className="text-sm text-muted-foreground">{currentSectionData.what_to_think_about}</p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8">
+            {/* Question */}
+            <div className="text-center">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-4 sm:mb-6">
+                Question {currentQuestion + 1}:
+              </h3>
+              <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed w-full">
+                {currentQuestionData.text}
+              </p>
+            </div>
+
+            {/* Answer Input */}
+            <div className="w-full">
+              <Textarea
+                placeholder="Type your answer here..."
+                value={answers[currentQuestionData.id] || ''}
+                onChange={(e) => handleAnswerChange(e.target.value)}
+                className="min-h-[150px] sm:min-h-[200px] lg:min-h-[250px] text-base sm:text-lg lg:text-xl resize-none w-full"
+                disabled={isSubmitting}
+              />
+              {currentQuestionData.required && (
+                <p className="text-sm sm:text-base text-muted-foreground mt-3 text-center">
+                  * This question is required
+                </p>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center pt-6">
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={currentSection === 1 && currentQuestion === 0}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {currentQuestionNumber} of {totalQuestions}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleNext}
+                disabled={!canContinue() || isSubmitting}
+                className="flex items-center gap-2 px-6"
+              >
+                {currentSection === 8 && currentQuestion === currentSectionData.questions.length - 1 ? (
+                  <>
+                    {isSubmitting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    {isSubmitting ? 'Saving...' : 'Complete'}
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Back to Factory Button */}
+        <div className="mt-8 text-center">
+          <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Factory
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};

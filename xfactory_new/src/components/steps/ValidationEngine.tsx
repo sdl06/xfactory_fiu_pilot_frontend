@@ -4366,3 +4366,68 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     </div>
   );
 };
+
+              onClick={async () => {
+                try {
+                  const teamIdStr = localStorage.getItem('xfactoryTeamId');
+                  const teamId = teamIdStr ? Number(teamIdStr) : null;
+                  if (teamId) {
+                    if (quantFormLink) {
+                      await apiClient.submitValidationEvidence(teamId, 'quant_form', quantFormLink);
+                    }
+                    if (quantVideoLink) {
+                      await apiClient.submitValidationEvidence(teamId, 'quant_video', quantVideoLink);
+                    }
+                    
+                    // Compute quantitative score based on survey insights and response volume
+                    try {
+                      const scoreResult = await apiClient.computeQuantitativeScoreTeam(
+                        teamId, 
+                        quantitativeInsights, 
+                        parseInt(responseVolume) || 0
+                      );
+                      console.log('Quantitative score computed:', scoreResult);
+                      
+                      // Update the quantitative score state with the computed result
+                      if (scoreResult && (scoreResult as any).score) {
+                        setQuantitativeScore((scoreResult as any).score);
+                      }
+                    } catch (error) {
+                      console.error('Error computing quantitative score:', error);
+                    }
+                    
+                    // Mark quantitative as complete locally and server-side without unlocking next stage
+                    try { await apiClient.markValidationCompleted(teamId, { quantitative: true }); } catch {}
+                    setCompletedTiers(prev => prev.includes('quantitative') ? prev : [...prev, 'quantitative']);
+                    
+                    // Refresh the quantitative score to ensure it's displayed in the dashboard
+                    try {
+                      const refreshedScore = await apiClient.getQuantitativeScoreTeam(teamId);
+                      // Handle both response formats: data.score or score
+                      const score = (refreshedScore as any)?.data?.score || (refreshedScore as any)?.score || null;
+                      if (score) {
+                        setQuantitativeScore(score);
+                      }
+                    } catch (error) {
+                      console.error('Error refreshing quantitative score:', error);
+                    }
+                    
+                    setShowQuantSubmitModal(false);
+                    setShowSurvey(false);
+                    // Ensure we show the completed state instead of survey interface
+                    setShowSurvey(false);
+                  }
+                } catch (error) {
+                  console.error('Failed to submit quantitative validation:', error);
+                }
+              }}
+              disabled={!quantVideoLink}
+            >
+              Submit Validation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};

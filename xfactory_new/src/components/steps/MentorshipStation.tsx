@@ -513,3 +513,498 @@ export const MentorshipStation = ({
     </div>
   );
 };
+                      setProcessingRequestId(null); 
+                    } 
+                  }} disabled={processingRequestId === (selectedProposal?.id || null)}>
+                    {processingRequestId === (selectedProposal?.id || null) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept'}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={async () => { if (!selectedProposal) return; setProcessingRequestId(selectedProposal.id); try { await apiClient.respondMentorRequest(selectedProposal.id, 'decline'); setDetailOpen(false); setProposals(prev => prev.filter(p => p.id !== selectedProposal.id)); } finally { setProcessingRequestId(null); } }} disabled={processingRequestId === (selectedProposal?.id || null)}>Decline</Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>{config.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-start gap-4">
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={assignedMentor.photo_url} />
+                <AvatarFallback>{(mentorName || 'M').charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-lg">{mentorName}</div>
+                  {assignedMentor.is_verified ? <Badge variant="success">Verified</Badge> : null}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {mentorPosition && mentorCompany ? `${mentorPosition} @ ${mentorCompany}` : (mentorPosition || mentorCompany)}
+                </div>
+                <div className="text-sm text-muted-foreground">{mentorExpertise || assignedMentor.email}</div>
+                {mentorYears !== undefined && (
+                  <div className="text-xs text-muted-foreground mt-1">{mentorYears} years of experience</div>
+                )}
+              </div>
+              {mentorCalendly && (
+                <Button variant="outline" onClick={() => setCalOpen(true)}>Book Meeting</Button>
+              )}
+            </div>
+
+            {(mentorExperience || mentorIndustries.length > 0) && (
+              <div className="rounded-md border p-4 bg-muted/30">
+                {mentorExperience && (
+                  <div className="mb-2">
+                    <div className="text-xs text-muted-foreground mb-1">Experience</div>
+                    <div className="text-sm whitespace-pre-wrap">{mentorExperience}</div>
+                  </div>
+                )}
+                {mentorIndustries.length > 0 && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Industries</div>
+                    <div className="flex flex-wrap gap-2">
+                      {mentorIndustries.map((ind: string, i: number) => (
+                        <Badge key={i} variant="secondary">{ind}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+ 
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Session Notes</label>
+                <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={sessionNotes} onChange={(e) => setSessionNotes(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Action Items</label>
+                <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={actionItems} onChange={(e) => setActionItems(e.target.value)} />
+              </div>
+            </div>
+ 
+            <div>
+              <label className="text-sm text-muted-foreground">Feedback</label>
+              <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)} />
+            </div>
+          <div>
+            <label className="text-sm text-muted-foreground">Rate this session</label>
+            <div className="flex items-center gap-1 mt-1">
+              {[1,2,3,4,5].map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setRating(i)}
+                  aria-label={`Rate ${i} star${i>1?'s':''}`}
+                  className="p-1"
+                >
+                  <Star className={i <= rating ? 'h-5 w-5 text-yellow-500 fill-yellow-500' : 'h-5 w-5 text-muted-foreground'} />
+                </button>
+              ))}
+              <span className="text-xs text-muted-foreground ml-2">{rating}/5</span>
+            </div>
+          </div>
+ 
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" onClick={() => setConfirmDoneOpen(true)}>Mentorship Done</Button>
+              <Button onClick={handleSaveOnly} disabled={isSaving}>{isSaving ? 'Saving…' : 'Save Session'}</Button>
+              <Button variant="ghost" onClick={onBack}>Back</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+ 
+      {/* Confirm Mentorship Done */}
+      <AlertDialog open={confirmDoneOpen} onOpenChange={setConfirmDoneOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark mentorship as completed?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will complete the {sessionType === 'pre-mvp' ? 'Pre‑MVP' : 'Post‑MVP'} mentorship for your team and save your current session notes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmDoneOpen(false); handleComplete(); }}>Yes, complete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={calOpen} onOpenChange={setCalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Book a Meeting</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {mentorCalendly ? (
+              <div
+                className="calendly-inline-widget"
+                data-url={mentorCalendly}
+                style={{ minWidth: '320px', height: '700px' as any }}
+                ref={(el) => {
+                  if (!el) return;
+                  // Ensure script
+                  const existing = document.querySelector('script[src="https://assets.calendly.com/assets/external/widget.js"]') as HTMLScriptElement | null;
+                  const init = () => {
+                    const Calendly = (window as any).Calendly;
+                    if (Calendly && typeof Calendly.initInlineWidget === 'function') {
+                      el.innerHTML = '';
+                      Calendly.initInlineWidget({ url: mentorCalendly, parentElement: el });
+                    }
+                  };
+                  if (existing) { init(); } else {
+                    const s = document.createElement('script');
+                    s.src = 'https://assets.calendly.com/assets/external/widget.js';
+                    s.async = true;
+                    s.onload = () => init();
+                    document.body.appendChild(s);
+                  }
+                }}
+              ></div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No Calendly link available for this mentor.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+                      setProcessingRequestId(null); 
+                    } 
+                  }} disabled={processingRequestId === (selectedProposal?.id || null)}>
+                    {processingRequestId === (selectedProposal?.id || null) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept'}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={async () => { if (!selectedProposal) return; setProcessingRequestId(selectedProposal.id); try { await apiClient.respondMentorRequest(selectedProposal.id, 'decline'); setDetailOpen(false); setProposals(prev => prev.filter(p => p.id !== selectedProposal.id)); } finally { setProcessingRequestId(null); } }} disabled={processingRequestId === (selectedProposal?.id || null)}>Decline</Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>{config.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-start gap-4">
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={assignedMentor.photo_url} />
+                <AvatarFallback>{(mentorName || 'M').charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-lg">{mentorName}</div>
+                  {assignedMentor.is_verified ? <Badge variant="success">Verified</Badge> : null}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {mentorPosition && mentorCompany ? `${mentorPosition} @ ${mentorCompany}` : (mentorPosition || mentorCompany)}
+                </div>
+                <div className="text-sm text-muted-foreground">{mentorExpertise || assignedMentor.email}</div>
+                {mentorYears !== undefined && (
+                  <div className="text-xs text-muted-foreground mt-1">{mentorYears} years of experience</div>
+                )}
+              </div>
+              {mentorCalendly && (
+                <Button variant="outline" onClick={() => setCalOpen(true)}>Book Meeting</Button>
+              )}
+            </div>
+
+            {(mentorExperience || mentorIndustries.length > 0) && (
+              <div className="rounded-md border p-4 bg-muted/30">
+                {mentorExperience && (
+                  <div className="mb-2">
+                    <div className="text-xs text-muted-foreground mb-1">Experience</div>
+                    <div className="text-sm whitespace-pre-wrap">{mentorExperience}</div>
+                  </div>
+                )}
+                {mentorIndustries.length > 0 && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Industries</div>
+                    <div className="flex flex-wrap gap-2">
+                      {mentorIndustries.map((ind: string, i: number) => (
+                        <Badge key={i} variant="secondary">{ind}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+ 
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Session Notes</label>
+                <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={sessionNotes} onChange={(e) => setSessionNotes(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Action Items</label>
+                <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={actionItems} onChange={(e) => setActionItems(e.target.value)} />
+              </div>
+            </div>
+ 
+            <div>
+              <label className="text-sm text-muted-foreground">Feedback</label>
+              <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)} />
+            </div>
+          <div>
+            <label className="text-sm text-muted-foreground">Rate this session</label>
+            <div className="flex items-center gap-1 mt-1">
+              {[1,2,3,4,5].map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setRating(i)}
+                  aria-label={`Rate ${i} star${i>1?'s':''}`}
+                  className="p-1"
+                >
+                  <Star className={i <= rating ? 'h-5 w-5 text-yellow-500 fill-yellow-500' : 'h-5 w-5 text-muted-foreground'} />
+                </button>
+              ))}
+              <span className="text-xs text-muted-foreground ml-2">{rating}/5</span>
+            </div>
+          </div>
+ 
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" onClick={() => setConfirmDoneOpen(true)}>Mentorship Done</Button>
+              <Button onClick={handleSaveOnly} disabled={isSaving}>{isSaving ? 'Saving…' : 'Save Session'}</Button>
+              <Button variant="ghost" onClick={onBack}>Back</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+ 
+      {/* Confirm Mentorship Done */}
+      <AlertDialog open={confirmDoneOpen} onOpenChange={setConfirmDoneOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark mentorship as completed?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will complete the {sessionType === 'pre-mvp' ? 'Pre‑MVP' : 'Post‑MVP'} mentorship for your team and save your current session notes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmDoneOpen(false); handleComplete(); }}>Yes, complete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={calOpen} onOpenChange={setCalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Book a Meeting</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {mentorCalendly ? (
+              <div
+                className="calendly-inline-widget"
+                data-url={mentorCalendly}
+                style={{ minWidth: '320px', height: '700px' as any }}
+                ref={(el) => {
+                  if (!el) return;
+                  // Ensure script
+                  const existing = document.querySelector('script[src="https://assets.calendly.com/assets/external/widget.js"]') as HTMLScriptElement | null;
+                  const init = () => {
+                    const Calendly = (window as any).Calendly;
+                    if (Calendly && typeof Calendly.initInlineWidget === 'function') {
+                      el.innerHTML = '';
+                      Calendly.initInlineWidget({ url: mentorCalendly, parentElement: el });
+                    }
+                  };
+                  if (existing) { init(); } else {
+                    const s = document.createElement('script');
+                    s.src = 'https://assets.calendly.com/assets/external/widget.js';
+                    s.async = true;
+                    s.onload = () => init();
+                    document.body.appendChild(s);
+                  }
+                }}
+              ></div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No Calendly link available for this mentor.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+                      setProcessingRequestId(null); 
+                    } 
+                  }} disabled={processingRequestId === (selectedProposal?.id || null)}>
+                    {processingRequestId === (selectedProposal?.id || null) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept'}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={async () => { if (!selectedProposal) return; setProcessingRequestId(selectedProposal.id); try { await apiClient.respondMentorRequest(selectedProposal.id, 'decline'); setDetailOpen(false); setProposals(prev => prev.filter(p => p.id !== selectedProposal.id)); } finally { setProcessingRequestId(null); } }} disabled={processingRequestId === (selectedProposal?.id || null)}>Decline</Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>{config.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-start gap-4">
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={assignedMentor.photo_url} />
+                <AvatarFallback>{(mentorName || 'M').charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-lg">{mentorName}</div>
+                  {assignedMentor.is_verified ? <Badge variant="success">Verified</Badge> : null}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {mentorPosition && mentorCompany ? `${mentorPosition} @ ${mentorCompany}` : (mentorPosition || mentorCompany)}
+                </div>
+                <div className="text-sm text-muted-foreground">{mentorExpertise || assignedMentor.email}</div>
+                {mentorYears !== undefined && (
+                  <div className="text-xs text-muted-foreground mt-1">{mentorYears} years of experience</div>
+                )}
+              </div>
+              {mentorCalendly && (
+                <Button variant="outline" onClick={() => setCalOpen(true)}>Book Meeting</Button>
+              )}
+            </div>
+
+            {(mentorExperience || mentorIndustries.length > 0) && (
+              <div className="rounded-md border p-4 bg-muted/30">
+                {mentorExperience && (
+                  <div className="mb-2">
+                    <div className="text-xs text-muted-foreground mb-1">Experience</div>
+                    <div className="text-sm whitespace-pre-wrap">{mentorExperience}</div>
+                  </div>
+                )}
+                {mentorIndustries.length > 0 && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Industries</div>
+                    <div className="flex flex-wrap gap-2">
+                      {mentorIndustries.map((ind: string, i: number) => (
+                        <Badge key={i} variant="secondary">{ind}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+ 
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Session Notes</label>
+                <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={sessionNotes} onChange={(e) => setSessionNotes(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Action Items</label>
+                <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={actionItems} onChange={(e) => setActionItems(e.target.value)} />
+              </div>
+            </div>
+ 
+            <div>
+              <label className="text-sm text-muted-foreground">Feedback</label>
+              <textarea className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/40" rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)} />
+            </div>
+          <div>
+            <label className="text-sm text-muted-foreground">Rate this session</label>
+            <div className="flex items-center gap-1 mt-1">
+              {[1,2,3,4,5].map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setRating(i)}
+                  aria-label={`Rate ${i} star${i>1?'s':''}`}
+                  className="p-1"
+                >
+                  <Star className={i <= rating ? 'h-5 w-5 text-yellow-500 fill-yellow-500' : 'h-5 w-5 text-muted-foreground'} />
+                </button>
+              ))}
+              <span className="text-xs text-muted-foreground ml-2">{rating}/5</span>
+            </div>
+          </div>
+ 
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" onClick={() => setConfirmDoneOpen(true)}>Mentorship Done</Button>
+              <Button onClick={handleSaveOnly} disabled={isSaving}>{isSaving ? 'Saving…' : 'Save Session'}</Button>
+              <Button variant="ghost" onClick={onBack}>Back</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+ 
+      {/* Confirm Mentorship Done */}
+      <AlertDialog open={confirmDoneOpen} onOpenChange={setConfirmDoneOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark mentorship as completed?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will complete the {sessionType === 'pre-mvp' ? 'Pre‑MVP' : 'Post‑MVP'} mentorship for your team and save your current session notes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmDoneOpen(false); handleComplete(); }}>Yes, complete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={calOpen} onOpenChange={setCalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Book a Meeting</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {mentorCalendly ? (
+              <div
+                className="calendly-inline-widget"
+                data-url={mentorCalendly}
+                style={{ minWidth: '320px', height: '700px' as any }}
+                ref={(el) => {
+                  if (!el) return;
+                  // Ensure script
+                  const existing = document.querySelector('script[src="https://assets.calendly.com/assets/external/widget.js"]') as HTMLScriptElement | null;
+                  const init = () => {
+                    const Calendly = (window as any).Calendly;
+                    if (Calendly && typeof Calendly.initInlineWidget === 'function') {
+                      el.innerHTML = '';
+                      Calendly.initInlineWidget({ url: mentorCalendly, parentElement: el });
+                    }
+                  };
+                  if (existing) { init(); } else {
+                    const s = document.createElement('script');
+                    s.src = 'https://assets.calendly.com/assets/external/widget.js';
+                    s.async = true;
+                    s.onload = () => init();
+                    document.body.appendChild(s);
+                  }
+                }}
+              ></div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No Calendly link available for this mentor.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
