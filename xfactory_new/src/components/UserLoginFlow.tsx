@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Factory, LogIn, ArrowLeft, User, Settings, LogOut } from "lucide-react";
+import { Factory, LogIn, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
 
@@ -55,8 +54,8 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Factory Station Header */}
-      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full relative">
+      {/* Factory Header */}
+      <div className="border-b border-border bg-gradient-conveyor relative">
         {/* Logos positioned at absolute left edge */}
         <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
           <img 
@@ -98,23 +97,9 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
             variant="ghost"
             size="icon"
             className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <User className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
             onClick={onBack}
           >
-            <LogOut className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
 
@@ -132,7 +117,7 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-md mx-auto px-6 py-12">
         <Card className="shadow-industrial">
@@ -142,7 +127,7 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
             </div>
             <CardTitle className="text-2xl">User Login</CardTitle>
             <CardDescription>
-              Access your Ivy Factory dashboard
+              Access your xFactory dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>

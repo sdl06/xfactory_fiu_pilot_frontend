@@ -25,9 +25,7 @@ import {
   Lock as LockIcon,
   Unlock as UnlockIcon,
   RefreshCw,
-  ArrowLeft,
-  User,
-  Settings
+  ArrowLeft
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -2313,20 +2311,6 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             variant="ghost"
             size="icon"
             className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <User className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
             onClick={onLogout}
           >
             <LogOut className="h-5 w-5" />
@@ -2341,8 +2325,8 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                 <Factory className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Ivy Factory Admin Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Manage student access and permissions</p>
+                <h1 className="text-xl font-bold text-white">Ivy Factory Admin Dashboard</h1>
+                <p className="text-sm text-white/80">Manage student access and permissions</p>
               </div>
             </div>
           </div>

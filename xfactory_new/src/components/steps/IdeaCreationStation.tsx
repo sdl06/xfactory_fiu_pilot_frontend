@@ -27,9 +27,7 @@ import {
   Download,
   RefreshCw,
   CheckCircle,
-  Settings,
-  User,
-  LogOut
+  Settings
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { FactorAI } from "../FactorAI";
@@ -996,13 +994,6 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
             size="icon"
             className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
           >
-            <User className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
             <Settings className="h-5 w-5" />
           </Button>
           <Button
@@ -1011,7 +1002,7 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
             className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
             onClick={onBack}
           >
-            <LogOut className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
 

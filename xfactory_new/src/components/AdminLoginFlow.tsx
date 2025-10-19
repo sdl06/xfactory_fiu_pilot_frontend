@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Factory, LogIn, Loader2, ArrowLeft, User, Settings, LogOut } from "lucide-react";
+import { Shield, Factory, LogIn, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 
@@ -111,23 +111,9 @@ export const AdminLoginFlow = ({ onLogin, onBack }: AdminLoginFlowProps) => {
             variant="ghost"
             size="icon"
             className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <User className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
             onClick={onBack}
           >
-            <LogOut className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
 
@@ -139,8 +125,8 @@ export const AdminLoginFlow = ({ onLogin, onBack }: AdminLoginFlowProps) => {
                 <Factory className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Ivy Factory Admin</h1>
-                <p className="text-sm text-muted-foreground">Administrator Portal</p>
+                <h1 className="text-xl font-bold text-white">Ivy Factory Admin</h1>
+                <p className="text-sm text-white/80">Administrator Portal</p>
               </div>
             </div>
           </div>

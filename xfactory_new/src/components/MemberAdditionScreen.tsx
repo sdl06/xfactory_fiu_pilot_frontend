@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Copy, Clock, CheckCircle, XCircle, User, Mail, MessageSquare, UserPlus, Loader2, Plus, Trash2, Settings, Factory, LogOut } from "lucide-react";
+import { Users, Copy, Clock, CheckCircle, XCircle, User, Mail, MessageSquare, UserPlus, Loader2, Plus, Trash2, Settings, Factory, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -431,29 +431,15 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
             variant="ghost"
             size="icon"
             className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <User className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
             onClick={onBack}
           >
-            <LogOut className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-center">
-            {/* Center: Section name and icon */}
+        <div className="w-full px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
                 <Users className="h-6 w-6 text-primary-foreground" />
@@ -464,10 +450,12 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
               </div>
             </div>
             
-            {/* Timer positioned to the right of center */}
-            <div className="absolute right-1/4 flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{timeRemaining}</span>
+            {/* Centered timer */}
+            <div className="flex-1 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">{timeRemaining}</span>
+              </div>
             </div>
           </div>
         </div>
