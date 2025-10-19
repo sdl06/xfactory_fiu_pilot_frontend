@@ -697,4 +697,3 @@ export const LegalStation = ({
       </div>
     </div>
   );
-};

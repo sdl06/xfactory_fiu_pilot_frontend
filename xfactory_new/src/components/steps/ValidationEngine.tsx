@@ -370,6 +370,67 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     loadQuantitativeInsights();
   }, []);
 
+  // Auto-generate + poll Deep Research; then fetch report, score, and populate bullets
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const teamIdStr = localStorage.getItem('xfactoryTeamId');
+        const teamId = teamIdStr ? Number(teamIdStr) : null;
+        if (!teamId) return;
+        if (deepResearch) return; // already loaded
+
+        // Ensure generation is started (safe to POST; backend guards latest idea)
+        try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}
+
+        // Poll status until completed or timeout (~2 minutes)
+        let attempts = 0;
+        while (attempts < 40) {
+          try {
+            const st = await apiClient.get(`/validation/teams/${teamId}/deep-research/status/`);
+            const status = (st as any)?.data?.status;
+            if (status === 'completed') break;
+          } catch {}
+          await new Promise(r => setTimeout(r, 3000));
+          attempts += 1;
+        }
+
+        // Fetch final report
+        try {
+          const rep = await apiClient.get(`/validation/teams/${teamId}/deep-research/`);
+          const report = (rep as any)?.data?.report;
+          if (report) {
+            setDeepResearch(report);
+            // Compute + fetch secondary score if missing
+            try { await apiClient.computeSecondaryScoreTeam(teamId); } catch {}
+            try {
+              const sec = await apiClient.getSecondaryScoreTeam(teamId);
+              const s: any = (sec as any)?.data?.score;
+              if (s && typeof s.final_score_20 === 'number') {
+                const sc = Number(s.final_score_20);
+                setSecondaryScore20(sc);
+                // Populate a secondary ValidationScore entry if absent
+                setValidationScores(prev => {
+                  if (prev.some(v => v.tier === 'secondary')) return prev;
+                  const bullets = Array.isArray(report?.key_findings) && report.key_findings.length > 0
+                    ? report.key_findings
+                    : (Array.isArray(report?.market_insights) ? report.market_insights : []);
+                  const status: any = sc >= 17 ? 'excellent' : sc >= 14 ? 'good' : sc >= 11 ? 'fair' : 'poor';
+                  return [...prev, { tier: 'secondary', score: sc, status, insights: bullets.slice(0, 4), data: { report, score: s } }];
+                });
+                setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
+              }
+            } catch {}
+          }
+        } catch (e) {
+          console.error('Failed to fetch deep research report', e);
+        }
+      } catch (e) {
+        console.error('Deep research generation failed', e);
+      }
+    };
+    run();
+  }, [currentTier, deepResearch]);
+
   // Save quantitative insights (similar to focus group insights)
   const saveQuantitativeInsights = async () => {
     const teamIdStr = localStorage.getItem('xfactoryTeamId');
@@ -966,6 +1027,10 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       setCompletedTiers(prev => [...prev, 'secondary']);
       // Mark backend team completion for secondary
       try { await apiClient.markValidationCompleted(teamId, { secondary: true }); } catch {}
+
+      // Auto-open results after first generation completes
+      setShowValidationResults(true);
+      setIsReportExpanded(true);
     } catch (e: any) {
       console.error('Secondary research failed', e);
     } finally {

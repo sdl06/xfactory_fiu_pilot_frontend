@@ -2373,7 +2373,7 @@ user problems: ${probsLine}`;
                             
                             <CardHeader className="pb-2">
                               <div className="flex items-center justify-between">
-                                <Badge variant="secondary" className="w-fit text-xs">{mockup.type}</Badge>
+                              <Badge variant="secondary" className="w-fit text-xs">{mockup.type}</Badge>
                                 {mockup.regeneration_round > 0 && (
                                   <Badge variant="outline" className="text-xs">
                                     Round {mockup.regeneration_round}
@@ -2419,7 +2419,7 @@ user problems: ${probsLine}`;
                                       placeholder="Edit the image prompt..."
                                     />
                                   ) : (
-                                    <div className="whitespace-pre-wrap break-words">{mockup.prompt}</div>
+                                  <div className="whitespace-pre-wrap break-words">{mockup.prompt}</div>
                                   )}
                                 </div>
                               )}
