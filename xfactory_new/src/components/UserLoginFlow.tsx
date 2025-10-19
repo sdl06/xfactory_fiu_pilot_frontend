@@ -65,7 +65,7 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
                 <Factory className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">xFactory</h1>
+                <h1 className="text-xl font-bold text-white">Ivy Factory</h1>
                 <p className="text-sm text-white/80">User Portal</p>
               </div>
             </div>
