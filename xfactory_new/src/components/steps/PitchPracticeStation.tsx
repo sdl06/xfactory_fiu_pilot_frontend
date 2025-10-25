@@ -451,11 +451,36 @@ export const PitchPracticeStation = ({
   };
 
   const handleGeneratePresentation = async () => {
-    setIsGenerating(true);
-    // Simulate loading time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsGenerating(false);
-    setGeneratedPDF(true);
+    try {
+      setIsGenerating(true);
+      const status = await apiClient.get('/team-formation/status/');
+      const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+      if (!teamId) { setIsGenerating(false); return; }
+      const enqueue = await apiClient.enqueueGammaTeam(teamId);
+      if ((enqueue as any)?.status === 202 || (enqueue as any)?.status === 200) {
+        // Start polling for latest PDF URL
+        const start = Date.now();
+        const timeoutMs = 6 * 60 * 1000; // 6 minutes
+        const pollDelay = async (ms: number) => new Promise(r => setTimeout(r, ms));
+        let delay = 4000;
+        while (Date.now() - start < timeoutMs) {
+          const latest = await apiClient.getLatestGammaTeam(teamId);
+          const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
+          if (url) {
+            // Open in new tab and mark as generated
+            try { window.open(url, '_blank'); } catch {}
+            setGeneratedPDF(true);
+            break;
+          }
+          await pollDelay(delay);
+          delay = Math.min(Math.floor(delay * 1.5), 15000);
+        }
+      }
+    } catch (e) {
+      console.error('Gamma enqueue/poll failed:', e);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const nextSlide = () => {

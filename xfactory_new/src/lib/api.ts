@@ -589,6 +589,14 @@ class ApiClient {
     return this.get(`/pitch-deck/teams/${teamId}/submission/`); 
   }
 
+  // Pitch Deck: Gamma queue (team-scoped, production)
+  async enqueueGammaTeam(teamId: number) {
+    return this.post(`/pitch-deck/teams/${teamId}/gamma/enqueue/`, {});
+  }
+  async getLatestGammaTeam(teamId: number) {
+    return this.get(`/pitch-deck/teams/${teamId}/gamma/latest/`);
+  }
+
   // Marketing (team-scoped)
   async generateMarketingTeam(teamId: number) {
     return this.post(`/marketing/teams/${teamId}/generate/`, {});
