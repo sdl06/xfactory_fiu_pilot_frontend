@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Lightbulb, FlaskConical, UserCheck, Building, Milestone, HelpCircle, Heart, DollarSign, FileText, Loader2, Download, X, User, Settings, LogOut } from "lucide-react";
 import { StationFlowManager } from "@/lib/stationFlow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiClient } from "@/lib/api";
+import { apiClient, getGammaPdfUrlTeam } from "@/lib/api";
 import InfoButton from "@/components/info-button";
 
 interface PitchPracticeStationProps {
@@ -803,10 +803,38 @@ export const PitchPracticeStation = ({
                 </div>
               </div>
             </div>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
-            </Button>
+            <div className="space-y-4">
+              <Button className="bg-primary hover:bg-primary/90" onClick={async () => {
+                try {
+                  const status = await apiClient.get('/team-formation/status/');
+                  const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+                  if (!teamId) return;
+                  const url = getGammaPdfUrlTeam(teamId);
+                  window.open(url, '_blank');
+                } catch {}
+              }}>
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </Button>
+              {/* Inline viewer */}
+              <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
+                <iframe
+                  title="Pitch Deck PDF"
+                  src={(() => {
+                    try {
+                      const sid = localStorage.getItem('xfactoryTeamId');
+                      const teamId = sid ? Number(sid) : undefined;
+                      if (!teamId) return undefined as any;
+                      return getGammaPdfUrlTeam(teamId);
+                    } catch {
+                      return undefined as any;
+                    }
+                  })()}
+                  className="w-full h-full"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </div>
           </div>
         )}
 

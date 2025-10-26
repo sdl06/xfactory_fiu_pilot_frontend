@@ -1010,6 +1010,9 @@ class ApiClient {
 export const apiClient = new ApiClient();
 export default apiClient;
 
+// Helper: Build team PDF serve URL (iframe-friendly)
+export const getGammaPdfUrlTeam = (teamId: number): string => `${API_ORIGIN}/api/pitch-deck/teams/${teamId}/gamma/pdf/`;
+
 
 
 
