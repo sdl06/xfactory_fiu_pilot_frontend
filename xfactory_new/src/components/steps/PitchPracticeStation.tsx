@@ -42,6 +42,23 @@ export const PitchPracticeStation = ({
   const [videoLink, setVideoLink] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<number | null>(null);
+  const [pdfNonce, setPdfNonce] = useState<number>(0);
+
+  const waitForPdfAccessible = async (url: string, timeoutMs = 120000) => {
+    const start = Date.now();
+    const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+    let backoff = 1500;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await fetch(`${url}?cb=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('pdf')) return true;
+      } catch {}
+      await delay(backoff);
+      backoff = Math.min(backoff * 1.5, 8000);
+    }
+    return false;
+  };
 
   // COMMENTED OUT: Load quantitative survey data for context (contains GET requests)
   const loadQuantitativeData = async (teamId: number) => {
@@ -336,8 +353,12 @@ export const PitchPracticeStation = ({
           const pdfCheck = await apiClient.getLatestGammaTeam(tId);
           const pdfUrlData = (pdfCheck as any)?.data;
           if (pdfUrlData?.pdf_url) {
-            setPdfUrl(pdfUrlData.pdf_url);
-            setGeneratedPDF(true);
+            const ok = await waitForPdfAccessible(pdfUrlData.pdf_url);
+            if (ok) {
+              setPdfUrl(pdfUrlData.pdf_url);
+              setPdfNonce(Date.now());
+              setGeneratedPDF(true);
+            }
           }
         } catch (e) {
           // No existing PDF, that's fine
@@ -490,9 +511,13 @@ export const PitchPracticeStation = ({
           const latest = await apiClient.getLatestGammaTeam(teamId);
           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
           if (url) {
-            setGeneratedPDF(true);
-            setPdfUrl(url);
-            break;
+            const ok = await waitForPdfAccessible(url);
+            if (ok) {
+              setPdfUrl(url);
+              setPdfNonce(Date.now());
+              setGeneratedPDF(true);
+              break;
+            }
           }
           await pollDelay(delay);
           delay = Math.min(Math.floor(delay * 1.5), 15000);
@@ -860,9 +885,13 @@ export const PitchPracticeStation = ({
                           const latest = await apiClient.getLatestGammaTeam(tId);
                           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
                           if (url && url !== pdfUrl) {
-                            setGeneratedPDF(true);
-                            setPdfUrl(url);
-                            break;
+                            const ok = await waitForPdfAccessible(url);
+                            if (ok) {
+                              setPdfUrl(url);
+                              setPdfNonce(Date.now());
+                              setGeneratedPDF(true);
+                              break;
+                            }
                           }
                           delay = Math.min(Math.floor(delay * 1.5), 15000);
                         }
@@ -876,9 +905,13 @@ export const PitchPracticeStation = ({
                           const latest = await apiClient.getLatestGammaTeam(tId);
                           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
                           if (url && url !== pdfUrl) {
-                            setGeneratedPDF(true);
-                            setPdfUrl(url);
-                            break;
+                            const ok = await waitForPdfAccessible(url);
+                            if (ok) {
+                              setPdfUrl(url);
+                              setPdfNonce(Date.now());
+                              setGeneratedPDF(true);
+                              break;
+                            }
                           }
                           await pollDelay(delay);
                           delay = Math.min(Math.floor(delay * 1.5), 15000);
@@ -909,7 +942,7 @@ export const PitchPracticeStation = ({
                 <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
                   <iframe
                     title="Pitch Deck PDF"
-                    src={getGammaPdfUrlTeam(teamId)}
+                    src={`${getGammaPdfUrlTeam(teamId)}?cb=${pdfNonce}`}
                     className="w-full h-full"
                     style={{ border: 'none' }}
                   />
