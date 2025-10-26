@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Lightbulb, FlaskConical, UserCheck, Building, Milestone, HelpCircle, Heart, DollarSign, FileText, Loader2, Download, X } from "lucide-react";
+import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Lightbulb, FlaskConical, UserCheck, Building, Milestone, HelpCircle, Heart, DollarSign, FileText, Loader2, Download, X, User, Settings, LogOut } from "lucide-react";
 import { StationFlowManager } from "@/lib/stationFlow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient } from "@/lib/api";
@@ -532,34 +532,50 @@ export const PitchPracticeStation = ({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Purple Header similar to validation */}
+      {/* Station Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white">
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-6xl mx-auto px-6 py-4 relative">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={onBack} className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
+            {/* Left Section - Logos (Absolute) */}
+            <div className="absolute left-6 flex items-center gap-4">
+              <img src="/logos/prov_logo_white.png" alt="xFactory" className="h-8" />
+              <img src="/logos/fiualonetransreverse.png" alt="FIU" className="h-8" />
+            </div>
+
+            {/* Middle Section - Station Info (Bounded Left) */}
+            <div className="flex items-center gap-3 ml-32">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <TestTube className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <h1 className="text-3xl font-bold flex items-center gap-3">
-                  <TestTube className="h-8 w-8" />
+                <h1 className="text-xl font-bold text-white">
                   {(stationId ?? Number(localStorage.getItem('xfactoryCurrentStation') || '0')) === 4 ? 'Mentor Pitch Deck' : 'Pitch Practice Station'}
                 </h1>
-                <p className="text-purple-100 mt-1">
+                <p className="text-sm text-purple-100">
                   {(stationId ?? Number(localStorage.getItem('xfactoryCurrentStation') || '0')) === 4
                     ? 'Prepare a concise mentor-facing deck with targeted feedback prompts'
                     : 'Perfect your investor pitch with marketing-aware guidelines and AI coaching'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Right Section - User Controls (Absolute) */}
+            <div className="absolute right-6 flex items-center gap-2">
               <Badge variant="outline" className="text-sm bg-white/10 border-white/20 text-white">
                 {(() => {
                   const sid = stationId ?? Number(localStorage.getItem('xfactoryCurrentStation') || '0');
                   return sid === 4 ? 'Station 4/15' : sid === 11 ? 'Station 11/15' : `Station ${sid || '?'} / 15`;
                 })()}
               </Badge>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10">
+                <User className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10" onClick={onBack}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
