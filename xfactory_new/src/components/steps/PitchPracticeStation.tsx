@@ -836,11 +836,60 @@ export const PitchPracticeStation = ({
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>
-                <Button variant="outline" onClick={() => {
+                <Button variant="outline" onClick={async () => {
                   setIsGenerating(true);
                   setGeneratedPDF(false);
                   setPdfUrl(null);
-                  handleGeneratePresentation();
+                  // Force enqueue a NEW job (ignore existing)
+                  try {
+                    const status = await apiClient.get('/team-formation/status/');
+                    const tId = (status as any)?.data?.current_team?.id as number | undefined;
+                    if (!tId) { setIsGenerating(false); return; }
+                    // Manually force a new job by enqueuing with force_regenerate=true
+                    const enqueue = await apiClient.enqueueGammaTeam(tId, true);
+                    if ((enqueue as any)?.status === 202 || (enqueue as any)?.status === 200) {
+                      // If it's mode: "existing", reject and wait for new generation
+                      if ((enqueue as any)?.data?.mode === 'existing') {
+                        // Keep polling until NEW job completes
+                        const start = Date.now();
+                        const timeoutMs = 6 * 60 * 1000;
+                        const pollDelay = async (ms: number) => new Promise(r => setTimeout(r, ms));
+                        let delay = 4000;
+                        while (Date.now() - start < timeoutMs) {
+                          await pollDelay(delay);
+                          const latest = await apiClient.getLatestGammaTeam(tId);
+                          const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
+                          if (url && url !== pdfUrl) {
+                            setGeneratedPDF(true);
+                            setPdfUrl(url);
+                            break;
+                          }
+                          delay = Math.min(Math.floor(delay * 1.5), 15000);
+                        }
+                      } else {
+                        // New job started, poll for it
+                        const start = Date.now();
+                        const timeoutMs = 6 * 60 * 1000;
+                        const pollDelay = async (ms: number) => new Promise(r => setTimeout(r, ms));
+                        let delay = 4000;
+                        while (Date.now() - start < timeoutMs) {
+                          const latest = await apiClient.getLatestGammaTeam(tId);
+                          const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
+                          if (url && url !== pdfUrl) {
+                            setGeneratedPDF(true);
+                            setPdfUrl(url);
+                            break;
+                          }
+                          await pollDelay(delay);
+                          delay = Math.min(Math.floor(delay * 1.5), 15000);
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Regeneration failed:', e);
+                  } finally {
+                    setIsGenerating(false);
+                  }
                 }} disabled={isGenerating}>
                   {isGenerating ? (
                     <>

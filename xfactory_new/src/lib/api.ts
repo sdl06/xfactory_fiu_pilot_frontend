@@ -590,8 +590,8 @@ class ApiClient {
   }
 
   // Pitch Deck: Gamma queue (team-scoped, production)
-  async enqueueGammaTeam(teamId: number) {
-    return this.post(`/pitch-deck/teams/${teamId}/gamma/enqueue/`, {});
+  async enqueueGammaTeam(teamId: number, forceRegenerate = false) {
+    return this.post(`/pitch-deck/teams/${teamId}/gamma/enqueue/`, { force_regenerate: forceRegenerate });
   }
   async getLatestGammaTeam(teamId: number) {
     return this.get(`/pitch-deck/teams/${teamId}/gamma/latest/`);
