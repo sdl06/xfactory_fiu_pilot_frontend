@@ -40,6 +40,7 @@ export const PitchPracticeStation = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pdfLink, setPdfLink] = useState('');
   const [videoLink, setVideoLink] = useState('');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   // COMMENTED OUT: Load quantitative survey data for context (contains GET requests)
   const loadQuantitativeData = async (teamId: number) => {
@@ -470,6 +471,7 @@ export const PitchPracticeStation = ({
             // Open in new tab and mark as generated
             try { window.open(url, '_blank'); } catch {}
             setGeneratedPDF(true);
+            setPdfUrl(url);
             break;
           }
           await pollDelay(delay);
@@ -804,36 +806,25 @@ export const PitchPracticeStation = ({
               </div>
             </div>
             <div className="space-y-4">
-              <Button className="bg-primary hover:bg-primary/90" onClick={async () => {
-                try {
-                  const status = await apiClient.get('/team-formation/status/');
-                  const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-                  if (!teamId) return;
-                  const url = getGammaPdfUrlTeam(teamId);
-                  window.open(url, '_blank');
-                } catch {}
-              }}>
+              <Button className="bg-primary hover:bg-primary/90" onClick={() => {
+                if (pdfUrl) {
+                  window.open(pdfUrl, '_blank');
+                }
+              }} disabled={!pdfUrl}>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>
               {/* Inline viewer */}
-              <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
-                <iframe
-                  title="Pitch Deck PDF"
-                  src={(() => {
-                    try {
-                      const sid = localStorage.getItem('xfactoryTeamId');
-                      const teamId = sid ? Number(sid) : undefined;
-                      if (!teamId) return undefined as any;
-                      return getGammaPdfUrlTeam(teamId);
-                    } catch {
-                      return undefined as any;
-                    }
-                  })()}
-                  className="w-full h-full"
-                  style={{ border: 'none' }}
-                />
-              </div>
+              {pdfUrl && (
+                <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
+                  <iframe
+                    title="Pitch Deck PDF"
+                    src={pdfUrl}
+                    className="w-full h-full"
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
