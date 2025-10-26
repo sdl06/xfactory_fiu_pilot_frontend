@@ -331,6 +331,18 @@ export const PitchPracticeStation = ({
         // Load submission data
         await loadSubmissionData(tId);
         
+        // Check for existing PDF presentation
+        try {
+          const pdfCheck = await apiClient.getLatestGammaTeam(tId);
+          const pdfUrlData = (pdfCheck as any)?.data;
+          if (pdfUrlData?.pdf_url) {
+            setPdfUrl(pdfUrlData.pdf_url);
+            setGeneratedPDF(true);
+          }
+        } catch (e) {
+          // No existing PDF, that's fine
+        }
+        
         // COMMENTED OUT: Load quantitative data for context (contains GET requests)
         // await loadQuantitativeData(teamId);
         
@@ -462,7 +474,14 @@ export const PitchPracticeStation = ({
       if (!teamId) { setIsGenerating(false); return; }
       const enqueue = await apiClient.enqueueGammaTeam(teamId);
       if ((enqueue as any)?.status === 202 || (enqueue as any)?.status === 200) {
-        // Start polling for latest PDF URL
+        // If it's mode: "existing", use the PDF URL immediately
+        if ((enqueue as any)?.data?.mode === 'existing' && (enqueue as any)?.data?.pdf_url) {
+          setGeneratedPDF(true);
+          setPdfUrl((enqueue as any).data.pdf_url);
+          setIsGenerating(false);
+          return;
+        }
+        // Start polling for latest PDF URL if it's a new generation
         const start = Date.now();
         const timeoutMs = 6 * 60 * 1000; // 6 minutes
         const pollDelay = async (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -471,8 +490,6 @@ export const PitchPracticeStation = ({
           const latest = await apiClient.getLatestGammaTeam(teamId);
           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
           if (url) {
-            // Open in new tab and mark as generated
-            try { window.open(url, '_blank'); } catch {}
             setGeneratedPDF(true);
             setPdfUrl(url);
             break;
