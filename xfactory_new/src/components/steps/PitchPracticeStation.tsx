@@ -41,6 +41,7 @@ export const PitchPracticeStation = ({
   const [pdfLink, setPdfLink] = useState('');
   const [videoLink, setVideoLink] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [teamId, setTeamId] = useState<number | null>(null);
 
   // COMMENTED OUT: Load quantitative survey data for context (contains GET requests)
   const loadQuantitativeData = async (teamId: number) => {
@@ -284,8 +285,10 @@ export const PitchPracticeStation = ({
       try {
         // Resolve current team id
         const status = await apiClient.get('/team-formation/status/');
-        const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-        if (!teamId) return;
+        const tId = (status as any)?.data?.current_team?.id as number | undefined;
+        if (!tId) return;
+        try { localStorage.setItem('xfactoryTeamId', String(tId)); } catch {}
+        setTeamId(tId);
 
         // COMMENTED OUT: Guidelines GET request
         // const genGuidelines = (async () => {
@@ -326,7 +329,7 @@ export const PitchPracticeStation = ({
         if (cRes) setCoaching(cRes?.coaching || cRes);
         
         // Load submission data
-        await loadSubmissionData(teamId);
+        await loadSubmissionData(tId);
         
         // COMMENTED OUT: Load quantitative data for context (contains GET requests)
         // await loadQuantitativeData(teamId);
@@ -807,19 +810,20 @@ export const PitchPracticeStation = ({
             </div>
             <div className="space-y-4">
               <Button className="bg-primary hover:bg-primary/90" onClick={() => {
-                if (pdfUrl) {
-                  window.open(pdfUrl, '_blank');
+                if (pdfUrl && teamId) {
+                  const serveUrl = getGammaPdfUrlTeam(teamId);
+                  window.open(serveUrl, '_blank');
                 }
-              }} disabled={!pdfUrl}>
+              }} disabled={!pdfUrl || !teamId}>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>
               {/* Inline viewer */}
-              {pdfUrl && (
+              {pdfUrl && teamId && (
                 <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
                   <iframe
                     title="Pitch Deck PDF"
-                    src={pdfUrl}
+                    src={getGammaPdfUrlTeam(teamId)}
                     className="w-full h-full"
                     style={{ border: 'none' }}
                   />
