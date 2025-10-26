@@ -826,15 +826,35 @@ export const PitchPracticeStation = ({
               </div>
             </div>
             <div className="space-y-4">
-              <Button className="bg-primary hover:bg-primary/90" onClick={() => {
-                if (pdfUrl && teamId) {
-                  const serveUrl = getGammaPdfUrlTeam(teamId);
-                  window.open(serveUrl, '_blank');
-                }
-              }} disabled={!pdfUrl || !teamId}>
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
+              <div className="flex gap-3 justify-center">
+                <Button className="bg-primary hover:bg-primary/90" onClick={() => {
+                  if (pdfUrl && teamId) {
+                    const serveUrl = getGammaPdfUrlTeam(teamId);
+                    window.open(serveUrl, '_blank');
+                  }
+                }} disabled={!pdfUrl || !teamId}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  setIsGenerating(true);
+                  setGeneratedPDF(false);
+                  setPdfUrl(null);
+                  handleGeneratePresentation();
+                }} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Regenerating...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Regenerate
+                    </>
+                  )}
+                </Button>
+              </div>
               {/* Inline viewer */}
               {pdfUrl && teamId && (
                 <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
