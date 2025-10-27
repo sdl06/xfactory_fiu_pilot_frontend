@@ -320,12 +320,40 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Factory Header */}
-      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
-        <div className="w-full px-6 py-4">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3 -ml-8">
-              <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
-                <Factory className="h-6 w-6 text-primary-foreground" />
+      <header className="border-b border-border bg-gradient-conveyor relative w-full">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Exit
+          </Button>
+        </div>
+
+        {/* Middle Section - Station Info and Step Indicators */}
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Idea Generation</h1>
@@ -333,47 +361,17 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
               </div>
             </div>
             
-            {/* Centered step indicators */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            {/* Step indicators on the right side of station info */}
+            <div className="flex items-center gap-2 ml-6">
               <Badge variant={step >= 1 ? "default" : "secondary"} className={step >= 1 ? "bg-green-600 hover:bg-green-700" : ""}>1</Badge>
-            <div className="w-8 h-0.5 bg-border"></div>
+              <div className="w-8 h-0.5 bg-white/30"></div>
               <Badge variant={step >= 2 ? "default" : "secondary"} className={step >= 2 ? "bg-green-600 hover:bg-green-700" : ""}>2</Badge>
-                <div className="w-8 h-0.5 bg-border"></div>
+              <div className="w-8 h-0.5 bg-white/30"></div>
               <Badge variant={step >= 3 ? "default" : "secondary"} className={step >= 3 ? "bg-green-600 hover:bg-green-700" : ""}>3</Badge>
-                    <div className="w-8 h-0.5 bg-border"></div>
+              <div className="w-8 h-0.5 bg-white/30"></div>
               <Badge variant={step >= 4 ? "default" : "secondary"} className={step >= 4 ? "bg-green-600 hover:bg-green-700" : ""}>4</Badge>
+            </div>
           </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Back Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="text-white hover:bg-white/20 mr-2"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Exit
-              </Button>
-              {/* Logo - bigger and positioned on the right */}
-              <img 
-                src="/logos/prov_logo_white.png" 
-                alt="Ivy Factory Logo" 
-                className="h-12 w-auto object-contain"
-                onError={(e) => {
-                  // Fallback to Factory icon if logo fails to load
-                  const imgElement = e.target as HTMLImageElement;
-                  imgElement.style.display = 'none';
-                  const parent = imgElement.parentElement;
-                  if (parent) {
-                    const fallbackIcon = document.createElement('div');
-                    fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
-                    parent.appendChild(fallbackIcon);
-                  }
-                }}
-              />
-          </div>
-        </div>
         </div>
       </header>
 

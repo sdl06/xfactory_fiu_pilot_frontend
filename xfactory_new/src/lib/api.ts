@@ -407,6 +407,10 @@ class ApiClient {
     return this.get(`/ideation/teams/${teamId}/concept-card/`);
   }
 
+  async getTeamConceptCardVersions(teamId: number) {
+    return this.get(`/ideation/teams/${teamId}/concept-card/versions/`);
+  }
+
   // Elevator Pitch (team-scoped deliverable)
   async getElevatorPitchSubmission(teamId: number) {
     return this.get(`/ideation/teams/${teamId}/elevator-pitch-submission/`);

@@ -39,6 +39,7 @@ import { lsGetScoped, scopedKey } from "@/lib/teamScope";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import html2canvas from 'html2canvas';
+import { ConceptCardVersionNavigation } from "@/components/ConceptCardVersionNavigation";
 
 type AppState = "landing" | "admin-login" | "user-login" | "admin-dashboard" | "account-creation" | "mentor-signup" | "investor-signup" | "mentor-dashboard" | "investor-dashboard" | "onboarding" | "dashboard" | "station" | "community" | "completion" | "member-addition" | "mentor-team-select";
 
@@ -250,6 +251,9 @@ const Index = () => {
   // Inline edit state for concept card (dashboard-level review modal)
   const [isEditingConcept, setIsEditingConcept] = useState(false);
   const [isPivotingConcept, setIsPivotingConcept] = useState(false);
+  // Version control state
+  const [conceptCardVersions, setConceptCardVersions] = useState<any[]>([]);
+  const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
   const [editableConcept, setEditableConcept] = useState<{ title: string; problem: string; solution: string; target_audience: string; current_solutions: string; business_model?: string; assumptions?: Array<{ text: string; confidence: number }> }>({
     title: "",
     problem: "",
@@ -1034,11 +1038,39 @@ const Index = () => {
     }
   };
 
+  const loadConceptCardVersions = async (teamId: number) => {
+    try {
+      const res = await apiClient.getTeamConceptCardVersions(teamId);
+      const versions = (res as any)?.data?.versions || [];
+      setConceptCardVersions(versions);
+      // Set current version to the latest
+      if (versions.length > 0) {
+        const latestIndex = versions.findIndex((v: any) => v.is_latest);
+        setCurrentVersionIndex(latestIndex >= 0 ? latestIndex : 0);
+      }
+    } catch (e) {
+      console.error('[Index] Error loading concept card versions:', e);
+      setConceptCardVersions([]);
+    }
+  };
+
   const handleEnterStation = async (stationId: number, reviewMode = false) => {
     // If dashboard Review is clicked for Station 1, open popup here without navigating
     if (stationId === 1 && reviewMode) {
       await loadIdeaReviewData();
       await loadElevatorPitch(); // Ensure elevator pitch is loaded
+      
+      // Load versions for concept card navigation
+      try {
+        const teamIdStr = localStorage.getItem('xfactoryTeamId');
+        if (teamIdStr) {
+          const teamId = Number(teamIdStr);
+          await loadConceptCardVersions(teamId);
+        }
+      } catch (e) {
+        console.error('[Index] Error loading versions:', e);
+      }
+      
       setShowIdeaReview(true);
       return;
     }
@@ -1437,6 +1469,32 @@ const Index = () => {
                       key: 'card',
                       render: () => (
                         <>
+                        {conceptCardVersions.length > 1 && (
+                          <ConceptCardVersionNavigation
+                            versions={conceptCardVersions}
+                            currentVersion={conceptCardVersions[currentVersionIndex]?.version || 1}
+                            onVersionChange={(versionNumber) => {
+                              const index = conceptCardVersions.findIndex(v => v.version === versionNumber);
+                              if (index >= 0) {
+                                setCurrentVersionIndex(index);
+                                // Update ideaReviewData with the selected version
+                                const selectedVersion = conceptCardVersions[index];
+                                setIdeaReviewData((prev: any) => ({
+                                  ...prev,
+                                  card: {
+                                    ...prev.card,
+                                    problem: selectedVersion.problem,
+                                    solution: selectedVersion.solution,
+                                    target_audience: selectedVersion.target_audience,
+                                    current_solutions: selectedVersion.current_solutions,
+                                    assumptions: selectedVersion.assumptions,
+                                    title: selectedVersion.title
+                                  }
+                                }));
+                              }
+                            }}
+                          />
+                        )}
                         <div id="concept-card-export" className="space-y-8">
                           <div className="text-center">
                             {ideaReviewData?.card?.business_name && (

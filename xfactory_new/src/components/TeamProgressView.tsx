@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ConceptCardVersionNavigation } from './ConceptCardVersionNavigation';
 
 export type TeamProgressSectionKey = 'idea' | 'mockups' | 'validation' | 'pitch_deck' | 'mvp' | 'finance' | 'marketing' | 'assignments';
 
@@ -348,6 +349,8 @@ const TeamProgressView: React.FC<TeamProgressViewProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conceptCard, setConceptCard] = useState<any | null>(null);
+  const [conceptCardVersions, setConceptCardVersions] = useState<any[]>([]);
+  const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
   const [elevator, setElevator] = useState<any | null>(null);
   const [personaKit, setPersonaKit] = useState<any | null>(null);
   const [validationEvidence, setValidationEvidence] = useState<any | null>(null);
@@ -585,6 +588,21 @@ const TeamProgressView: React.FC<TeamProgressViewProps> = ({
           if (!cancelled) setConceptCard((res as any).data || null);
         } catch {
           if (!cancelled) setConceptCard(null);
+        }
+
+        try {
+          const res = await apiClient.getTeamConceptCardVersions(teamId);
+          const versions = (res as any)?.data?.versions || [];
+          if (!cancelled) {
+            setConceptCardVersions(versions);
+            // Set current version to the latest
+            if (versions.length > 0) {
+              const latestIndex = versions.findIndex((v: any) => v.is_latest);
+              setCurrentVersionIndex(latestIndex >= 0 ? latestIndex : 0);
+            }
+          }
+        } catch {
+          if (!cancelled) setConceptCardVersions([]);
         }
 
         try {
@@ -919,6 +937,29 @@ const TeamProgressView: React.FC<TeamProgressViewProps> = ({
     <div className="space-y-4">
       {conceptCard ? (
         <div className="border rounded p-4 space-y-4">
+          {conceptCardVersions.length > 1 && (
+            <ConceptCardVersionNavigation
+              versions={conceptCardVersions}
+              currentVersion={conceptCardVersions[currentVersionIndex]?.version || 1}
+              onVersionChange={(versionNumber) => {
+                const index = conceptCardVersions.findIndex(v => v.version === versionNumber);
+                if (index >= 0) {
+                  setCurrentVersionIndex(index);
+                  // Update conceptCard with the selected version
+                  const selectedVersion = conceptCardVersions[index];
+                  setConceptCard({
+                    ...conceptCard,
+                    problem: selectedVersion.problem,
+                    solution: selectedVersion.solution,
+                    target_audience: selectedVersion.target_audience,
+                    current_solutions: selectedVersion.current_solutions,
+                    assumptions: selectedVersion.assumptions,
+                    title: selectedVersion.title
+                  });
+                }
+              }}
+            />
+          )}
           <div className="text-lg font-semibold">Concept Card</div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
