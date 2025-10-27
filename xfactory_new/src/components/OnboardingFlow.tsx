@@ -152,6 +152,10 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
   useEffect(() => {
     (async () => {
       if (step === 3 && data.hasIdea) {
+        // Skip if fields already have non-empty content (avoid overwriting user input or already loaded data)
+        const hasExistingData = data.marketOpportunities?.some(opp => opp.trim()) || data.userProblems?.some(prob => prob.trim());
+        if (hasExistingData) return;
+        
         try {
           // Try team-scoped brainstorming assistant (cached or generate+fetch)
           const status = await apiClient.get('/team-formation/status/');
@@ -195,14 +199,14 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
             setData(prev => ({
               ...prev,
               marketOpportunities: [
-                opps[0] || prev.marketOpportunities?.[0] || '',
-                opps[1] || prev.marketOpportunities?.[1] || '',
-                opps[2] || prev.marketOpportunities?.[2] || ''
+                opps[0] || '',
+                opps[1] || '',
+                opps[2] || ''
               ],
               userProblems: [
-                probs[0] || prev.userProblems?.[0] || '',
-                probs[1] || prev.userProblems?.[1] || '',
-                probs[2] || prev.userProblems?.[2] || ''
+                probs[0] || '',
+                probs[1] || '',
+                probs[2] || ''
               ]
             }));
           }
@@ -846,14 +850,28 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                   size="lg"
                   className="bg-gradient-machinery hover:opacity-90"
                   onClick={async () => {
+                    // Clear existing data first
+                    setData(prev => ({
+                      ...prev,
+                      marketOpportunities: ['', '', ''],
+                      userProblems: ['', '', '']
+                    }));
+                    
                     // Regenerate/pre-fill with AI
                     try {
                       const status = await apiClient.get('/team-formation/status/');
                       const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-                      if (teamId) { try { await apiClient.generateTeamBrainstorming(teamId); } catch {} }
+                      if (teamId) { 
+                        // Clear old brainstorming first
+                        try { await apiClient.delete(`/ideation/teams/${teamId}/brainstorming/`); } catch {}
+                        // Then generate new brainstorming
+                        try { await apiClient.generateTeamBrainstorming(teamId); } catch {}
+                      }
                     } catch {}
+                    
                     // Trigger the prefill effect by nudging step state
-                    setStep(3);
+                    setStep(2); // Go back one step
+                    setTimeout(() => setStep(3), 50); // Then forward to trigger useEffect
                   }}
                 >
                   Generate with AI
