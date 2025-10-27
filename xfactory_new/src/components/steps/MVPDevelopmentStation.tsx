@@ -588,10 +588,10 @@ export const MVPDevelopmentStation = ({
                     <TrendingUp className="h-5 w-5" />
                     Development Stages
                     <InfoButton
-                      title="Progress Bar Translator"
-                      content={`**Your level-up map**
-                      Shows which milestone you are on and what is left.
-                      Think of it as the video game progress bar for your startup.`}
+                      title="Progress Overview"
+                      content={`**Development Progress**
+                      Shows which milestone you are on and what remains.
+                      Track your progress through the development stages.`}
                     />
                   </CardTitle>
                 </CardHeader>

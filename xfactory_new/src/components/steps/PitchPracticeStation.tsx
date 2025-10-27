@@ -700,9 +700,9 @@ export const PitchPracticeStation = ({
                   Pitch Deck Coaching
                   <InfoButton
                     title="Coach-in-a-Box"
-                    content={`**Pitch coach in a box**
-                    Gives you slide-by-slide feedback so you are not winging it minutes before the meeting.
-                    Take the notes, tweak the deck, then run it again.`}
+                    content={`**Pitch coaching feedback**
+                    Provides slide-by-slide feedback to improve your presentation.
+                    Review the notes, update your deck, and practice with the insights.`}
                   />
                 </CardTitle>
                 <CardDescription>
@@ -733,9 +733,9 @@ export const PitchPracticeStation = ({
                   Generate Presentation
                   <InfoButton
                     title="Instant Deck Mode"
-                    content={`**Instant deck generator**
+                    content={`**Automated deck generation**
                     Lets the AI draft slides so you can focus on storytelling.
-                    Still read it before presenting so you do not promise moon colonies.`}
+                    Always review the content before presenting to ensure accuracy.`}
                   />
                 </CardTitle>
                 <CardDescription>

@@ -1212,9 +1212,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                     <label htmlFor="idea-problem" className="text-sm font-medium">Problem Statement</label>
                     <InfoButton
                       title="Problem Statement Decoder"
-                      content={`**Make the pain real**
-                      Describe the chaos your users complain about like you are venting in the group chat.
-                      Specific beats vague every time.`}
+                      content={`**Define the problem**
+                      Describe the specific problem your users face.
+                      Be clear and specific about the issue they need solved.`}
                     />
                   </div>
                   <textarea
@@ -1231,9 +1231,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                     <label htmlFor="idea-solution" className="text-sm font-medium">Solution Approach</label>
                     <InfoButton
                       title="Solution Glow-Up"
-                      content={`**Explain how you fix it**
-                      Drop the TikTok-length pitch for what your solution actually does.
-                      If it sounds like wizardry, add a sentence that proves it works.`}
+                      content={`**Explain your solution**
+                      Describe what your solution does and how it works.
+                      Be clear about how it solves the problem you identified.`}
                     />
                   </div>
                   <textarea
@@ -1250,9 +1250,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                     <label htmlFor="idea-target" className="text-sm font-medium">Target Audience</label>
                     <InfoButton
                       title="Who Are The Humans?"
-                      content={`**Name the tribe**
-                      Call out the main people who scream "take my money" when they hear your solution.
-                      Bonus points for vibes, habits, and how broke or balling they are.`}
+                      content={`**Define your target audience**
+                      Identify the main people who need your solution.
+                      Describe their characteristics, needs, and preferences.`}
                     />
                   </div>
                   <textarea

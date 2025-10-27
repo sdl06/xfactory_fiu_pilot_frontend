@@ -904,9 +904,8 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
                       <CardTitle>Cost Analysis</CardTitle>
                     <InfoButton 
                       title="Cost Analysis 💸" 
-                      content={`**TL;DR: This is where you figure out how much money you'll actually need to not go broke**
-
-Think of this as your 'reality check' section. You'll list all the one-time costs to get started (like buying equipment, legal stuff, etc.) and then all the monthly bills you'll have to pay to keep the lights on. It's basically your 'how much money do I need to not be homeless' calculator.`} 
+                      content={`**Cost Analysis Overview**
+This section helps you determine how much money you'll need to start and run your business. You'll list all the one-time costs to get started (equipment, legal requirements, etc.) and all the monthly expenses required to keep your business operating. This helps you create a realistic budget for your startup.`} 
                     />
                     </div>
                 <CardDescription>
@@ -978,9 +977,8 @@ Think of this as your 'reality check' section. You'll list all the one-time cost
                     <h3 className="text-lg font-semibold text-primary">Startup Costs (One-time Investment)</h3>
                     <InfoButton 
                       title="Startup Costs 💸" 
-                      content={`**TL;DR: All the money you need to spend ONCE to get your business started**
-
-These are one-time expenses to get your business off the ground. Think of it as your "business setup fee" - things like buying equipment, legal fees, initial inventory, website development, etc. Once you pay these, you don't have to pay them again (hopefully). It's like buying a car - you pay once, then you own it.`} 
+                      content={`**Startup Costs Explanation**
+These are one-time expenses required to get your business started. These include equipment purchases, legal fees, initial inventory, website development, and other initial setup costs. Once you pay these expenses, they do not need to be paid again.`} 
                     />
                   </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -990,9 +988,8 @@ These are one-time expenses to get your business off the ground. Think of it as 
                         <Label htmlFor="productDevelopment">Product Development ($)</Label>
                         <InfoButton 
                           title="Product Development 🛠️" 
-                          content={`**TL;DR: Money spent on building/creating your actual product**
-
-This covers all the costs of developing your product - whether it's software development, manufacturing, design, prototyping, testing, etc. If you're building an app, this includes coding, design, testing. If you're making physical products, this includes materials, manufacturing, prototypes. Basically, anything that goes into making the thing you're selling.`} 
+                          content={`**Product Development Costs**
+This covers all the costs of developing your product, including software development, manufacturing, design, prototyping, and testing. For software products, this includes coding, design, and testing costs. For physical products, this includes materials, manufacturing, and prototype creation.`} 
                         />
                       </div>
                       <Input
@@ -1008,9 +1005,8 @@ This covers all the costs of developing your product - whether it's software dev
                         <Label htmlFor="marketing">Marketing & Customer Acquisition ($)</Label>
                         <InfoButton 
                           title="Marketing & Customer Acquisition 📢" 
-                          content={`**TL;DR: Money spent to get people to know about and buy your stuff**
-
-This covers all your marketing expenses - ads, social media, content creation, PR, events, etc. Basically, anything that helps people discover your business and convinces them to buy from you. It's like throwing a party and paying for invitations, decorations, and food to get people to show up.`} 
+                          content={`**Marketing and Customer Acquisition Costs**
+This covers all your marketing expenses including advertising, social media, content creation, PR, and events. These activities help people discover your business and encourage them to purchase your products or services.`} 
                         />
                       </div>
                       <Input
@@ -1026,9 +1022,8 @@ This covers all your marketing expenses - ads, social media, content creation, P
                         <Label htmlFor="teamSalaries">Team Salaries & Freelance Support ($)</Label>
                         <InfoButton 
                           title="Team Salaries & Freelance Support 👨‍💼" 
-                          content={`**TL;DR: One-time costs for hiring people to help you get started**
-
-This covers initial hiring costs, freelancer payments, consultant fees, etc. - basically any one-time payments to people who help you build your business. Think of it as your "hiring bonus" or "consultant fees" to get expert help when you're starting out.`} 
+                          content={`**Team Salaries and Freelance Support Costs**
+This covers one-time hiring costs including initial team member payments, freelancer fees, and consultant expenses. These are payments made to people who help you build your business during the startup phase.`} 
                         />
                       </div>
                       <Input
@@ -1046,9 +1041,8 @@ This covers initial hiring costs, freelancer payments, consultant fees, etc. - b
                         <Label htmlFor="toolsSubscriptions">Tools & Subscriptions ($)</Label>
                         <InfoButton 
                           title="Tools & Subscriptions 🛠️" 
-                          content={`**TL;DR: One-time costs for software, tools, and equipment you need to buy**
-
-This covers the initial purchase of software licenses, equipment, tools, and subscriptions you need to get started. Think Adobe Creative Suite, design software, hardware, etc. It's like buying all the tools you need for your workshop before you start building.`} 
+                          content={`**Tools and Subscriptions Costs**
+This covers the initial purchase of software licenses, equipment, tools, and subscriptions required to get started. Examples include design software, hardware, and specialized tools needed for your business operations.`} 
                         />
                       </div>
                       <Input
@@ -1064,9 +1058,8 @@ This covers the initial purchase of software licenses, equipment, tools, and sub
                         <Label htmlFor="legalAdmin">Legal & Admin ($)</Label>
                         <InfoButton 
                           title="Legal & Admin ⚖️" 
-                          content={`**TL;DR: One-time legal and administrative setup costs**
-
-This covers business registration, legal advice, trademark filing, compliance setup, accounting setup, etc. Basically all the boring but necessary legal and admin stuff you need to do once to get your business properly set up. It's like getting all your paperwork in order before you can start operating.`} 
+                          content={`**Legal and Administrative Costs**
+This covers one-time legal and administrative setup costs including business registration, legal advice, trademark filing, compliance setup, and accounting setup. These are necessary legal and administrative requirements to properly establish your business.`} 
                         />
                       </div>
                       <Input
@@ -1082,9 +1075,8 @@ This covers business registration, legal advice, trademark filing, compliance se
                         <Label htmlFor="other">Other Expenses ($)</Label>
                         <InfoButton 
                           title="Other Expenses 📦" 
-                          content={`**TL;DR: Any other one-time startup costs that don't fit the other categories**
-
-This is your "miscellaneous" startup costs - anything else you need to spend money on to get started that doesn't fit into the other categories. Think travel expenses, unexpected costs, contingency funds, etc. It's like having a "just in case" budget for stuff you didn't think of.`} 
+                          content={`**Other Expenses**
+This includes any other one-time startup costs that do not fit into the other categories. Examples include travel expenses, unexpected costs, and contingency funds for unanticipated expenses.`} 
                         />
                       </div>
                       <Input
@@ -1105,9 +1097,8 @@ This is your "miscellaneous" startup costs - anything else you need to spend mon
                     <h3 className="text-lg font-semibold text-green-600">Monthly Operational Costs (Ongoing Expenses)</h3>
                     <InfoButton 
                       title="Operational Costs 🔄" 
-                      content={`**TL;DR: All the monthly bills you have to pay to keep your business running**
-
-These are your recurring monthly expenses - the bills you have to pay every month to keep the lights on. Think rent, salaries, utilities, software subscriptions, marketing, etc. Unlike startup costs, these never stop (unless you go out of business). It's like your monthly phone bill - you pay it every month, forever.`} 
+                      content={`**Operational Costs Explanation**
+These are your recurring monthly expenses that you must pay to keep your business running. These include rent, salaries, utilities, software subscriptions, and marketing. Unlike startup costs, these expenses continue each month while your business is operating.`} 
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1117,7 +1108,7 @@ These are your recurring monthly expenses - the bills you have to pay every mont
                           <Label htmlFor="rentUtilities">Rent & Utilities ($/month)</Label>
                           <InfoButton 
                             title="Rent & Utilities 🏢" 
-                            content={`**TL;DR: Your monthly office/workspace bills**
+                            content={`**Monthly Office and Workspace Costs**
 
 This covers your physical space costs - office rent, utilities (electricity, water, internet), maintenance, etc. If you're working from home, this might be a portion of your home expenses. It's basically your "where do I work" monthly bill.`} 
                           />
@@ -1135,7 +1126,7 @@ This covers your physical space costs - office rent, utilities (electricity, wat
                           <Label htmlFor="salaries">Salaries & Benefits ($/month)</Label>
                           <InfoButton 
                             title="Salaries & Benefits 👥" 
-                            content={`**TL;DR: How much you pay your team (including yourself) each month**
+                            content={`**Monthly Team Compensation Costs**
 
 This covers all employee costs - salaries, benefits, taxes, insurance, etc. If you're a solo founder, this might just be your own salary. If you have employees, this includes everyone's pay. It's basically your "people costs" - the money you spend to have humans work for you.`} 
                           />
@@ -1153,7 +1144,7 @@ This covers all employee costs - salaries, benefits, taxes, insurance, etc. If y
                           <Label htmlFor="marketing">Marketing & Advertising ($/month)</Label>
                           <InfoButton 
                             title="Marketing & Advertising 📢" 
-                            content={`**TL;DR: Monthly money spent to get customers and keep them coming back**
+                            content={`**Monthly Marketing and Advertising Expenses**
 
 This covers your ongoing marketing expenses - ads, social media management, content creation, PR, events, etc. Basically, all the monthly costs to keep your brand visible and attract new customers. It's like paying for ongoing advertising to keep your business in people's minds.`} 
                           />
@@ -1173,9 +1164,9 @@ This covers your ongoing marketing expenses - ads, social media management, cont
                           <Label htmlFor="toolsSubscriptions">Tools & Subscriptions ($/month)</Label>
                           <InfoButton 
                             title="Tools & Subscriptions 🛠️" 
-                            content={`**TL;DR: Monthly software and service subscriptions you need to run your business**
+                            content={`**Monthly Software and Service Subscription Costs**
 
-This covers all your recurring software costs - SaaS tools, cloud services, design software, analytics tools, etc. Think Netflix but for business tools. These are the monthly subscriptions that keep your business running smoothly.`} 
+This covers all your recurring software costs - SaaS tools, cloud services, design software, analytics tools, etc. These are business-focused subscriptions. These are the monthly subscriptions that keep your business running smoothly.`} 
                           />
                         </div>
                         <Input
@@ -1191,7 +1182,7 @@ This covers all your recurring software costs - SaaS tools, cloud services, desi
                           <Label htmlFor="insuranceLegal">Insurance & Legal ($/month)</Label>
                           <InfoButton 
                             title="Insurance & Legal ⚖️" 
-                            content={`**TL;DR: Monthly costs to keep your business protected and compliant**
+                            content={`**Monthly Insurance and Legal Protection Costs**
 
 This covers ongoing legal and insurance costs - business insurance, legal retainer fees, compliance monitoring, etc. Basically, the monthly cost of keeping your business legally protected and following all the rules. It's like having a monthly "protection plan" for your business.`} 
                           />
@@ -1209,7 +1200,7 @@ This covers ongoing legal and insurance costs - business insurance, legal retain
                           <Label htmlFor="otherOperational">Other Operational ($/month)</Label>
                           <InfoButton 
                             title="Other Operational 📦" 
-                            content={`**TL;DR: Any other monthly business expenses that don't fit the other categories**
+                            content={`**Monthly Additional Business Expenses**
 
 This is your "miscellaneous" monthly costs - anything else you need to spend money on each month to keep your business running that doesn't fit into the other categories. Think travel expenses, office supplies, unexpected costs, etc. It's like having a monthly "just in case" budget.`} 
                           />
@@ -1228,7 +1219,7 @@ This is your "miscellaneous" monthly costs - anything else you need to spend mon
                           <Label htmlFor="cogsPerCustomer">COGS per Customer ($/month)</Label>
                           <InfoButton 
                             title="COGS per Customer 🏭" 
-                            content={`**TL;DR: How much does it actually cost you to serve one customer?**
+                            content={`**Explanation:** How much does it actually cost you to serve one customer?**
 
 COGS = Cost of Goods Sold. This is the direct cost of providing your product/service to one customer. If you're selling coffee, this includes the coffee beans, cup, labor to make it, etc. If you're running a SaaS app, this might be server costs per user. The key: this should be LESS than what you charge them, otherwise you're losing money on every sale (which is... not ideal).`} 
                           />
@@ -1283,7 +1274,7 @@ COGS = Cost of Goods Sold. This is the direct cost of providing your product/ser
                     <CardTitle>Revenue Model Setup</CardTitle>
                     <InfoButton 
                       title="Revenue Model Setup 💰" 
-                      content={`**TL;DR: This is where you figure out how to actually make money (the whole point of a business)**
+                      content={`**Explanation:** This is where you figure out how to actually make money (the whole point of a business)**
 
 Here's where you decide how much to charge people, how many customers you think you can get each month, and how fast you'll grow. It's like setting up your 'money-making machine' - you need to know how much each customer pays you, how many you'll get, and how much it costs you to serve them. Pro tip: if your costs are higher than what you charge, you're basically running a charity (not a business).`} 
                     />
@@ -1298,7 +1289,7 @@ Here's where you decide how much to charge people, how many customers you think 
                       <Label>Pricing Model</Label>
                       <InfoButton 
                         title="Pricing Model 🏷️" 
-                        content={`**TL;DR: How are you gonna charge people for your stuff?**
+                        content={`**Explanation:** How are you gonna charge people for your stuff?**
 
 This is basically asking 'what's your business model?' Are you charging per month (subscription), per use (pay-as-you-go), or a one-time fee? Think of it like choosing between Netflix (monthly), Uber (per ride), or buying a video game (one-time). Each has different pros and cons for making money.`} 
                       />
@@ -1325,9 +1316,9 @@ This is basically asking 'what's your business model?' Are you charging per mont
                       <Label htmlFor="pricePoint">Price per Customer ($)</Label>
                       <InfoButton 
                         title="Price per Customer 💵" 
-                        content={`**TL;DR: How much money do you get from each customer?**
+                        content={`**Explanation:** How much money do you get from each customer?**
 
-This is literally how much you charge one person for your product/service. If you're selling coffee for $5, this is $5. If you're charging $50/month for a subscription, this is $50. Don't forget to consider what people will actually pay - charging $1000 for a cup of coffee might not work (unless it's made of gold).`} 
+This is literally how much you charge one person for your product/service. If you're selling coffee for $5, this is $5. If you're charging $50/month for a subscription, this is $50. Don't forget to consider what people will actually pay - overpricing may limit your customer base.`} 
                       />
                     </div>
                     <Input
@@ -1347,9 +1338,9 @@ This is literally how much you charge one person for your product/service. If yo
                       <Label htmlFor="customersPerMonth">New Customers per Month</Label>
                       <InfoButton 
                         title="New Customers per Month 👥" 
-                        content={`**TL;DR: How many new people will buy from you each month?**
+                        content={`**Explanation:** How many new people will buy from you each month?**
 
-This is your customer acquisition target - how many new customers you think you can get each month. Be realistic here! If you're just starting, don't put 10,000 unless you have a really good plan. Start small and grow from there. Remember: it's better to have 10 paying customers than 1000 people who just 'like' your Instagram post.`} 
+This is your customer acquisition target - how many new customers you think you can get each month. Be realistic here! If you're just starting, don't put 10,000 unless you have a really good plan. Start small and grow from there. Remember: quality customers are more valuable than social media engagement.`} 
                       />
                     </div>
                     <Input
@@ -1369,7 +1360,7 @@ This is your customer acquisition target - how many new customers you think you 
                       <Label>Conversion Rate: {revenueModel.conversionRate}%</Label>
                       <InfoButton 
                         title="Conversion Rate 🎯" 
-                        content={`**TL;DR: What percentage of people who see your stuff actually buy it**
+                        content={`**Explanation:** What percentage of people who see your stuff actually buy it**
 
 This is basically your "closing rate" - out of 100 people who check out your product/service, how many actually become paying customers? A 5% conversion rate means 5 out of 100 people buy. Higher is better, but 2-5% is pretty normal for most businesses.`} 
                       />
@@ -1392,9 +1383,9 @@ This is basically your "closing rate" - out of 100 people who check out your pro
                       <Label>Monthly Growth Rate: {revenueModel.monthlyGrowthRate}%</Label>
                       <InfoButton 
                         title="Monthly Growth Rate 📈" 
-                        content={`**TL;DR: How fast do you think your customer base will grow each month?**
+                        content={`**Explanation:** How fast do you think your customer base will grow each month?**
 
-This is your growth assumption - how much more customers you'll get each month compared to the previous month. 10% means if you had 100 customers this month, you'll have 110 next month. Be careful not to be too optimistic - 50% monthly growth is basically impossible unless you're selling something really addictive (and legal).`} 
+This is your growth assumption - how much more customers you'll get each month compared to the previous month. 10% means if you had 100 customers this month, you'll have 110 next month. Be careful not to be too optimistic - growth rates above 50% monthly are rarely sustainable.`} 
                       />
                     </div>
                     <Slider
@@ -1418,7 +1409,7 @@ This is your growth assumption - how much more customers you'll get each month c
                     <CardTitle>{summaryMetrics.projectionPeriod}-Month Revenue Forecast</CardTitle>
                     <InfoButton 
                       title="Revenue Forecast 📊" 
-                      content={`**TL;DR: This shows how much money you'll make over time (hopefully going up)**
+                      content={`**Explanation:** This shows how much money you'll make over time (hopefully going up)**
 
 This chart predicts your future revenue based on your assumptions. The green area shows monthly revenue (how much you make each month), and the lighter green shows cumulative revenue (total money made so far). If the line goes up, you're doing well. If it goes down... well, that's why we have this tool to help you plan better!`} 
                     />
@@ -1501,7 +1492,7 @@ This chart predicts your future revenue based on your assumptions. The green are
                     <CardTitle>Scenario Planning</CardTitle>
                     <InfoButton 
                       title="Scenario Planning 🎯" 
-                      content={`**TL;DR: This is your 'what if' playground for business planning**
+                      content={`**Explanation:** This is your 'what if' playground for business planning**
 
 Ever wondered 'what if I charged more?' or 'what if I cut costs?' This is where you can test those scenarios without actually doing it. Slide the bars to see how different changes would affect your bottom line. It's like having a crystal ball for your business (but way more accurate than a Magic 8-ball).`} 
                     />
@@ -1516,7 +1507,7 @@ Ever wondered 'what if I charged more?' or 'what if I cut costs?' This is where 
                       <Label>Cost Reduction: {scenarios.costReduction}%</Label>
                       <InfoButton 
                         title="Cost Reduction 💰" 
-                        content={`**TL;DR: How much you can cut your monthly expenses through smart optimization**
+                        content={`**Explanation:** How much you can cut your monthly expenses through smart optimization**
 
 This is your "efficiency slider" - how much can you reduce your monthly costs by being smarter about operations? Maybe you find cheaper suppliers, automate processes, or negotiate better deals. 20% cost reduction means you're spending 20% less each month.`} 
                       />
@@ -1539,7 +1530,7 @@ This is your "efficiency slider" - how much can you reduce your monthly costs by
                       <Label>Revenue Increase: {scenarios.revenueIncrease}%</Label>
                       <InfoButton 
                         title="Revenue Increase 📈" 
-                        content={`**TL;DR: How much you can boost your monthly income through better strategies**
+                        content={`**Explanation:** How much you can boost your monthly income through better strategies**
 
 This is your "growth slider" - how much can you increase your monthly revenue by improving your product, marketing, or pricing? Maybe you get better at converting leads, raise prices, or find new revenue streams. 30% revenue increase means you're making 30% more each month.`} 
                       />
@@ -1563,7 +1554,7 @@ This is your "growth slider" - how much can you increase your monthly revenue by
                         <div className="text-sm text-muted-foreground">Monthly Burn</div>
                         <InfoButton 
                           title="Monthly Burn 🔥" 
-                          content={`**TL;DR: How much money you're losing each month to keep the business running**
+                          content={`**Explanation:** How much money you're losing each month to keep the business running**
 
 This is your "money drain" - the total amount you spend each month on all operational costs (salaries, rent, marketing, etc.). It's called "burn" because you're literally burning through your startup money. The lower this number, the longer your money lasts.`} 
                         />
@@ -1577,7 +1568,7 @@ This is your "money drain" - the total amount you spend each month on all operat
                         <div className="text-sm text-muted-foreground">Runway</div>
                         <InfoButton 
                           title="Runway 🛫" 
-                          content={`**TL;DR: How many months you can survive before running out of money**
+                          content={`**Explanation:** How many months you can survive before running out of money**
 
 This is your "survival time" - how long your startup money will last at your current spending rate. If you have $100k and burn $10k/month, your runway is 10 months. You need to either make money or raise more cash before your runway runs out!`} 
                         />
@@ -1596,7 +1587,7 @@ This is your "survival time" - how long your startup money will last at your cur
                     <CardTitle>Cash Flow Visualization</CardTitle>
                     <InfoButton 
                       title="Cash Flow Visualization 💸" 
-                      content={`**TL;DR: This shows if you're making money or losing money each month**
+                      content={`**Explanation:** This shows if you're making money or losing money each month**
 
 Green line = money coming in (revenue), Red line = money going out (costs), Purple line = your actual profit/loss. When green is above red, you're making money (yay!). When red is above green, you're losing money (not yay). The goal is to get the green line above the red line and keep it there. It's like a financial game of 'red light, green light' but with your bank account.`} 
                     />
@@ -1653,7 +1644,7 @@ Green line = money coming in (revenue), Red line = money going out (costs), Purp
                     <CardTitle>Income Statement (P&L)</CardTitle>
                     <InfoButton 
                       title="Income Statement (P&L) 📋" 
-                      content={`**TL;DR: This is your business's report card - did you pass or fail?**
+                      content={`**Explanation:** This is your business's report card - did you pass or fail?**
 
 This is basically your business's financial report card. It shows total revenue (money made), total costs (money spent), net income (profit/loss), and profit margin (how much you keep). If net income is positive, you passed! If it's negative, you need to study harder (or adjust your business model). Think of it as your business's GPA, but instead of grades, it's dollars.`} 
                     />
@@ -1669,7 +1660,7 @@ This is basically your business's financial report card. It shows total revenue 
                         <span className="font-medium">Total Revenue ({summaryMetrics.projectionPeriod}M)</span>
                         <InfoButton 
                           title="Total Revenue 💰" 
-                          content={`**TL;DR: All the money you made during this time period**
+                          content={`**Explanation:** All the money you made during this time period**
 
 This is your total income from all customers over the projection period. It's the sum of all your monthly revenue. If you make $10k/month for 12 months, your total revenue is $120k. This is the "money in" side of your business.`} 
                         />
@@ -1683,7 +1674,7 @@ This is your total income from all customers over the projection period. It's th
                         <span className="font-medium">Total Costs ({summaryMetrics.projectionPeriod}M)</span>
                         <InfoButton 
                           title="Total Costs 💸" 
-                          content={`**TL;DR: All the money you spent during this time period**
+                          content={`**Explanation:** All the money you spent during this time period**
 
 This is your total expenses over the projection period - all your operational costs (salaries, rent, marketing) plus the cost of making your product (COGS). If you spend $8k/month for 12 months, your total costs are $96k. This is the "money out" side of your business.`} 
                         />
@@ -1697,7 +1688,7 @@ This is your total expenses over the projection period - all your operational co
                         <span className="font-medium">Net Income ({summaryMetrics.projectionPeriod}M)</span>
                         <InfoButton 
                           title="Net Income 📊" 
-                          content={`**TL;DR: Your actual profit (or loss) after all expenses**
+                          content={`**Explanation:** Your actual profit (or loss) after all expenses**
 
 This is what you actually made - total revenue minus total costs. If you made $120k in revenue but spent $96k in costs, your net income is $24k profit. If it's negative, you lost money. This is the "bottom line" that really matters.`} 
                         />
@@ -1711,7 +1702,7 @@ This is what you actually made - total revenue minus total costs. If you made $1
                         <span className="font-medium">Profit Margin</span>
                         <InfoButton 
                           title="Profit Margin 📈" 
-                          content={`**TL;DR: What percentage of your revenue you actually keep as profit**
+                          content={`**Explanation:** What percentage of your revenue you actually keep as profit**
 
 This shows how efficient your business is at making money. If you make $100k in revenue and keep $20k as profit, your profit margin is 20%. Higher margins mean you're keeping more of what you earn. 10-20% is pretty good for most businesses.`} 
                         />
@@ -1730,7 +1721,7 @@ This shows how efficient your business is at making money. If you make $100k in 
                     <CardTitle>Break-even Analysis</CardTitle>
                     <InfoButton 
                       title="Break-even Analysis 🎯" 
-                      content={`**TL;DR: When will you finally make back all the money you spent to start this thing?**
+                      content={`**Explanation:** When will you finally make back all the money you spent to start this thing?**
 
 This shows when you'll 'break even' - meaning you've made back all the money you initially invested. The green line is revenue, red line is costs, and the purple dashed line shows if you're in the black or red overall. When the purple line crosses zero, you've officially made back your startup money (and can finally stop eating ramen for every meal).`} 
                     />
@@ -1891,7 +1882,7 @@ This shows when you'll 'break even' - meaning you've made back all the money you
                   <CardTitle>Investor-Ready Financial Summary</CardTitle>
                   <InfoButton 
                     title="Investor Summary 💼" 
-                    content={`**TL;DR: This is your elevator pitch in numbers - convince people to give you money**
+                    content={`**Explanation:** This is your elevator pitch in numbers - convince people to give you money**
 
 This is basically your business's 'resume' for investors. It shows all the important numbers, assumptions, and projections in one place. Think of it as your 'why you should give me money' presentation, but with charts and graphs instead of PowerPoint slides. If you can't explain your business model here, investors probably won't understand it either.`} 
                   />
@@ -1934,7 +1925,7 @@ This is basically your business's 'resume' for investors. It shows all the impor
                           <span>Total Startup Costs:</span>
                           <InfoButton 
                             title="Total Startup Costs 💰" 
-                            content={`**TL;DR: All the money you need to spend BEFORE you can even start your business**
+                            content={`**Explanation:** All the money you need to spend BEFORE you can even start your business**
 
 This is your "entry fee" into entrepreneurship. It includes everything you need to buy or set up before you can make your first dollar: equipment, legal stuff, initial marketing, office setup, etc. Think of it as the down payment on your business dreams. The higher this number, the more money you need to raise or save before you can launch.`} 
                           />
@@ -1946,7 +1937,7 @@ This is your "entry fee" into entrepreneurship. It includes everything you need 
                           <span>{summaryMetrics.projectionPeriod}-Month Revenue:</span>
                           <InfoButton 
                             title={`${summaryMetrics.projectionPeriod}-Month Revenue 💵`} 
-                            content={`**TL;DR: How much money you'll make in total over the projection period (hopefully a lot)**
+                            content={`**Explanation:** How much money you'll make in total over the projection period (hopefully a lot)**
 
 This is your projected total income for the entire projection period. It's the sum of all your monthly revenue. If you make $10k/month for ${summaryMetrics.projectionPeriod} months, this would be $${(10000 * summaryMetrics.projectionPeriod).toLocaleString()}. This is the "money in" side of your business - the bigger this number, the more successful your business model is.`} 
                           />
@@ -1958,7 +1949,7 @@ This is your projected total income for the entire projection period. It's the s
                           <span>Break-even Month:</span>
                           <InfoButton 
                             title="Break-even Month 🎯" 
-                            content={`**TL;DR: The month when you finally stop losing money and start making profit**
+                            content={`**Explanation:** The month when you finally stop losing money and start making profit**
 
 This is the holy grail of startup metrics - the month when your total revenue finally covers all your costs (including startup costs). Before this month, you're losing money. After this month, you're making profit. The sooner this happens, the better. If it says "N/A", it means you won't break even within the projection period (which is... not great).`} 
                           />
@@ -1970,7 +1961,7 @@ This is the holy grail of startup metrics - the month when your total revenue fi
                           <span>Monthly Burn Rate:</span>
                           <InfoButton 
                             title="Monthly Burn Rate 🔥" 
-                            content={`**TL;DR: How much money you spend every month to keep the lights on**
+                            content={`**Explanation:** How much money you spend every month to keep the lights on**
 
 This is your "money drain" - the total amount you spend each month on all operational costs (salaries, rent, marketing, etc.). It's called "burn" because you're literally burning through your startup money. The lower this number, the longer your money lasts. If you burn $10k/month and have $100k in the bank, you have 10 months to figure things out.`} 
                           />
@@ -1982,7 +1973,7 @@ This is your "money drain" - the total amount you spend each month on all operat
                           <span>Monthly Gross Profit:</span>
                           <InfoButton 
                             title="Monthly Gross Profit 💚" 
-                            content={`**TL;DR: How much money you make each month AFTER paying for the actual product/service costs**
+                            content={`**Explanation:** How much money you make each month AFTER paying for the actual product/service costs**
 
 This is your revenue minus the cost of goods sold (COGS). If you sell a $100 product that costs $30 to make, your gross profit is $70. This is the "good profit" - it shows you're making money on each sale. The higher this number, the more profitable each customer is.`} 
                           />
@@ -1994,7 +1985,7 @@ This is your revenue minus the cost of goods sold (COGS). If you sell a $100 pro
                           <span>Monthly Net Profit:</span>
                           <InfoButton 
                             title="Monthly Net Profit 💰" 
-                            content={`**TL;DR: The REAL profit you make each month after ALL costs (the money you actually keep)**
+                            content={`**Explanation:** The REAL profit you make each month after ALL costs (the money you actually keep)**
 
 This is your gross profit minus all operational costs (salaries, rent, marketing, etc.). This is the "true profit" - the actual money you get to keep or reinvest. If this is positive, you're making real money. If it's negative, you're still losing money each month (which is normal for early-stage startups).`} 
                           />
@@ -2008,7 +1999,7 @@ This is your gross profit minus all operational costs (salaries, rent, marketing
                           <span>Gross Margin:</span>
                           <InfoButton 
                             title="Gross Margin 📊" 
-                            content={`**TL;DR: What percentage of each sale is pure profit (before operational costs)**
+                            content={`**Explanation:** What percentage of each sale is pure profit (before operational costs)**
 
 This is your gross profit divided by revenue, expressed as a percentage. If you sell a $100 product that costs $30 to make, your gross margin is 70%. Higher margins = more profitable business. Software companies often have 80%+ margins, while restaurants might have 20-30% margins.`} 
                           />
@@ -2020,7 +2011,7 @@ This is your gross profit divided by revenue, expressed as a percentage. If you 
                           <span>Net Margin:</span>
                           <InfoButton 
                             title="Net Margin 🎯" 
-                            content={`**TL;DR: The REAL profit percentage after ALL costs (the ultimate measure of profitability)**
+                            content={`**Explanation:** The REAL profit percentage after ALL costs (the ultimate measure of profitability)**
 
 This is your net profit divided by revenue, expressed as a percentage. If you make $20 net profit on a $100 sale, your net margin is 20%. This is the "true profitability" of your business. Positive margins = profitable business. Negative margins = you're losing money (but that's normal for early startups).`} 
                           />
@@ -2054,7 +2045,7 @@ This is your net profit divided by revenue, expressed as a percentage. If you ma
                     <h3 className="font-semibold">Revenue vs. Burn Chart</h3>
                     <InfoButton 
                       title="Revenue vs. Burn Chart 📊" 
-                      content={`**TL;DR: This shows if you're making money or burning through it like a bonfire**
+                      content={`**Explanation:** This shows if you're making money or burning through it like a bonfire**
 
 This bar chart is like a financial scoreboard. Green bars = money coming in, Red bars = operational costs (fixed monthly bills), Orange bars = COGS (costs per customer). If green bars are taller than red+orange bars, you're winning! If not, you're basically burning money (which is not a sustainable business model, unless you're running a literal bonfire business).`} 
                     />
