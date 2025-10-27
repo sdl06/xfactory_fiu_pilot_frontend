@@ -981,6 +981,11 @@ class ApiClient {
     return this.get('/team-formation/debug-all-users/');
   }
 
+  // Launch Prep endpoints
+  async generatePressRelease(teamId: number) {
+    return this.post(`/launch-prep/teams/${teamId}/press-release/generate/`, {});
+  }
+
   // Admin: Mentor and Investor Assignment
   async getTeamAssignments(teamId: number) {
     return this.get(`/admin/teams/${teamId}/assignments/`);

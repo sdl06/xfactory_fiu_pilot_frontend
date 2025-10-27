@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { FactorAI } from "../FactorAI";
 import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
 
 interface LaunchPrepStationProps {
   mvpData: any;
@@ -29,6 +30,7 @@ interface LaunchPrepStationProps {
 export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepStationProps) => {
   const [currentTab, setCurrentTab] = useState("press-release");
   const [completedSections, setCompletedSections] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   // Press Release State
@@ -47,59 +49,6 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
     analyticsSetup: false
   });
 
-  const pressReleaseTemplates = [
-    {
-      id: "startup-launch",
-      title: "Startup Product Launch",
-      template: `FOR IMMEDIATE RELEASE
-
-[Your Company] Launches Revolutionary [Product Name] to Transform [Industry]
-
-[City, Date] – [Your Company], a [brief company description], today announced the launch of [Product Name], a groundbreaking [product category] designed to [main value proposition].
-
-[Product Name] addresses the critical challenge of [problem you solve] by [how you solve it]. Key features include:
-• [Feature 1]
-• [Feature 2] 
-• [Feature 3]
-
-"[Quote from founder/CEO about the vision and impact]," said [Name], [Title] of [Your Company].
-
-Early users have reported [specific benefit/metric]. [Customer quote if available].
-
-[Product Name] is available starting [date] at [website/pricing]. For more information, visit [website].
-
-About [Your Company]:
-[Company boilerplate - 2-3 sentences about company, mission, location, team size, etc.]
-
-Contact:
-[Name]
-[Title]
-[Email]
-[Phone]`
-    },
-    {
-      id: "feature-announcement",
-      title: "New Feature Announcement",
-      template: `FOR IMMEDIATE RELEASE
-
-[Your Company] Unveils Game-Changing [Feature Name] for [Product Name]
-
-[City, Date] – [Your Company] today introduced [Feature Name], a powerful new capability that [main benefit/impact].
-
-The new feature enables users to [specific capability], addressing feedback from [user base size] active users who requested [user need].
-
-Key benefits include:
-• [Benefit 1]
-• [Benefit 2]
-• [Benefit 3]
-
-"[Quote about why this feature matters]," said [Name], [Title] at [Your Company].
-
-[Feature Name] is now available to all [Product Name] users at no additional cost. Learn more at [website].
-
-###`
-    }
-  ];
 
   const handleSectionComplete = (section: string) => {
     if (!completedSections.includes(section)) {
@@ -120,6 +69,49 @@ Key benefits include:
       });
     } catch (err) {
       console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const generatePressRelease = async () => {
+    setIsGenerating(true);
+    try {
+      const teamIdStr = localStorage.getItem('xfactoryTeamId');
+      const teamId = teamIdStr ? Number(teamIdStr) : null;
+      
+      if (!teamId) {
+        toast({
+          title: "Error",
+          description: "Team ID not found",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await apiClient.generatePressRelease(teamId);
+      
+      if ((response as any).success) {
+        const data = response as any;
+        setPressReleaseData({
+          headline: data.business_name || "",
+          subtitle: "",
+          content: data.press_release || "",
+          template: data.press_release || ""
+        });
+        toast({
+          title: "Success!",
+          description: "Press release generated successfully",
+        });
+      } else {
+        throw new Error((response as any).error || 'Failed to generate press release');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate press release",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -178,45 +170,36 @@ Key benefits include:
               </TabsTrigger>
             </TabsList>
 
-            {/* Press Release Templates */}
+            {/* Press Release Generation */}
             <TabsContent value="press-release" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    Press Release Templates
+                    Generate Press Release
                   </CardTitle>
                   <CardDescription>
-                    Create professional press releases to announce your launch
+                    Create professional press releases to announce your launch with AI
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {pressReleaseTemplates.map((template) => (
-                      <Card key={template.id} className="cursor-pointer hover:shadow-md transition-all">
-                        <CardHeader>
-                          <CardTitle className="text-lg">{template.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => setPressReleaseData({...pressReleaseData, template: template.template})}
-                            >
-                              Use Template
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => copyToClipboard(template.template)}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="mb-6">
+                    <Button 
+                      onClick={generatePressRelease}
+                      disabled={isGenerating}
+                      className="flex items-center gap-2"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          Generate Press Release
+                        </>
+                      )}
+                    </Button>
                   </div>
 
                   {pressReleaseData.template && (
@@ -231,7 +214,17 @@ Key benefits include:
                         />
                       </div>
                       <div>
-                        <Label htmlFor="press-content">Press Release Content</Label>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="press-content">Press Release Content</Label>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(pressReleaseData.template)}
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Template
+                          </Button>
+                        </div>
                         <Textarea
                           id="press-content"
                           rows={12}
