@@ -248,7 +248,7 @@ const Index = () => {
   const [elevatorSaved, setElevatorSaved] = useState(false);
   // Inline edit state for concept card (dashboard-level review modal)
   const [isEditingConcept, setIsEditingConcept] = useState(false);
-  const [editableConcept, setEditableConcept] = useState<{ title: string; problem: string; solution: string; target_audience: string; current_solutions: string; business_model?: string }>({
+  const [editableConcept, setEditableConcept] = useState<{ title: string; problem: string; solution: string; target_audience: string; current_solutions: string; business_model?: string; assumptions?: Array<{ text: string; confidence: number }> }>({
     title: "",
     problem: "",
     solution: "",
@@ -483,6 +483,12 @@ const Index = () => {
   // Initialize editable concept when data loads
   useEffect(() => {
     if (ideaReviewData?.card) {
+      const assumptions = Array.isArray(ideaReviewData.card.assumptions) 
+        ? ideaReviewData.card.assumptions.slice(0, 3).map((a: any) => ({
+            text: typeof a === 'string' ? a : (a?.text || ''),
+            confidence: typeof a === 'object' && typeof a?.confidence === 'number' ? a.confidence : 75
+          }))
+        : [];
       setEditableConcept({
         title: ideaReviewData.card.title || "",
         problem: ideaReviewData.card.problem || "",
@@ -490,6 +496,7 @@ const Index = () => {
         target_audience: ideaReviewData.card.target_audience || "",
         current_solutions: ideaReviewData.card.current_solutions || "",
         business_model: (ideaReviewData.card as any).business_model || "",
+        assumptions: assumptions,
       });
     }
   }, [ideaReviewData]);
@@ -508,6 +515,7 @@ const Index = () => {
           target_audience: editableConcept.target_audience,
           current_solutions: editableConcept.current_solutions,
           business_model: editableConcept.business_model,
+          assumptions: editableConcept.assumptions || prev.card?.assumptions || [],
         }
       }) : prev);
 
@@ -1502,25 +1510,63 @@ const Index = () => {
                           <div className="space-y-3">
                             <h4 className="text-lg font-bold text-slate-700">🔬 Key Assumptions</h4>
                             <div className="grid md:grid-cols-2 gap-4">
-                              {ideaReviewData.card.assumptions.slice(0,3).map((a: any, idx: number) => (
+                              {(isEditingConcept ? (editableConcept.assumptions || []) : ideaReviewData.card.assumptions.slice(0,3)).map((a: any, idx: number) => (
                                 <div key={idx} className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
                                   <div className="flex items-start gap-3">
                                     <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1">
                                       {idx + 1}
                                     </div>
-                                    <div className="flex-1">
-                                      <p className="text-slate-700 font-medium mb-2">{typeof a === 'string' ? a : (a?.text || '')}</p>
-                                      <div className="flex items-center gap-4 text-sm">
-                                        {typeof a !== 'string' && typeof a?.confidence === 'number' && (
-                                          <span className="inline-flex items-center gap-1">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                            {a.confidence}% confidence
-                                          </span>
-                                        )}
-                                        {typeof a !== 'string' && (a?.testing_plan) && (
-                                          <span className="text-slate-500">{a.testing_plan}</span>
-                                        )}
-                                      </div>
+                                    <div className="flex-1 space-y-2">
+                                      {isEditingConcept ? (
+                                        <>
+                                          <textarea
+                                            value={a.text || ''}
+                                            onChange={(e) => {
+                                              const newAssumptions = [...(editableConcept.assumptions || [])];
+                                              newAssumptions[idx] = { ...newAssumptions[idx], text: e.target.value };
+                                              setEditableConcept({ ...editableConcept, assumptions: newAssumptions });
+                                            }}
+                                            className="w-full px-3 py-2 rounded border bg-white text-slate-700 resize-none"
+                                            rows={2}
+                                            placeholder="Enter assumption"
+                                          />
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-600">Confidence:</span>
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              max="100"
+                                              value={a.confidence || 75}
+                                              onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 0;
+                                                if (val >= 0 && val <= 100) {
+                                                  const newAssumptions = [...(editableConcept.assumptions || [])];
+                                                  newAssumptions[idx] = { ...newAssumptions[idx], confidence: val };
+                                                  setEditableConcept({ ...editableConcept, assumptions: newAssumptions });
+                                                }
+                                              }}
+                                              className="w-20 px-2 py-1 rounded border bg-white text-slate-700 text-sm"
+                                              placeholder="75"
+                                            />
+                                            <span className="text-xs text-slate-500">%</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <p className="text-slate-700 font-medium mb-2">{typeof a === 'string' ? a : (a?.text || '')}</p>
+                                          <div className="flex items-center gap-4 text-sm">
+                                            {typeof a !== 'string' && typeof a?.confidence === 'number' && (
+                                              <span className="inline-flex items-center gap-1">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                {a.confidence}% confidence
+                                              </span>
+                                            )}
+                                            {typeof a !== 'string' && (a?.testing_plan) && (
+                                              <span className="text-slate-500">{a.testing_plan}</span>
+                                            )}
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
