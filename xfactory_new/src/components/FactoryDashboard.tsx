@@ -636,6 +636,9 @@ export const FactoryDashboard = ({
                 </CardTitle>
                 <div className="space-y-3">
                   <Progress value={progressPercentage} className="h-3" />
+                  <p className="text-center text-primary-foreground/80 font-medium">
+                    {Math.round(progressPercentage)}% Complete
+                  </p>
                   <p className="text-primary-foreground/80">
                     Main Production Line Active
                   </p>
@@ -677,7 +680,7 @@ export const FactoryDashboard = ({
               Production Line Journey
             </h2>
             <Badge variant="success" className="text-lg px-4 py-2">
-              {completedCount}/{totalSteps} Stations Complete ({Math.round((completedCount / totalSteps) * 100)}%)
+              {completedCount}/{totalSteps} Stations Complete
             </Badge>
           </div>
           {/* Make roadmap section same max width as Departments by inheriting container width */}
