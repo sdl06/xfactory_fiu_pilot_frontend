@@ -39,17 +39,22 @@ export const ConceptCardVersionNavigation: React.FC<ConceptCardVersionNavigation
     }
   };
 
+  // Show arrows even for single version, but disabled
+  const showArrows = versions.length >= 1;
+
   return (
     <div className="flex items-center justify-center gap-3 p-3 bg-muted/30 rounded-lg">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handlePrevious}
-        disabled={!hasPrevious}
-        className="h-8"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
+      {showArrows && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePrevious}
+          disabled={!hasPrevious || versions.length === 1}
+          className="h-8"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      )}
       
       <div className="flex flex-col items-center gap-1">
         <div className="text-sm font-medium">Version {currentVersionData?.version || currentVersion}</div>
@@ -61,15 +66,17 @@ export const ConceptCardVersionNavigation: React.FC<ConceptCardVersionNavigation
         )}
       </div>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleNext}
-        disabled={!hasNext}
-        className="h-8"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+      {showArrows && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNext}
+          disabled={!hasNext || versions.length === 1}
+          className="h-8"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };

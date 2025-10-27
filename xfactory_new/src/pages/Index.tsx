@@ -1469,7 +1469,7 @@ const Index = () => {
                       key: 'card',
                       render: () => (
                         <>
-                        {conceptCardVersions.length > 1 && (
+                        {conceptCardVersions.length > 0 && (
                           <ConceptCardVersionNavigation
                             versions={conceptCardVersions}
                             currentVersion={conceptCardVersions[currentVersionIndex]?.version || 1}
