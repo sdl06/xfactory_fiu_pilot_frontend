@@ -548,6 +548,11 @@ const Index = () => {
           onboardingData: null,
         }));
         
+        // Clear the completion flag in localStorage to allow re-entering onboarding
+        try {
+          localStorage.removeItem(scopedKey('xfactoryIdeaCompleted'));
+        } catch {}
+        
         // Navigate back to the onboarding flow (same flow as after team formation)
         setAppState('onboarding');
       }
