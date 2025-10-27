@@ -951,6 +951,7 @@ const TeamProgressView: React.FC<TeamProgressViewProps> = ({
                         {assumption?.testing_plan ? ` � ${assumption.testing_plan}` : ''}
                       </div>
                     )}
+                    <div className="text-xs text-muted-foreground italic mt-1">* Percentage indicates confidence level</div>
                   </div>
                 ))}
               </div>

@@ -1043,12 +1043,13 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                       return (
                         <div key={i} className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
                           <div className="text-slate-700 font-semibold mb-2">{text}</div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                               <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500" style={{ width: `${conf}%` }} />
                             </div>
                             <div className="text-sm text-slate-600 min-w-[3rem] text-right">{conf}%</div>
                           </div>
+                          <div className="text-xs text-slate-500 italic">* Percentage indicates confidence level</div>
                         </div>
                       );
                     })}
