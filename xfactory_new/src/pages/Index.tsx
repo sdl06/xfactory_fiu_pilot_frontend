@@ -537,24 +537,19 @@ const Index = () => {
       const teamId = teamIdStr ? Number(teamIdStr) : null;
       if (teamId) {
         const { apiClient } = await import("@/lib/api");
-        // Regenerate concept card from scratch to start fresh
-        await apiClient.generateTeamConceptCard(teamId);
-        // Reset the review data to show the new concept
-        loadIdeaReviewData();
-        
-        // Close the idea review dialog and navigate to station 1 (Idea Generation)
+        // Close the dialogs first
         setShowIdeaReview(false);
         setIsPivotingConcept(false);
         
-        // Navigate to station 1 - Idea Generation
-        localStorage.setItem(scopedKey('xfactoryCurrentStation'), '1');
-        setAppState('station');
+        // Clear the existing idea card data to force a fresh start
         setStationData(prev => ({
           ...prev,
-          currentStation: 1,
-          ideaCard: null, // Clear the old idea card
+          ideaCard: null,
           onboardingData: null,
         }));
+        
+        // Navigate back to the onboarding flow (same flow as after team formation)
+        setAppState('onboarding');
       }
     } catch {}
   };
