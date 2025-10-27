@@ -248,6 +248,7 @@ const Index = () => {
   const [elevatorSaved, setElevatorSaved] = useState(false);
   // Inline edit state for concept card (dashboard-level review modal)
   const [isEditingConcept, setIsEditingConcept] = useState(false);
+  const [isPivotingConcept, setIsPivotingConcept] = useState(false);
   const [editableConcept, setEditableConcept] = useState<{ title: string; problem: string; solution: string; target_audience: string; current_solutions: string; business_model?: string; assumptions?: Array<{ text: string; confidence: number }> }>({
     title: "",
     problem: "",
@@ -527,6 +528,34 @@ const Index = () => {
         await apiClient.generateTeamConceptCard(teamId);
       }
       setIsEditingConcept(false);
+    } catch {}
+  };
+
+  const handlePivotConcept = async () => {
+    try {
+      const teamIdStr = localStorage.getItem('xfactoryTeamId');
+      const teamId = teamIdStr ? Number(teamIdStr) : null;
+      if (teamId) {
+        const { apiClient } = await import("@/lib/api");
+        // Regenerate concept card from scratch to start fresh
+        await apiClient.generateTeamConceptCard(teamId);
+        // Reset the review data to show the new concept
+        loadIdeaReviewData();
+        
+        // Close the idea review dialog and navigate to station 1 (Idea Generation)
+        setShowIdeaReview(false);
+        setIsPivotingConcept(false);
+        
+        // Navigate to station 1 - Idea Generation
+        localStorage.setItem(scopedKey('xfactoryCurrentStation'), '1');
+        setAppState('station');
+        setStationData(prev => ({
+          ...prev,
+          currentStation: 1,
+          ideaCard: null, // Clear the old idea card
+          onboardingData: null,
+        }));
+      }
     } catch {}
   };
 
@@ -1413,9 +1442,14 @@ const Index = () => {
                               ) : (
                                 <span>{ideaReviewData?.card?.title || 'AI-powered startup concept'}</span>
                               )}
-                              <Button variant="secondary" size="sm" className="ml-2" onClick={() => setIsEditingConcept(v => !v)}>
-                                {isEditingConcept ? 'Cancel' : 'Edit'}
-                              </Button>
+                              <div className="flex gap-2 ml-2">
+                                <Button variant="secondary" size="sm" onClick={() => setIsEditingConcept(v => !v)}>
+                                  {isEditingConcept ? 'Cancel' : 'Edit'}
+                                </Button>
+                                <Button variant="outline" size="sm" className="border-orange-300 text-orange-600 hover:bg-orange-50" onClick={() => setIsPivotingConcept(true)}>
+                                  Pivot
+                                </Button>
+                              </div>
                             </div>
                           </div>
                           <div className="grid md:grid-cols-2 gap-8">
@@ -1637,6 +1671,22 @@ const Index = () => {
                 })()}
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Pivot Confirmation Dialog */}
+        <Dialog open={isPivotingConcept} onOpenChange={setIsPivotingConcept}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Pivot Concept</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground py-4">
+              Are you sure you want to pivot and start fresh? This will regenerate your concept card from scratch and overwrite the existing data. Your other sections won't be affected.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsPivotingConcept(false)}>Cancel</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600" onClick={handlePivotConcept}>Confirm Pivot</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
