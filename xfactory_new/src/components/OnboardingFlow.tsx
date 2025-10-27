@@ -341,6 +341,16 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
           </div>
             
             <div className="flex items-center gap-3">
+              {/* Back Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="text-white hover:bg-white/20 mr-2"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Exit
+              </Button>
               {/* Logo - bigger and positioned on the right */}
               <img 
                 src="/logos/prov_logo_white.png" 
@@ -691,9 +701,8 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                     {(data.marketOpportunities || []).map((opportunity, index) => (
                       <div key={index} className="flex gap-2">
                     <textarea
-                          className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                          className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                           style={{
-                            height: 'auto',
                             minHeight: '6rem',
                             maxHeight: '20rem'
                           }}
@@ -707,7 +716,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                           onChange={(e) => {
                             const target = e.target;
                             target.style.height = 'auto';
-                            target.style.height = Math.min(target.scrollHeight, 320) + 'px'; // 320px = 20rem
+                            target.style.height = Math.min(target.scrollHeight, 320) + 'px';
                             setData(prev => ({ 
                         ...prev, 
                               marketOpportunities: (prev.marketOpportunities || []).map((opp, i) => i === index ? target.value : opp)
@@ -717,6 +726,12 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             const target = e.target as HTMLTextAreaElement;
                             target.style.height = 'auto';
                             target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                          }}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = 'auto';
+                              el.style.height = Math.min(el.scrollHeight, 320) + 'px';
+                            }
                           }}
                         />
                         {index > 2 && (
@@ -759,9 +774,8 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                     {(data.userProblems || []).map((problem, index) => (
                       <div key={index} className="flex gap-2">
                     <textarea
-                          className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
+                          className="flex-1 min-h-[6rem] p-3 rounded-lg border border-border bg-card text-card-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                           style={{
-                            height: 'auto',
                             minHeight: '6rem',
                             maxHeight: '20rem'
                           }}
@@ -775,7 +789,7 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                           onChange={(e) => {
                             const target = e.target;
                             target.style.height = 'auto';
-                            target.style.height = Math.min(target.scrollHeight, 320) + 'px'; // 320px = 20rem
+                            target.style.height = Math.min(target.scrollHeight, 320) + 'px';
                             setData(prev => ({ 
                         ...prev, 
                               userProblems: (prev.userProblems || []).map((prob, i) => i === index ? target.value : prob)
@@ -785,6 +799,12 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
                             const target = e.target as HTMLTextAreaElement;
                             target.style.height = 'auto';
                             target.style.height = Math.min(target.scrollHeight, 320) + 'px';
+                          }}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = 'auto';
+                              el.style.height = Math.min(el.scrollHeight, 320) + 'px';
+                            }
                           }}
                         />
                         {index > 2 && (

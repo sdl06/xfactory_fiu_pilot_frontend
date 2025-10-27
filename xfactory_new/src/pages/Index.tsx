@@ -77,6 +77,7 @@ interface StationData {
   investorData?: any;
   completedStations: number[];
   onboardingInitialStep?: number;
+  _pivotReset?: number; // Used to force remount when pivoting
 }
 
 const Index = () => {
@@ -537,6 +538,7 @@ const Index = () => {
       const teamId = teamIdStr ? Number(teamIdStr) : null;
       if (teamId) {
         const { apiClient } = await import("@/lib/api");
+        
         // Close the dialogs first
         setShowIdeaReview(false);
         setIsPivotingConcept(false);
@@ -548,12 +550,24 @@ const Index = () => {
           onboardingData: null,
         }));
         
+        // Clear brainstorming data in the backend to force fresh generation
+        try {
+          await apiClient.delete(`/ideation/teams/${teamId}/brainstorming/`);
+        } catch {}
+        
         // Clear the completion flag in localStorage to allow re-entering onboarding
         try {
           localStorage.removeItem(scopedKey('xfactoryIdeaCompleted'));
+          // Also clear any cached brainstorming data
+          localStorage.removeItem('xfactoryBrainstorming');
         } catch {}
         
         // Navigate back to the onboarding flow (same flow as after team formation)
+        // The key will force a fresh remount with empty state
+        setStationData(prev => ({
+          ...prev,
+          _pivotReset: Date.now(),
+        }));
         setAppState('onboarding');
       }
     } catch {}
@@ -1332,8 +1346,8 @@ const Index = () => {
         <OnboardingFlow 
           onComplete={handleOnboardingComplete}
           onBack={onboardingBackHandler}
-          // Force remount when we gain concept card data so initialStep applies
-          key={stationData?.ideaCard ? 'onboarding-with-card' : 'onboarding-default'}
+          // Force remount when we gain concept card data so initialStep applies or when pivoting
+          key={stationData?._pivotReset ? `onboarding-pivot-${stationData._pivotReset}` : (stationData?.ideaCard ? 'onboarding-with-card' : 'onboarding-default')}
         />
       </div>
     );
