@@ -10,13 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Rocket, 
   FileText, 
-  Globe, 
-  Mail, 
   CreditCard,
   ArrowRight, 
   ArrowLeft,
   CheckCircle,
-  Download,
   Copy,
   ExternalLink
 } from "lucide-react";
@@ -40,14 +37,6 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
     subtitle: "",
     content: "",
     template: ""
-  });
-
-  // Domain & Email State
-  const [domainData, setDomainData] = useState({
-    domain: "",
-    email: "",
-    dnsConfigured: false,
-    emailConfigured: false
   });
 
   // Website & Checkout State
@@ -137,7 +126,6 @@ Key benefits include:
   const handleComplete = () => {
     const launchPrepData = {
       pressRelease: pressReleaseData,
-      domain: domainData,
       integrations: integrationData,
       completedSections,
       completedAt: new Date().toISOString()
@@ -145,7 +133,7 @@ Key benefits include:
     onComplete(launchPrepData);
   };
 
-  const progress = (completedSections.length / 3) * 100;
+  const progress = (completedSections.length / 2) * 100;
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,21 +160,16 @@ Key benefits include:
           <div className="mb-6">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-muted-foreground mt-2">
-              {completedSections.length} of 3 sections completed
+              {completedSections.length} of 2 sections completed
             </p>
           </div>
 
           <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="press-release" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Press Release
                 {completedSections.includes('press-release') && <CheckCircle className="h-3 w-3 text-success" />}
-              </TabsTrigger>
-              <TabsTrigger value="domain-email" className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                Domain & Email
-                {completedSections.includes('domain-email') && <CheckCircle className="h-3 w-3 text-success" />}
               </TabsTrigger>
               <TabsTrigger value="integrations" className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
@@ -267,99 +250,6 @@ Key benefits include:
               </Card>
             </TabsContent>
 
-            {/* Domain & Email Setup */}
-            <TabsContent value="domain-email" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5" />
-                    Domain & Email Setup
-                  </CardTitle>
-                  <CardDescription>
-                    Configure your custom domain and professional email
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Domain Setup */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Custom Domain
-                    </h3>
-                    <div>
-                      <Label htmlFor="domain">Domain Name</Label>
-                      <Input
-                        id="domain"
-                        placeholder="yourcompany.com"
-                        value={domainData.domain}
-                        onChange={(e) => setDomainData({...domainData, domain: e.target.value})}
-                      />
-                    </div>
-                    <Card className="p-4 bg-muted/50">
-                      <h4 className="font-medium mb-2">DNS Configuration Required:</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>A Record (@):</span>
-                          <code className="bg-background px-2 py-1 rounded">185.158.133.1</code>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>A Record (www):</span>
-                          <code className="bg-background px-2 py-1 rounded">185.158.133.1</code>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-3"
-                        onClick={() => window.open('https://dnschecker.org', '_blank')}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Check DNS Propagation
-                      </Button>
-                    </Card>
-                  </div>
-
-                  {/* Email Setup */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Professional Email
-                    </h3>
-                    <div>
-                      <Label htmlFor="email">Business Email</Label>
-                      <Input
-                        id="email"
-                        placeholder="hello@yourcompany.com"
-                        value={domainData.email}
-                        onChange={(e) => setDomainData({...domainData, email: e.target.value})}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card className="p-4 text-center">
-                        <h4 className="font-medium">Google Workspace</h4>
-                        <p className="text-sm text-muted-foreground mb-3">$6/user/month</p>
-                        <Button variant="outline" size="sm">Setup</Button>
-                      </Card>
-                      <Card className="p-4 text-center">
-                        <h4 className="font-medium">Microsoft 365</h4>
-                        <p className="text-sm text-muted-foreground mb-3">$5/user/month</p>
-                        <Button variant="outline" size="sm">Setup</Button>
-                      </Card>
-                      <Card className="p-4 text-center">
-                        <h4 className="font-medium">Zoho Mail</h4>
-                        <p className="text-sm text-muted-foreground mb-3">$1/user/month</p>
-                        <Button variant="outline" size="sm">Setup</Button>
-                      </Card>
-                    </div>
-                  </div>
-
-                  <Button onClick={() => handleSectionComplete('domain-email')}>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Complete Domain & Email Setup
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             {/* Website & Checkout Integrations */}
             <TabsContent value="integrations" className="space-y-6">
@@ -385,9 +275,10 @@ Key benefits include:
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => setIntegrationData({...integrationData, paymentProvider: 'stripe'})}
+                            onClick={() => window.open('https://dashboard.stripe.com/register', '_blank')}
                           >
-                            Select Stripe
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Setup Stripe
                           </Button>
                         </div>
                       </Card>
@@ -398,9 +289,10 @@ Key benefits include:
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => setIntegrationData({...integrationData, paymentProvider: 'paypal'})}
+                            onClick={() => window.open('https://www.paypal.com/businessprofile/mysettings/commerce/create', '_blank')}
                           >
-                            Select PayPal
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Setup PayPal
                           </Button>
                         </div>
                       </Card>
@@ -411,9 +303,10 @@ Key benefits include:
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => setIntegrationData({...integrationData, paymentProvider: 'square'})}
+                            onClick={() => window.open('https://squareup.com/us/en/signup', '_blank')}
                           >
-                            Select Square
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Setup Square
                           </Button>
                         </div>
                       </Card>
@@ -427,10 +320,24 @@ Key benefits include:
                       <Label htmlFor="website-url">Production Website URL</Label>
                       <Input
                         id="website-url"
-                        placeholder="https://yourcompany.com"
+                        placeholder="yourcompany.com"
                         value={integrationData.websiteUrl}
                         onChange={(e) => setIntegrationData({...integrationData, websiteUrl: e.target.value})}
                       />
+                      {integrationData.websiteUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => {
+                            const url = `https://www.godaddy.com/domainsearch/find?domainToCheck=${integrationData.websiteUrl}`;
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Check Domain Availability
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -468,7 +375,7 @@ Key benefits include:
             </Button>
             <Button 
               onClick={handleComplete}
-              disabled={completedSections.length < 3}
+              disabled={completedSections.length < 2}
             >
               Complete Launch Prep
               <ArrowRight className="ml-2 h-4 w-4" />
