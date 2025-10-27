@@ -654,25 +654,18 @@ export const FactoryDashboard = ({
             <Star className="h-5 w-5 text-accent" />
             The Departments
           </h3>
-          <div className="grid md:grid-cols-4 gap-4">
-            <Button variant="success" size="sm" className="h-auto p-4 flex-col gap-2" onClick={onEnterCommunity}>
-              <Users className="h-5 w-5" />
-              <span>Factory Community</span>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Button variant="success" size="sm" className="h-auto p-4 flex-col gap-2" asChild>
+              <a href="https://chat.whatsapp.com/En7KRfHDMBnItJ9OUEyy4z" target="_blank" rel="noopener noreferrer">
+                <Users className="h-5 w-5" />
+                <span>Factory Community</span>
+              </a>
             </Button>
             <Button variant="machinery" size="sm" className="h-auto p-4 flex-col gap-2" style={{ animation: 'none' }} asChild>
-              <a href="mailto:trinity@ivyfactory.com,adelaide@ivyfactory.com?subject=Support Request">
+              <a href="mailto:trinity@ivyfactory.com,adelaide@ivy-factory.com?subject=SUPPORT">
                 <Cog className="h-5 w-5" />
                 <span>Support Crew</span>
               </a>
-            </Button>
-            <Button variant="warning" size="sm" className="h-auto p-4 flex-col gap-2" onClick={() => onEnterStation(4)}>
-              <TrendingUp className="h-5 w-5" />
-              <span>Investor Hub</span>
-            </Button>
-
-            <Button variant="outline" size="sm" className="h-auto p-4 flex-col gap-2">
-              <Scale className="h-5 w-5" />
-              <span>Leadership Board</span>
             </Button>
           </div>
         </div>
@@ -684,7 +677,7 @@ export const FactoryDashboard = ({
               Production Line Journey
             </h2>
             <Badge variant="success" className="text-lg px-4 py-2">
-              {completedCount}/{totalSteps} Stations Complete
+              {completedCount}/{totalSteps} Stations Complete ({Math.round((completedCount / totalSteps) * 100)}%)
             </Badge>
           </div>
           {/* Make roadmap section same max width as Departments by inheriting container width */}
