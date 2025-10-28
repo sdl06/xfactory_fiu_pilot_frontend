@@ -48,8 +48,44 @@ export const FactorAI = ({
   const [showSettings, setShowSettings] = useState(false);
   const [supportTimerOn, setSupportTimerOn] = useState(true);
   const [hasShownWelcome, setHasShownWelcome] = useState(false);
+  const [floatingMessage, setFloatingMessage] = useState<string | null>(null);
+  const [messageBank, setMessageBank] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Show floating messages when Ivie is closed (every 5 minutes)
+  useEffect(() => {
+    if (isOpen) {
+      setFloatingMessage(null); // Clear when opened
+      return;
+    }
+    
+    const floatingBank = [
+      "Need help understanding something? Click on me!",
+      "I'm here whenever you need guidance. Just ask.",
+      "Stuck or confused? I can help clarify anything.",
+      "Building a startup? I'm here to support you.",
+      "No question is too basic. Click me if you're unsure.",
+      "You've got this! I'm here if you need me."
+    ];
+    
+    const pick = () => floatingBank[Math.floor(Math.random() * floatingBank.length)];
+    
+    // Show first message after a delay
+    const firstTimeout = setTimeout(() => {
+      setFloatingMessage(pick());
+    }, 30000); // 30 seconds after closing
+    
+    // Then every 5 minutes
+    const interval = setInterval(() => {
+      setFloatingMessage(pick());
+    }, 5 * 60 * 1000);
+    
+    return () => {
+      clearTimeout(firstTimeout);
+      clearInterval(interval);
+    };
+  }, [isOpen]);
 
   // Periodic supportive nudges every 5 minutes while open
   useEffect(() => {
@@ -254,6 +290,25 @@ What would you like to work on today?`;
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 left-6 z-50">
+        {floatingMessage && (
+          <div className="absolute bottom-20 left-0 w-64 bg-purple-600 text-white p-3 rounded-lg shadow-lg animate-fade-in">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm">{floatingMessage}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFloatingMessage(null)}
+                className="h-5 w-5 p-0 hover:bg-purple-700 text-white flex-shrink-0"
+              >
+                ×
+              </Button>
+            </div>
+            {/* Speech bubble tail */}
+            <div className="absolute bottom-0 left-4 transform translate-y-full">
+              <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-600"></div>
+            </div>
+          </div>
+        )}
         <Button
           onClick={() => setIsOpen(true)}
           className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300"
