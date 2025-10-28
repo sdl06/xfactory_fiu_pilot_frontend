@@ -44,7 +44,7 @@ export const PitchPracticeStation = ({
   const [teamId, setTeamId] = useState<number | null>(null);
   const [pdfNonce, setPdfNonce] = useState<number>(0);
 
-  const waitForPdfAccessible = async (url: string, timeoutMs = 120000) => {
+  const waitForPptxAccessible = async (url: string, timeoutMs = 120000) => {
     const start = Date.now();
     const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
     let backoff = 1500;
@@ -52,7 +52,7 @@ export const PitchPracticeStation = ({
       try {
         const res = await fetch(`${url}?cb=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
         const ct = res.headers.get('content-type') || '';
-        if (res.ok && ct.includes('pdf')) return true;
+        if (res.ok && (ct.includes('vnd.openxmlformats') || ct.includes('pptx') || ct.includes('application/vnd.openxmlformats'))) return true;
       } catch {}
       await delay(backoff);
       backoff = Math.min(backoff * 1.5, 8000);
@@ -348,12 +348,12 @@ export const PitchPracticeStation = ({
         // Load submission data
         await loadSubmissionData(tId);
         
-        // Check for existing PDF presentation
+        // Check for existing PPTX presentation
         try {
           const pdfCheck = await apiClient.getLatestGammaTeam(tId);
           const pdfUrlData = (pdfCheck as any)?.data;
           if (pdfUrlData?.pdf_url) {
-            const ok = await waitForPdfAccessible(pdfUrlData.pdf_url);
+            const ok = await waitForPptxAccessible(pdfUrlData.pdf_url);
             if (ok) {
               setPdfUrl(pdfUrlData.pdf_url);
               setPdfNonce(Date.now());
@@ -511,7 +511,7 @@ export const PitchPracticeStation = ({
           const latest = await apiClient.getLatestGammaTeam(teamId);
           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
           if (url) {
-            const ok = await waitForPdfAccessible(url);
+            const ok = await waitForPptxAccessible(url);
             if (ok) {
               setPdfUrl(url);
               setPdfNonce(Date.now());
@@ -845,8 +845,8 @@ export const PitchPracticeStation = ({
                   Your professional pitch deck has been created and is ready for download.
                 </p>
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">pitch-deck-presentation.pdf</p>
-                  <p className="text-xs text-muted-foreground">12 slides • 2.3 MB</p>
+                <p className="text-xs text-muted-foreground">pitch-deck-presentation.pptx</p>
+                <p className="text-xs text-muted-foreground">12 slides • 2.3 MB</p>
                 </div>
               </div>
             </div>
@@ -859,7 +859,7 @@ export const PitchPracticeStation = ({
                   }
                 }} disabled={!pdfUrl || !teamId}>
                   <Download className="h-4 w-4 mr-2" />
-                  Download PDF
+                  Download PPTX
                 </Button>
                 <Button variant="outline" onClick={async () => {
                   setIsGenerating(true);
@@ -885,7 +885,7 @@ export const PitchPracticeStation = ({
                           const latest = await apiClient.getLatestGammaTeam(tId);
                           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
                           if (url && url !== pdfUrl) {
-                            const ok = await waitForPdfAccessible(url);
+                            const ok = await waitForPptxAccessible(url);
                             if (ok) {
                               setPdfUrl(url);
                               setPdfNonce(Date.now());
@@ -905,7 +905,7 @@ export const PitchPracticeStation = ({
                           const latest = await apiClient.getLatestGammaTeam(tId);
                           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
                           if (url && url !== pdfUrl) {
-                            const ok = await waitForPdfAccessible(url);
+                            const ok = await waitForPptxAccessible(url);
                             if (ok) {
                               setPdfUrl(url);
                               setPdfNonce(Date.now());
@@ -941,7 +941,7 @@ export const PitchPracticeStation = ({
               {pdfUrl && teamId && (
                 <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
                   <iframe
-                    title="Pitch Deck PDF"
+                    title="Pitch Deck PPTX"
                     src={`${getGammaPdfUrlTeam(teamId)}?cb=${pdfNonce}`}
                     className="w-full h-full"
                     style={{ border: 'none' }}
