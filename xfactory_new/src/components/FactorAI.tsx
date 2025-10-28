@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Bot, Send, Minimize2, Maximize2, Settings, Lightbulb, Target, Code, TestTube, TrendingUp, Rocket, Zap, RefreshCw, Sparkles, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -46,6 +47,7 @@ export const FactorAI = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [supportTimerOn, setSupportTimerOn] = useState(true);
+  const [hasShownWelcome, setHasShownWelcome] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -74,18 +76,52 @@ export const FactorAI = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Initialize with contextual welcome message
+  // Show onboarding messages when opening Ivie
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      const welcomeMessage = getContextualWelcome();
+    if (isOpen && !hasShownWelcome) {
+      const welcomeBank = [
+        "I'm here for whatever you need. Click on me if you don't understand something—I'll help you through it.",
+        "No question is too small. I'm here to support you on your startup journey. Reach out anytime.",
+        "You've got this. If anything feels unclear, I'm just a click away to help you make progress.",
+        "Building a startup can feel overwhelming, but you're not alone. I'm here to guide and support you.",
+        "Whether you're stuck, confused, or just need someone to chat with about your idea—I've got your back.",
+        "Your journey starts with a single step. I'm here to help you take that next step confidently."
+      ];
+      const message = welcomeBank[Math.floor(Math.random() * welcomeBank.length)];
       setMessages([{
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: welcomeMessage,
+        content: message,
         timestamp: new Date()
       }]);
+      setHasShownWelcome(true);
     }
-  }, [isOpen, currentStation]);
+  }, [isOpen, hasShownWelcome]);
+
+  // Show a supportive message when window regains focus (user returns to app)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!document.hasFocus() || !isOpen || !hasShownWelcome) return;
+      const supportBank = [
+        "Welcome back! I'm still here whenever you need help.",
+        "I'm ready when you are. If you're feeling stuck or confused, just ask me.",
+        "You're doing great. Remember: progress over perfection. Need anything clarified?",
+        "Building something new is hard, but you're making moves. Want to talk about what's on your mind?",
+        "I'm here to help you succeed. What part would you like to understand better?",
+        "Take your time, and ask me anything. No question is too basic—we all start somewhere."
+      ];
+      const welcomeMsg = supportBank[Math.floor(Math.random() * supportBank.length)];
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: welcomeMsg,
+        timestamp: new Date()
+      }]);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isOpen, hasShownWelcome]);
 
   const getContextualWelcome = () => {
     const stationNames: Record<number, string> = {
@@ -301,7 +337,10 @@ What would you like to work on today?`;
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  setHasShownWelcome(false); // Reset so next open shows welcome
+                }}
                 className="h-6 w-6 p-0 hover:bg-white/20"
               >
                 ×
@@ -323,7 +362,15 @@ What would you like to work on today?`;
                           ? 'bg-primary text-primary-foreground' 
                           : 'bg-muted'
                       }`}>
-                        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                        <div className="text-sm">
+                          {message.role === 'assistant' ? (
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown>{message.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <div className="whitespace-pre-wrap">{message.content}</div>
+                          )}
+                        </div>
                         <div className="text-xs opacity-70 mt-1">
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
