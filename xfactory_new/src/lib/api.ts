@@ -928,6 +928,10 @@ class ApiClient {
   }
 
   async getTeamLatestIdeaId(teamId: number) { return this.get(`/ideation/teams/${teamId}/latest-idea/`); }
+  // Ivie assistant chat
+  async assistantChatTeam(teamId: number, payload: { message: string; history?: Array<{ role: 'user'|'assistant'; content: string }>; station?: number; user_data?: any; }) {
+    return this.post(`/ideation/teams/${teamId}/assistant/chat/`, payload);
+  }
   // Interviews
   async getTeamInterviews(teamId: number) {
     return this.get(`/validation/teams/${teamId}/interviews/`);

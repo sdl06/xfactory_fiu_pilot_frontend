@@ -6,6 +6,7 @@ import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Ligh
 import { StationFlowManager } from "@/lib/stationFlow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient, getGammaPdfUrlTeam } from "@/lib/api";
+import { FactorAI } from "../FactorAI";
 import InfoButton from "@/components/info-button";
 
 interface PitchPracticeStationProps {
@@ -1061,6 +1062,8 @@ export const PitchPracticeStation = ({
           </div>
         </div>
       )}
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={8} userData={{}} context="pitch-practice" />
     </div>
   );
 };

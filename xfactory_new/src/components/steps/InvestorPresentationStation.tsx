@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { TrendingUp, Clock, Calendar, MessageSquare, ArrowLeft, ArrowRight, CheckCircle, Star, DollarSign, Target, Mail, Briefcase } from "lucide-react";
+import { FactorAI } from "../FactorAI";
 
 interface InvestorPresentationProps {
   onComplete: (data: any) => void;
@@ -283,6 +284,9 @@ export const InvestorPresentationStation = ({
           )}
         </div>
       </div>
+      
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={12} userData={{ pitchData, mvpData, financialData }} context="investor-presentation" />
     </div>
   );
 };

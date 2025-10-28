@@ -9,6 +9,7 @@ import { Users, MessageSquare, Video, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiClient } from "@/lib/api";
+import { FactorAI } from "../FactorAI";
 
 interface MentorshipSessionProps {
   onComplete: (data: any) => void;
@@ -345,6 +346,9 @@ export const MentorshipStation = ({
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={10} userData={{ sessionType, context }} context="mentorship" />
     </div>
   );
 };

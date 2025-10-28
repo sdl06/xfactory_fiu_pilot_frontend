@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Bot, Send, Minimize2, Maximize2, Settings, Lightbulb, Target, Code, TestTube, TrendingUp, Rocket, Zap, RefreshCw, Sparkles, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -43,18 +44,30 @@ export const FactorAI = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [supportTimerOn, setSupportTimerOn] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Load API key from localStorage
+  // Periodic supportive nudges every 5 minutes while open
   useEffect(() => {
-    const savedKey = localStorage.getItem('factorai_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-    }
-  }, []);
+    if (!isOpen || !supportTimerOn) return;
+    const bank = [
+      "You're doing great—small steps lead to real momentum.",
+      "Need help unblocking something? I can suggest next actions.",
+      "Remember to validate with users early—evidence beats assumptions.",
+      "Focus on one concrete outcome this session. I can help you define it.",
+      "If you're stuck, describe the bottleneck—I'll propose options."
+    ];
+    const pick = () => bank[Math.floor(Math.random() * bank.length)];
+    const id = setInterval(() => {
+      setMessages(prev => ([
+        ...prev,
+        { id: crypto.randomUUID(), role: 'assistant', content: pick(), timestamp: new Date() }
+      ]));
+    }, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [isOpen, supportTimerOn]);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -101,7 +114,7 @@ export const FactorAI = ({
       9: "Let's monitor and optimize! I can help you track key metrics, analyze performance data, and identify areas for continuous improvement."
     };
 
-    return `👋 Hi! I'm **FactorAI**, your AI startup advisor. 
+    return `👋 Hi! I'm **Ivie**, your AI startup advisor. 
 
 I see you're at the **${stationName}**. ${contextualHelp[currentStation] || "I'm here to help you build an amazing startup!"}
 
@@ -126,29 +139,19 @@ What would you like to work on today?`;
     return tips[station] || "• Stay focused on your goals\n• Ask for help when needed\n• Celebrate small wins";
   };
 
-  const saveApiKey = (key: string) => {
-    localStorage.setItem('factorai_api_key', key);
-    setApiKey(key);
-    setShowSettings(false);
-    toast({
-      title: "API Key Saved",
-      description: "Your OpenAI API key has been saved locally.",
-    });
+  const getTeamId = async (): Promise<number | null> => {
+    try {
+      const cached = localStorage.getItem('xfactoryTeamId');
+      const teamId = cached ? Number(cached) : null;
+      if (teamId) return teamId;
+      const status = await apiClient.get('/team-formation/status/');
+      return (status as any)?.data?.current_team?.id || null;
+    } catch { return null; }
   };
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please set your OpenAI API key in settings to use FactorAI.",
-        variant: "destructive",
-      });
-      setShowSettings(true);
-      return;
-    }
-
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -161,6 +164,20 @@ What would you like to work on today?`;
     setIsLoading(true);
 
     try {
+      const teamId = await getTeamId();
+      const payloadHistory = messages.slice(-5).map(m => ({ role: m.role, content: m.content }));
+      const res = teamId ? await apiClient.assistantChatTeam(teamId, {
+        message: inputMessage,
+        history: payloadHistory,
+        station: currentStation,
+        user_data: userData
+      }) : { status: 400, data: { error: 'No team found' } } as any;
+
+      if ((res as any)?.error || (res as any)?.status >= 400) {
+        throw new Error((res as any)?.error || 'Chat failed');
+      }
+
+      const aiResponse = (res as any)?.data?.reply || "I'm here to help—could you share a bit more detail?";
       const stationNames: Record<number, string> = {
         1: "Idea Creation Station",
         2: "Visual Mockup Station",
@@ -226,10 +243,10 @@ Provide advice specifically relevant to their current station and overall startu
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('FactorAI Error:', error);
+      console.error('Ivie Error:', error);
       toast({
         title: "Error",
-        description: "Failed to get response from FactorAI. Please check your API key and try again.",
+        description: "Ivie couldn't respond just now. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -263,7 +280,7 @@ Provide advice specifically relevant to their current station and overall startu
           <Bot className="h-6 w-6 text-white" />
         </Button>
         <Badge className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-2 py-1 text-xs whitespace-nowrap">
-          FactorAI
+          Ivie
         </Badge>
       </div>
     );
@@ -278,7 +295,7 @@ Provide advice specifically relevant to their current station and overall startu
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">FactorAI Settings</CardTitle>
+                <CardTitle className="text-lg">Ivie</CardTitle>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setShowSettings(false)}>
                 ×
@@ -286,30 +303,9 @@ Provide advice specifically relevant to their current station and overall startu
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
-                <strong>For production use:</strong> Connect to Supabase and add your OpenAI API key to Edge Function Secrets.
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                For now, enter your API key below (stored locally):
-              </p>
+            <div className="text-sm text-muted-foreground">
+              Ivie is connected. Your current station and idea context will guide responses.
             </div>
-            <div>
-              <label className="text-sm font-medium">OpenAI API Key</label>
-              <Input
-                type="password"
-                placeholder="sk-..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <Button onClick={() => saveApiKey(apiKey)} disabled={!apiKey} className="w-full">
-              Save API Key
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OpenAI Platform</a>
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -328,7 +324,7 @@ Provide advice specifically relevant to their current station and overall startu
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
               <div>
-                <CardTitle className="text-sm font-bold">FactorAI</CardTitle>
+                <CardTitle className="text-sm font-bold">Ivie</CardTitle>
                 {(() => {
                   const StationIcon = getStationIcon(currentStation);
                   return (
@@ -456,7 +452,7 @@ Provide advice specifically relevant to their current station and overall startu
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Ask FactorAI anything..."
+                  placeholder="Ask Ivie anything..."
                   disabled={isLoading}
                   className="flex-1"
                 />

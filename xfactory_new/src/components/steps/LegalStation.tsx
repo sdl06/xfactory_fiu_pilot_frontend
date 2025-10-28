@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Scale, ArrowLeft, CheckCircle, Search, HelpCircle, Loader2, Brain, BookOpen } from "lucide-react";
 import { StationFlowManager } from "@/lib/stationFlow";
+import { FactorAI } from "../FactorAI";
 
 interface LegalStationProps {
   onComplete: (data: any) => void;
@@ -695,6 +696,9 @@ export const LegalStation = ({
           </div>
         </Tabs>
       </div>
+      
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={6} userData={{ mvpData }} context="legal" />
     </div>
   );
 };

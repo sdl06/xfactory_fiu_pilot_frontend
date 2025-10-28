@@ -12,6 +12,7 @@ import {
   ExternalLink, LayoutDashboard, Loader2, Sparkles
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
+import { FactorAI } from "../FactorAI";
 import { Badge as UITag } from "@/components/ui/badge";
 
 interface MVPDevelopmentStationProps {
@@ -839,6 +840,9 @@ export const MVPDevelopmentStation = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={4} userData={{ mvpData }} context="mvp-development" />
     </div>
   );
 };

@@ -14,6 +14,7 @@ import { apiClient } from "@/lib/api";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Legend, ReferenceLine } from 'recharts';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import InfoButton from "@/components/info-button";
+import { FactorAI } from "../FactorAI";
 
 interface FinancialStationProps {
   onComplete: (data: any) => void;
@@ -2157,6 +2158,9 @@ This bar chart is like a financial scoreboard. Green bars = money coming in, Red
 
 
       </div>
+      
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={5} userData={{ previousData }} context="finance" />
     </div>
   );
 };
