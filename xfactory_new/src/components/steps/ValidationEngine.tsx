@@ -811,7 +811,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       return "";
     }
   };
-  const markSecondaryFromReport = (report: any) => {
+  const markSecondaryFromReport = (report: any, shouldMarkComplete: boolean = false) => {
     const extracted = report || {};
     const marketInsights = extracted.market_insights || [];
     const competitive = extracted.competitive_analysis || [];
@@ -851,7 +851,10 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         return [...prev, validationScore];
       }
     });
-    setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
+    // Only mark as completed if explicitly requested (e.g., after user action)
+    if (shouldMarkComplete) {
+      setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
+    }
   };
   const loadExistingSecondaryIfAny = async () => {
     try {
@@ -1622,7 +1625,9 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
             try {
               const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
               const report = (reportRes.data as any)?.report;
-              if (report) { markSecondaryFromReport(report); }
+              if (report) { 
+                markSecondaryFromReport(report, true); // Mark complete since report just finished
+              }
             } catch {}
           }
           setIsValidating(false);
@@ -2514,7 +2519,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                                    const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
                                                    const report = (reportRes.data as any)?.report;
                                                    if (report) {
-                                                     markSecondaryFromReport(report);
+                                                     markSecondaryFromReport(report, true); // Mark complete after regeneration
                                                    }
                                                  } catch (error) {
                                                    console.error('Failed to refresh report after regeneration:', error);
