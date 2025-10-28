@@ -93,24 +93,31 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
       // Generate new feature announcement template
       const featureResp = await apiClient.generatePressRelease(teamId, 'feature_announcement');
       
-      if ((productResp as any).success) {
-        const data = productResp as any;
+      console.log('Product response:', productResp);
+      console.log('Feature response:', featureResp);
+      
+      const productData = (productResp as any).data || productResp;
+      const featureData = (featureResp as any).data || featureResp;
+      
+      console.log('Product data:', productData);
+      console.log('Feature data:', featureData);
+      
+      if (productData?.success) {
         setPressReleaseData(prev => ({
           ...prev,
-          headline: data.business_name || "",
+          headline: productData.business_name || "",
           subtitle: "",
-          content: data.press_release || "",
-          template: data.press_release || ""
+          content: productData.press_release || "",
+          template: productData.press_release || ""
         }));
       }
-      if ((featureResp as any).success) {
-        const f = featureResp as any;
+      if (featureData?.success) {
         setPressReleaseData(prev => ({
           ...prev,
-          featureTemplate: f.press_release || prev.featureTemplate
+          featureTemplate: featureData.press_release || prev.featureTemplate
         }));
       }
-      if ((productResp as any).success || (featureResp as any).success) {
+      if (productData?.success || featureData?.success) {
         toast({
           title: "Success!",
           description: "Press release templates generated",
