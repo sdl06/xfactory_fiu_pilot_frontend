@@ -178,61 +178,6 @@ What would you like to work on today?`;
       }
 
       const aiResponse = (res as any)?.data?.reply || "I'm here to help—could you share a bit more detail?";
-      const stationNames: Record<number, string> = {
-        1: "Idea Creation Station",
-        2: "Visual Mockup Station",
-        3: "Validation Engine",
-        4: "Prototyping Station",
-        5: "Testing Station",
-        6: "Iteration Station",
-        7: "Scaling Station",
-        8: "Launch Station",
-        9: "Monitoring Station"
-      };
-
-      const systemPrompt = `You are FactorAI, an expert startup advisor helping entrepreneurs build successful companies. 
-
-CONTEXT:
-- Current Station: ${currentStation} (${stationNames[currentStation] || 'Unknown'})
-- User Business Type: ${userData?.businessType || 'Not specified'}
-- User Idea: ${userData?.ideaSummary || 'Not specified'}
-- Completed Stations: ${stationData?.completedStations?.join(', ') || 'None'}
-
-PERSONALITY:
-- Be encouraging and practical
-- Give actionable advice
-- Ask follow-up questions to understand better
-- Use startup terminology appropriately
-- Be concise but thorough
-- Include relevant examples when helpful
-
-FOCUS:
-Provide advice specifically relevant to their current station and overall startup journey. Help them overcome challenges and make progress.`;
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages.slice(-5).map(msg => ({ role: msg.role, content: msg.content })),
-            { role: 'user', content: inputMessage }
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
