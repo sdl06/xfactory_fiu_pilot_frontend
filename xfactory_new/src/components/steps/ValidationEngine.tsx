@@ -811,32 +811,148 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       return "";
     }
   };
-  const markSecondaryFromReport = (report: any, shouldMarkComplete: boolean = false) => {
-    const extracted = report || {};
-    const marketInsights = extracted.market_insights || [];
-    const competitive = extracted.competitive_analysis || [];
-    const personas = extracted.personas || [];
+  // Robust parsing for secondary research reports (handles JSON, markdown, and free text)
+  const parseSecondaryReport = (report: any) => {
+    const textParts: string[] = [
+      String(report?.title || ''),
+      String(report?.abstract || ''),
+      String(report?.content || ''),
+      String(report?.text || ''),
+      String(report?.body || ''),
+    ].filter(Boolean);
+
+    const fullText: string = textParts.join('\n\n');
+    const extracted: any = report?.extracted || report || {};
+
+    const marketInsightsRaw: string[] = Array.isArray(extracted.market_insights) ? extracted.market_insights : [];
+    const competitiveRaw: any[] = Array.isArray(extracted.competitive_analysis) ? extracted.competitive_analysis : [];
+    const personasRaw: any[] = Array.isArray(extracted.personas) ? extracted.personas : [];
+
+    const normCompetitive = competitiveRaw.map((c: any) => ({
+      competitor: c?.competitor || c?.name || c?.company || '',
+      summary: c?.summary || c?.notes || '',
+    })).filter((c: any) => c.competitor);
+
+    const normPersonas = personasRaw.map((p: any) => ({
+      name: p?.name || p?.label || 'Persona',
+      summary: p?.summary || p?.description || '',
+    }));
+
+    // Utility to parse numbers with K/M/B and currency
+    const parseNumberish = (val?: string | number | null): number | null => {
+      if (typeof val === 'number') return val;
+      const s = String(val || '').trim();
+      if (!s) return null;
+      const m = s.match(/\$?([\d,.]+)\s*(k|m|b|million|billion)?/i);
+      if (!m) return null;
+      const base = Number(m[1].replace(/,/g, ''));
+      const unit = (m[2] || '').toLowerCase();
+      if (!isFinite(base)) return null;
+      if (unit === 'k') return base * 1e3;
+      if (unit === 'm' || unit === 'million') return base * 1e6;
+      if (unit === 'b' || unit === 'billion') return base * 1e9;
+      return base;
+    };
+
+    // Try structured first, then regex from free text
+    const tam = extracted.tam ?? (() => {
+      const m = fullText.match(/\bTAM\b[^\n:$]*[:$]?\s*([\$\d,\.]+\s*(?:k|m|b|million|billion)?)/i);
+      return parseNumberish(m?.[1] || null);
+    })();
+
+    const sam = extracted.sam ?? (() => {
+      const m = fullText.match(/\bSAM\b[^\n:$]*[:$]?\s*([\$\d,\.]+\s*(?:k|m|b|million|billion)?)/i);
+      return parseNumberish(m?.[1] || null);
+    })();
+
+    const som = extracted.som ?? (() => {
+      const m = fullText.match(/\bSOM\b[^\n:$]*[:$]?\s*([\$\d,\.]+\s*(?:k|m|b|million|billion)?)/i);
+      return parseNumberish(m?.[1] || null);
+    })();
+
+    // Derive market insights if not provided
+    let marketInsights: string[] = [...marketInsightsRaw];
+    if (marketInsights.length === 0) {
+      // Look for markdown bullets or key findings section
+      const bullets = fullText
+        .split('\n')
+        .filter(l => /^\s*[-*•]/.test(l))
+        .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
+        .filter(Boolean);
+      marketInsights = bullets.slice(0, 6);
+    }
+
+    // Build top-level insights for the UI bullets
     const insights: string[] = [];
-    if (marketInsights.length) insights.push(String(marketInsights[0]));
-    if (competitive.length) insights.push(`Competitive: ${competitive[0]?.competitor || 'key player'}`);
-    if (extracted.tam) insights.push(`TAM: ${extracted.tam}`);
-    if (personas.length) insights.push(`Persona: ${personas[0]?.name || 'Target persona identified'}`);
+    if (marketInsights[0]) insights.push(String(marketInsights[0]));
+    if (normCompetitive[0]?.competitor) insights.push(`Competitive: ${normCompetitive[0].competitor}`);
+    if (typeof tam === 'number') insights.push(`TAM: ${tam.toLocaleString()}`);
+    if (normPersonas[0]?.name) insights.push(`Persona: ${normPersonas[0].name}`);
     while (insights.length < 4) insights.push('Key finding identified');
+
+    return {
+      title: String(report?.title || 'Secondary Market Research Report'),
+      abstract: String(report?.abstract || ''),
+      content: fullText,
+      tam, sam, som,
+      personas: normPersonas,
+      marketInsights,
+      competitive: normCompetitive,
+      sources: extracted.sources || report?.sources || [],
+      insights,
+      // Compose a readable markdown essay for rendering in the UI
+      report: (() => {
+        const lines: string[] = [];
+        const fmt = (n: number | null) => (typeof n === 'number' ? n.toLocaleString() : 'N/A');
+        const title = String(report?.title || 'Secondary Market Research Report');
+        const abstract = String(report?.abstract || '').trim();
+        lines.push(`# ${title}`);
+        if (abstract) {
+          lines.push('', abstract);
+        }
+        lines.push('', '## Market Sizing');
+        lines.push(`- TAM: ${fmt(tam)}`);
+        lines.push(`- SAM: ${fmt(sam)}`);
+        lines.push(`- SOM: ${fmt(som)}`);
+        if (normPersonas.length) {
+          lines.push('', '## Personas');
+          normPersonas.forEach(p => {
+            lines.push(`- ${p.name}${p.summary ? ` — ${p.summary}` : ''}`);
+          });
+        }
+        if (normCompetitive.length) {
+          lines.push('', '## Competitors');
+          normCompetitive.forEach(c => {
+            lines.push(`- ${c.competitor}${c.summary ? ` — ${c.summary}` : ''}`);
+          });
+        }
+        if (insights.length) {
+          lines.push('', '## Key Insights');
+          insights.forEach(i => lines.push(`- ${i}`));
+        }
+        if (marketInsights.length) {
+          lines.push('', '## Market Findings');
+          marketInsights.forEach(i => lines.push(`- ${i}`));
+        }
+        if (fullText) {
+          lines.push('', '## Full Report');
+          lines.push(fullText);
+        }
+        return lines.join('\n');
+      })(),
+    };
+  };
+
+  const markSecondaryFromReport = (report: any, shouldMarkComplete: boolean = false) => {
+    const normalized = parseSecondaryReport(report);
+    const insights: string[] = Array.isArray(normalized.insights) ? normalized.insights : [];
     // Initialize with 0% until the /20 score is computed
     const validationScore: ValidationScore = {
       tier: 'secondary',
       score: 0,
       status: 'warning',
       insights: insights.slice(0,4),
-      data: {
-        report: `# ${report?.title || 'Secondary Market Research Report'}\n\n${report?.content || ''}\n\n${report?.abstract || ''}`,
-        tam: extracted.tam,
-        sam: extracted.sam,
-        som: extracted.som,
-        personas,
-        marketInsights,
-        competitive
-      }
+      data: normalized,
     };
     setValidationScores(prev => {
       // Update existing secondary score or add new one
@@ -958,6 +1074,9 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const report = (reportRes.data as any)?.report;
       if (!report) throw new Error('Deep research report not found');
 
+      // Parse and normalize the report content
+      const normalized = parseSecondaryReport(report);
+
       // Build 4-insight summary from extracted data or content
       const insights: string[] = [];
       const extracted = report || {};
@@ -975,19 +1094,11 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const status = 'warning' as const;
     
     const validationScore: ValidationScore = {
-        tier: 'secondary',
+      tier: 'secondary',
       score,
       status,
-        insights: insights.slice(0,4),
-        data: {
-          report: `# ${report?.title || 'Secondary Market Research Report'}\n\n${report?.content || ''}\n\n${report?.abstract || ''}`,
-          tam: extracted.tam,
-          sam: extracted.sam,
-          som: extracted.som,
-          personas,
-          marketInsights,
-          competitive
-        }
+      insights: normalized.insights.slice(0,4),
+      data: normalized,
     };
 
     setValidationScores(prev => {
@@ -1009,22 +1120,20 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         const sec = await apiClient.getSecondaryScoreTeam(teamId);
         const s: any = (sec as any)?.data?.score;
         if (s && typeof s.final_score_20 === 'number') {
-              setSecondaryScore20(Number(s.final_score_20) || 0);
-              let current = 0;
-              setSecondaryScoreAnim(0);
-              const target = Math.max(0, Math.min(20, Number(s.final_score_20) || 0));
-              const step = Math.max(1, Math.round(target / 20));
-              const timer = setInterval(() => {
-                current += step;
-                if (current >= target) { current = target; clearInterval(timer); }
-                setSecondaryScoreAnim(current);
-              }, 40);
-              // Sync percentage in validationScores from the /20 score
-              const percent = Math.round(target * 5);
-              const mappedStatus = target >= 17 ? 'excellent' : target >= 14 ? 'good' : target >= 11 ? 'warning' : 'poor';
-              setValidationScores(prev => prev.map(sv => sv.tier === 'secondary' ? { ...sv, score: percent, status: mappedStatus as any } : sv));
-
-          
+          setSecondaryScore20(Number(s.final_score_20) || 0);
+          let current = 0;
+          setSecondaryScoreAnim(0);
+          const target = Math.max(0, Math.min(20, Number(s.final_score_20) || 0));
+          const step = Math.max(1, Math.round(target / 20));
+          const timer = setInterval(() => {
+            current += step;
+            if (current >= target) { current = target; clearInterval(timer); }
+            setSecondaryScoreAnim(current);
+          }, 40);
+          // Sync percentage in validationScores from the /20 score
+          const percent = Math.round(target * 5);
+          const mappedStatus = target >= 17 ? 'excellent' : target >= 14 ? 'good' : target >= 11 ? 'warning' : 'poor';
+          setValidationScores(prev => prev.map(sv => sv.tier === 'secondary' ? { ...sv, score: percent, status: mappedStatus as any } : sv));
         }
       } catch {}
       setCompletedTiers(prev => [...prev, 'secondary']);
