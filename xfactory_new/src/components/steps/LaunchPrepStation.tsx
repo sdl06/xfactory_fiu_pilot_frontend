@@ -251,7 +251,7 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                           rows={12}
                           value={pressReleaseData.template}
                           onChange={(e) => setPressReleaseData({...pressReleaseData, template: e.target.value})}
-                          className="font-mono text-sm"
+                          className="text-sm leading-relaxed"
                         />
                       </div>
                       {pressReleaseData.featureTemplate && (
@@ -272,7 +272,7 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                             rows={12}
                             value={pressReleaseData.featureTemplate}
                             onChange={(e) => setPressReleaseData({...pressReleaseData, featureTemplate: e.target.value})}
-                            className="font-mono text-sm"
+                            className="text-sm leading-relaxed"
                           />
                         </div>
                       )}
