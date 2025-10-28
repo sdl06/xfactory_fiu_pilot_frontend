@@ -986,6 +986,10 @@ class ApiClient {
     return this.post(`/launch-prep/teams/${teamId}/press-release/generate/`, { variant });
   }
 
+  async getPressReleases(teamId: number) {
+    return this.get(`/launch-prep/teams/${teamId}/press-releases/`);
+  }
+
   // Admin: Mentor and Investor Assignment
   async getTeamAssignments(teamId: number) {
     return this.get(`/admin/teams/${teamId}/assignments/`);

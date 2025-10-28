@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
   const [currentTab, setCurrentTab] = useState("press-release");
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingReleases, setIsLoadingReleases] = useState(true);
   const { toast } = useToast();
 
   // Press Release State
@@ -50,6 +51,43 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
     analyticsSetup: false
   });
 
+  // Load saved press releases on mount
+  useEffect(() => {
+    const loadPressReleases = async () => {
+      setIsLoadingReleases(true);
+      try {
+        const teamIdStr = localStorage.getItem('xfactoryTeamId');
+        const teamId = teamIdStr ? Number(teamIdStr) : null;
+        
+        if (!teamId) {
+          setIsLoadingReleases(false);
+          return;
+        }
+        
+        const response = await apiClient.getPressReleases(teamId);
+        const data = (response as any).data || response;
+        
+        if (data?.success && data?.press_releases && data.press_releases.length > 0) {
+          const productLaunch = data.press_releases.find((r: any) => r.variant === 'product_launch');
+          const featureAnnouncement = data.press_releases.find((r: any) => r.variant === 'feature_announcement');
+          
+          setPressReleaseData({
+            headline: productLaunch?.business_name || "",
+            subtitle: "",
+            content: productLaunch?.content || "",
+            template: productLaunch?.content || "",
+            featureTemplate: featureAnnouncement?.content || ""
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load press releases:', error);
+      } finally {
+        setIsLoadingReleases(false);
+      }
+    };
+    
+    loadPressReleases();
+  }, []);
 
   const handleSectionComplete = (section: string) => {
     if (!completedSections.includes(section)) {
@@ -223,7 +261,12 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                     </Button>
                   </div>
 
-                  {(pressReleaseData.template || pressReleaseData.featureTemplate) && (
+                  {isLoadingReleases ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <span className="ml-3 text-muted-foreground">Loading press releases...</span>
+                    </div>
+                  ) : (pressReleaseData.template || pressReleaseData.featureTemplate) && (
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="headline">Headline</Label>
