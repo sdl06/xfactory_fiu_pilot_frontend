@@ -982,8 +982,8 @@ class ApiClient {
   }
 
   // Launch Prep endpoints
-  async generatePressRelease(teamId: number) {
-    return this.post(`/launch-prep/teams/${teamId}/press-release/generate/`, {});
+  async generatePressRelease(teamId: number, variant: 'product_launch' | 'feature_announcement' = 'product_launch') {
+    return this.post(`/launch-prep/teams/${teamId}/press-release/generate/`, { variant });
   }
 
   // Admin: Mentor and Investor Assignment

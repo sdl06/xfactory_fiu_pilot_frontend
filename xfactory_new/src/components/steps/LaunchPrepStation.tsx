@@ -38,7 +38,8 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
     headline: "",
     subtitle: "",
     content: "",
-    template: ""
+    template: "",
+    featureTemplate: ""
   });
 
   // Website & Checkout State
@@ -87,22 +88,35 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
         return;
       }
 
-      const response = await apiClient.generatePressRelease(teamId);
+      // Generate product launch template
+      const productResp = await apiClient.generatePressRelease(teamId, 'product_launch');
+      // Generate new feature announcement template
+      const featureResp = await apiClient.generatePressRelease(teamId, 'feature_announcement');
       
-      if ((response as any).success) {
-        const data = response as any;
-        setPressReleaseData({
+      if ((productResp as any).success) {
+        const data = productResp as any;
+        setPressReleaseData(prev => ({
+          ...prev,
           headline: data.business_name || "",
           subtitle: "",
           content: data.press_release || "",
           template: data.press_release || ""
-        });
+        }));
+      }
+      if ((featureResp as any).success) {
+        const f = featureResp as any;
+        setPressReleaseData(prev => ({
+          ...prev,
+          featureTemplate: f.press_release || prev.featureTemplate
+        }));
+      }
+      if ((productResp as any).success || (featureResp as any).success) {
         toast({
           title: "Success!",
-          description: "Press release generated successfully",
+          description: "Press release templates generated",
         });
       } else {
-        throw new Error((response as any).error || 'Failed to generate press release');
+        throw new Error('Failed to generate press release');
       }
     } catch (error: any) {
       toast({
@@ -202,7 +216,7 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                     </Button>
                   </div>
 
-                  {pressReleaseData.template && (
+                  {(pressReleaseData.template || pressReleaseData.featureTemplate) && (
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="headline">Headline</Label>
@@ -233,6 +247,28 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                           className="font-mono text-sm"
                         />
                       </div>
+                      {pressReleaseData.featureTemplate && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label htmlFor="feature-content">New Feature Announcement</Label>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => copyToClipboard(pressReleaseData.featureTemplate)}
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Feature Template
+                            </Button>
+                          </div>
+                          <Textarea
+                            id="feature-content"
+                            rows={12}
+                            value={pressReleaseData.featureTemplate}
+                            onChange={(e) => setPressReleaseData({...pressReleaseData, featureTemplate: e.target.value})}
+                            className="font-mono text-sm"
+                          />
+                        </div>
+                      )}
                       <Button onClick={() => handleSectionComplete('press-release')}>
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Complete Press Release
