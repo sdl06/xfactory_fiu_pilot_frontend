@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, MessageSquare, Video, Star } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, MessageSquare, Video, Star, Calendar } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiClient } from "@/lib/api";
 import { FactorAI } from "../FactorAI";
@@ -29,7 +28,6 @@ export const MentorshipStation = ({
   const [feedback, setFeedback] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mentorMatch, setMentorMatch] = useState<any | null>(null);
-  const [calOpen, setCalOpen] = useState(false);
   const [confirmDoneOpen, setConfirmDoneOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [rating, setRating] = useState<number>(0);
@@ -225,9 +223,10 @@ export const MentorshipStation = ({
                   <div className="text-xs text-muted-foreground mt-1">{mentorYears} years of experience</div>
                 )}
               </div>
-              {mentorCalendly && (
-                <Button variant="outline" onClick={() => setCalOpen(true)}>Book Meeting</Button>
-              )}
+              <Button variant="outline" onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLSerWSBzORcSgMcP2D0nFGYhcs5qpLDjnpRY9F1xIF1Hnr-FZA/viewform', '_blank')} className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Schedule Meeting
+              </Button>
             </div>
 
             {(mentorExperience || mentorIndustries.length > 0) && (
@@ -309,43 +308,6 @@ export const MentorshipStation = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={calOpen} onOpenChange={setCalOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Book a Meeting</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {mentorCalendly ? (
-              <div
-                className="calendly-inline-widget"
-                data-url={mentorCalendly}
-                style={{ minWidth: '320px', height: '700px' as any }}
-                ref={(el) => {
-                  if (!el) return;
-                  // Ensure script
-                  const existing = document.querySelector('script[src="https://assets.calendly.com/assets/external/widget.js"]') as HTMLScriptElement | null;
-                  const init = () => {
-                    const Calendly = (window as any).Calendly;
-                    if (Calendly && typeof Calendly.initInlineWidget === 'function') {
-                      el.innerHTML = '';
-                      Calendly.initInlineWidget({ url: mentorCalendly, parentElement: el });
-                    }
-                  };
-                  if (existing) { init(); } else {
-                    const s = document.createElement('script');
-                    s.src = 'https://assets.calendly.com/assets/external/widget.js';
-                    s.async = true;
-                    s.onload = () => init();
-                    document.body.appendChild(s);
-                  }
-                }}
-              ></div>
-            ) : (
-              <div className="text-sm text-muted-foreground">No Calendly link available for this mentor.</div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
       
       {/* Ivie Assistant */}
       <FactorAI currentStation={10} userData={{ sessionType, context }} context="mentorship" />
