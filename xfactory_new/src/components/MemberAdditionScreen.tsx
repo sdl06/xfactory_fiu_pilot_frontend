@@ -103,14 +103,19 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
 
   const loadJoinRequests = async () => {
     try {
-      const response = await apiClient.request('/team-formation/requests/');
+      // Fetch received join requests (for teams where user is a member/creator)
+      const response = await apiClient.request('/team-formation/requests/?type=received');
       if (response.data) {
-        // Filter requests for this team
-        const teamRequests = response.data.filter((req: any) => req.team === teamData.id);
+        // Filter to only show requests for the current team
+        const teamRequests = response.data.filter((req: any) => {
+          // req.team is an ID, teamData.id is the team ID
+          return req.team === (teamData.id || Number(localStorage.getItem('xfactoryTeamId')));
+        });
         setJoinRequests(teamRequests);
       }
     } catch (error) {
       console.error('Error loading join requests:', error);
+      setJoinRequests([]);
     }
   };
 
