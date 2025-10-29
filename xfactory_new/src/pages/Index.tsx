@@ -244,6 +244,89 @@ const Index = () => {
     })();
   }, [isLoading, user]);
 
+  // Refresh roadmap on reset events without full page reload
+  useEffect(() => {
+    const onStorage = async (e: StorageEvent) => {
+      if (e.key !== 'xfactoryRoadmapReset') return;
+      try {
+        // Resolve team id
+        let teamIdStr = localStorage.getItem('xfactoryTeamId');
+        if (!teamIdStr) {
+          try {
+            const status = await apiClient.get('/team-formation/status/');
+            teamIdStr = String((status as any)?.data?.current_team?.id || '');
+          } catch {}
+        }
+        const teamId = teamIdStr ? Number(teamIdStr) : null;
+        if (!teamId) return;
+
+        const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
+        const trcData: any = (trc as any)?.data || {};
+
+        const mvp = trcData?.mvp || {};
+        const validation = trcData?.validation || {};
+        const pitch = trcData?.pitch_deck || {};
+        const testing = trcData?.testing || {};
+        const operations = trcData?.operations || {};
+        const finance = trcData?.finance || {};
+        const legal = trcData?.legal || {};
+        const prelaunch = trcData?.prelaunch || {};
+        const mentorship = trcData?.mentorship || {};
+        const ideation = trcData?.ideation || {};
+
+        const isIdeaDone = ideation.completed !== false;
+        const isMockupDone = !!(mvp.prototype_built || mvp.software_mockup);
+        const isValidationComplete = !!(validation.secondary && validation.qualitative && validation.quantitative);
+
+        const sectionsCompleted: string[] = [];
+        if (isIdeaDone) sectionsCompleted.push('ideation');
+        if (isValidationComplete) sectionsCompleted.push('validation');
+        if (pitch.slides_generated || pitch.practice_completed || pitch.mentor_deck_generated || pitch.investor_deck_generated || pitch.submission_completed) sectionsCompleted.push('pitch_deck');
+        if (mvp.prototype_built || mvp.task_plan_generated) sectionsCompleted.push('mvp');
+        if (testing.usability_completed || testing.feedback_collection_completed) sectionsCompleted.push('testing');
+        if (operations.playbook_completed) sectionsCompleted.push('operations');
+        if (finance.budget_completed) sectionsCompleted.push('finance');
+        if (legal.compliance_completed) sectionsCompleted.push('legal');
+        if (prelaunch.deployment_ready) sectionsCompleted.push('prelaunch');
+        if (mentorship.pre_mvp_completed) sectionsCompleted.push('mentorship');
+
+        const sectionToStations: Record<string, number> = {
+          ideation: 1,
+          validation: 3,
+          pitch_deck: 4,
+          mentorship: 5,
+          mvp: 6,
+          testing: 7,
+          marketing: 12,
+          finance: 13,
+          legal: 14,
+          prelaunch: 8,
+        };
+
+        setStationData(prev => {
+          const merged = new Set<number>();
+          if (isIdeaDone) merged.add(1);
+          if (isMockupDone) merged.add(2);
+          if (isValidationComplete) merged.add(3);
+          for (const s of sectionsCompleted) {
+            const sid = sectionToStations[s];
+            if (sid) merged.add(sid);
+          }
+          if (mvp.prototype_built || mvp.task_plan_generated) merged.add(7);
+          const mergedArr = Array.from(merged).sort((a,b)=>a-b);
+          const mainSeq = [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15];
+          let nextStation = 1;
+          for (const sid of mainSeq) { if (!merged.has(sid)) { nextStation = sid; break; } }
+          const updated = { ...prev, completedStations: mergedArr } as any;
+          updated.currentStation = nextStation;
+          return updated;
+        });
+      } catch {}
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Dashboard-level Idea Review state (popup without navigating)
   const [showIdeaReview, setShowIdeaReview] = useState(false);
   const [ideaReviewPage, setIdeaReviewPage] = useState(0);

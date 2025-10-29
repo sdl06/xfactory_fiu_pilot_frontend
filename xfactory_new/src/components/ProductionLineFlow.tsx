@@ -222,8 +222,11 @@ const StationNode = ({ data }: { data: any }) => {
                       
                       await apiClient.updateTeamRoadmap(teamId, resetPayload);
                       
-                      // Reload page to refresh completed stations list
-                      window.location.reload();
+                      // Notify app to refresh roadmap without full reload
+                      try {
+                        localStorage.setItem('xfactoryRoadmapReset', String(Date.now()));
+                        window.dispatchEvent(new StorageEvent('storage', { key: 'xfactoryRoadmapReset' }));
+                      } catch {}
                     } catch (error: any) {
                       console.error('Failed to reset station:', error);
                       alert(`Failed to reset ${station.title}: ${error?.message || 'Unknown error'}`);
@@ -491,8 +494,11 @@ const StationNode = ({ data }: { data: any }) => {
                   
                   await apiClient.updateTeamRoadmap(teamId, resetPayload);
                   
-                  // Reload page to refresh completed stations list
-                  window.location.reload();
+                  // Notify app to refresh roadmap without full reload
+                  try {
+                    localStorage.setItem('xfactoryRoadmapReset', String(Date.now()));
+                    window.dispatchEvent(new StorageEvent('storage', { key: 'xfactoryRoadmapReset' }));
+                  } catch {}
                 } catch (error: any) {
                   console.error('Failed to reset station:', error);
                   alert(`Failed to reset ${station.title}: ${error?.message || 'Unknown error'}`);

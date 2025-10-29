@@ -494,7 +494,8 @@ export const PitchPracticeStation = ({
       const status = await apiClient.get('/team-formation/status/');
       const teamId = (status as any)?.data?.current_team?.id as number | undefined;
       if (!teamId) { setIsGenerating(false); return; }
-      const enqueue = await apiClient.enqueueGammaTeam(teamId);
+      // Always force a fresh generation to avoid serving a prior deck after pivots/resets
+      const enqueue = await apiClient.enqueueGammaTeam(teamId, true);
       if ((enqueue as any)?.status === 202 || (enqueue as any)?.status === 200) {
         // If it's mode: "existing", use the PDF URL immediately
         if ((enqueue as any)?.data?.mode === 'existing' && (enqueue as any)?.data?.pdf_url) {
@@ -856,7 +857,7 @@ export const PitchPracticeStation = ({
                 <Button className="bg-primary hover:bg-primary/90" onClick={() => {
                   if (pdfUrl && teamId) {
                     const serveUrl = getGammaPdfUrlTeam(teamId);
-                    window.open(serveUrl, '_blank');
+                    window.open(`${serveUrl}?cb=${Date.now()}`, '_blank');
                   }
                 }} disabled={!pdfUrl || !teamId}>
                   <Download className="h-4 w-4 mr-2" />
