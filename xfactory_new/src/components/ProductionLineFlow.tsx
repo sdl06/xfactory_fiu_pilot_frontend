@@ -127,31 +127,68 @@ const StationNode = ({ data }: { data: any }) => {
                         try { const status = await apiClient.get('/team-formation/status/'); teamId = (status as any)?.data?.current_team?.id; } catch {}
                       }
                       if (!teamId) return;
-                      const key = ((): string => {
-                        switch (station.id) {
-                          case 1: return 'idea';
-                          case 2: return 'mockups';
-                          case 3: return 'validation';
-                          case 4: return 'pitch_deck';
-                          case 5: return 'mentorship_pre';
-                          case 6: return 'mvp';
-                          case 7: return 'mentorship_post';
-                          case 8: return 'launch_prep';
-                          case 9: return 'launch_execution';
-                          case 10: return 'mentorship_pre_investor';
-                          case 11: return 'pitch_practice';
-                          case 12: return 'finance';
-                          case 13: return 'marketing';
-                          case 14: return 'legal';
-                          case 15: return 'investor_presentation';
-                          default: return `station_${station.id}`;
-                        }
-                      })();
-                      // Reset the section by sending an empty object for that key
-                      await apiClient.updateTeamRoadmap(teamId, { [key]: {} });
-                      // Soft feedback; parent will refresh completed list
-                      try { (window as any)?.toast?.({ title: 'Reset', description: `${station.title} has been reset.` }); } catch {}
-                    } catch {}
+                      // Map station IDs to backend section keys and reset payload
+                      const resetPayload: any = {};
+                      
+                      switch (station.id) {
+                        case 1: // Idea - concept card exists, but can't easily reset via roadmap
+                          alert('Resetting the idea station requires deleting the concept card. This feature is not yet available.');
+                          return;
+                        case 2: // Mockups - part of mvp.software_mockup
+                          resetPayload['mvp'] = { software_mockup: false };
+                          break;
+                        case 3: // Validation
+                          resetPayload['validation'] = {};
+                          break;
+                        case 4: // Pitch Deck
+                          resetPayload['pitch_deck'] = {};
+                          break;
+                        case 5: // Pre-MVP Mentorship
+                          resetPayload['mentorship'] = { pre_mvp_completed: false };
+                          break;
+                        case 6: // MVP
+                          resetPayload['mvp'] = {};
+                          break;
+                        case 7: // Post-MVP Mentorship (controlled by MVP completion)
+                          resetPayload['mvp'] = {};
+                          break;
+                        case 8: // Launch Prep
+                          resetPayload['prelaunch'] = {};
+                          break;
+                        case 9: // Launch Execution
+                          resetPayload['prelaunch'] = {};
+                          break;
+                        case 10: // Pre-Investor Mentorship
+                          resetPayload['mentorship'] = {};
+                          break;
+                        case 11: // Pitch Practice
+                          resetPayload['pitch_deck'] = {};
+                          break;
+                        case 12: // Finance Workshop
+                          resetPayload['finance'] = {};
+                          break;
+                        case 13: // Marketing Workshop
+                          resetPayload['marketing'] = {};
+                          break;
+                        case 14: // Legal Workshop
+                          resetPayload['legal'] = {};
+                          break;
+                        case 15: // Investor Presentation
+                          resetPayload['pitch_deck'] = {};
+                          break;
+                        default:
+                          alert(`Unknown station ID: ${station.id}`);
+                          return;
+                      }
+                      
+                      await apiClient.updateTeamRoadmap(teamId, resetPayload);
+                      
+                      // Reload page to refresh completed stations list
+                      window.location.reload();
+                    } catch (error: any) {
+                      console.error('Failed to reset station:', error);
+                      alert(`Failed to reset ${station.title}: ${error?.message || 'Unknown error'}`);
+                    }
                   }}
                   title="Reset this step"
                 >
@@ -331,29 +368,68 @@ const StationNode = ({ data }: { data: any }) => {
                     try { const status = await apiClient.get('/team-formation/status/'); teamId = (status as any)?.data?.current_team?.id; } catch {}
                   }
                   if (!teamId) return;
-                  const key = ((): string => {
-                    switch (station.id) {
-                      case 1: return 'idea';
-                      case 2: return 'mockups';
-                      case 3: return 'validation';
-                      case 4: return 'pitch_deck';
-                      case 5: return 'mentorship_pre';
-                      case 6: return 'mvp';
-                      case 7: return 'mentorship_post';
-                      case 8: return 'launch_prep';
-                      case 9: return 'launch_execution';
-                      case 10: return 'mentorship_pre_investor';
-                      case 11: return 'pitch_practice';
-                      case 12: return 'finance';
-                      case 13: return 'marketing';
-                      case 14: return 'legal';
-                      case 15: return 'investor_presentation';
-                      default: return `station_${station.id}`;
-                    }
-                  })();
-                  await apiClient.updateTeamRoadmap(teamId, { [key]: {} });
-                  try { (window as any)?.toast?.({ title: 'Reset', description: `${station.title} has been reset.` }); } catch {}
-                } catch {}
+                  // Map station IDs to backend section keys and reset payload
+                  const resetPayload: any = {};
+                  
+                  switch (station.id) {
+                    case 1: // Idea - concept card exists, but can't easily reset via roadmap
+                      alert('Resetting the idea station requires deleting the concept card. This feature is not yet available.');
+                      return;
+                    case 2: // Mockups - part of mvp.software_mockup
+                      resetPayload['mvp'] = { software_mockup: false };
+                      break;
+                    case 3: // Validation
+                      resetPayload['validation'] = {};
+                      break;
+                    case 4: // Pitch Deck
+                      resetPayload['pitch_deck'] = {};
+                      break;
+                    case 5: // Pre-MVP Mentorship
+                      resetPayload['mentorship'] = { pre_mvp_completed: false };
+                      break;
+                    case 6: // MVP
+                      resetPayload['mvp'] = {};
+                      break;
+                    case 7: // Post-MVP Mentorship (controlled by MVP completion)
+                      resetPayload['mvp'] = {};
+                      break;
+                    case 8: // Launch Prep
+                      resetPayload['prelaunch'] = {};
+                      break;
+                    case 9: // Launch Execution
+                      resetPayload['prelaunch'] = {};
+                      break;
+                    case 10: // Pre-Investor Mentorship
+                      resetPayload['mentorship'] = {};
+                      break;
+                    case 11: // Pitch Practice
+                      resetPayload['pitch_deck'] = {};
+                      break;
+                    case 12: // Finance Workshop
+                      resetPayload['finance'] = {};
+                      break;
+                    case 13: // Marketing Workshop
+                      resetPayload['marketing'] = {};
+                      break;
+                    case 14: // Legal Workshop
+                      resetPayload['legal'] = {};
+                      break;
+                    case 15: // Investor Presentation
+                      resetPayload['pitch_deck'] = {};
+                      break;
+                    default:
+                      alert(`Unknown station ID: ${station.id}`);
+                      return;
+                  }
+                  
+                  await apiClient.updateTeamRoadmap(teamId, resetPayload);
+                  
+                  // Reload page to refresh completed stations list
+                  window.location.reload();
+                } catch (error: any) {
+                  console.error('Failed to reset station:', error);
+                  alert(`Failed to reset ${station.title}: ${error?.message || 'Unknown error'}`);
+                }
               }}
               title="Reset this step"
             >
