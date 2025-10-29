@@ -1753,7 +1753,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <a href={validationEvidence.qual_transcript_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {validationEvidence.qual_transcript_link}
                             </a>
-                          ) : '�'}
+                          ) : 'N/A'}
                         </div>
                         <div className="text-sm">
                           <span className="font-medium">Legacy Folder: </span>
@@ -1761,7 +1761,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <a href={validationEvidence.qual_folder_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {validationEvidence.qual_folder_link}
                             </a>
-                          ) : '�'}
+                          ) : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -1822,7 +1822,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <a href={validationEvidence.survey_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {validationEvidence.survey_link}
                             </a>
-                          ) : '�'}
+                          ) : 'N/A'}
                         </div>
                         <div className="text-sm">
                           <span className="font-medium">Google Forms: </span>
@@ -1830,7 +1830,7 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
                             <a href={validationEvidence.quant_google_form_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {validationEvidence.quant_google_form_link}
                             </a>
-                          ) : '�'}
+                          ) : 'N/A'}
                         </div>
                         <div className="text-sm">
                           <span className="font-medium">Video Evidence: </span>
@@ -2745,7 +2745,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             </DialogDescription>
           </DialogHeader>
           {isLoadingMember && (
-            <div className="text-sm text-muted-foreground">Loading member details�</div>
+            <div className="text-sm text-muted-foreground">Loading member details…</div>
           )}
           {selectedMember && !isLoadingMember && (
             <div className="space-y-4">

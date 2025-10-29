@@ -989,7 +989,7 @@ const TeamProgressView: React.FC<TeamProgressViewProps> = ({
                     {typeof assumption !== 'string' && (
                       <div className="text-xs text-muted-foreground mt-1">
                         {typeof assumption?.confidence === 'number' ? `${assumption.confidence}% confidence` : ''}
-                        {assumption?.testing_plan ? ` � ${assumption.testing_plan}` : ''}
+                        {assumption?.testing_plan ? ` • ${assumption.testing_plan}` : ''}
                       </div>
                     )}
                     <div className="text-xs text-muted-foreground italic mt-1">* Percentage indicates confidence level of such assumption being true</div>

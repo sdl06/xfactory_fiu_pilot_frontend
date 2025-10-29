@@ -437,7 +437,7 @@ export const MockupStation = ({
                 <text x={x + 10} y={y + 16} fill="#3730a3" fontSize="12" fontWeight={700}>{label}</text>
                 {/* quick details */}
                 {acts.length > 0 && (
-                  <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">â€¢ {String(acts[0])}</text>
+                  <text x={x + 12} y={y + 42} fill="#374151" fontSize="11">• {String(acts[0])}</text>
                 )}
                 {tps.length > 0 && (
                   <text x={x + 12} y={y + 58} fill="#6b7280" fontSize="11">@ {String(tps[0])}</text>
@@ -1753,7 +1753,7 @@ user problems: ${probsLine}`;
           {v0Phase === 'generating' && (
             <Card className="shadow-machinery">
               <CardHeader className="text-center">
-                <CardTitle className="text-xl">Generating your landingâ€¦</CardTitle>
+                <CardTitle className="text-xl">Generating your landing…</CardTitle>
                 <CardDescription>We're creating a v0 chat and building your landing page. This can take a few moments.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -1791,7 +1791,7 @@ user problems: ${probsLine}`;
                         className="flex-1 px-3 py-2 border rounded bg-background text-foreground"
                       />
                       <Button variant="warning" onClick={handleSendV0Instruction} disabled={isSendingV0}>
-                        {isSendingV0 ? 'Applyingâ€¦' : 'Apply Change'}
+                        {isSendingV0 ? 'Applying…' : 'Apply Change'}
                       </Button>
                     </div>
                     <div className="flex gap-3">
@@ -1933,7 +1933,7 @@ user problems: ${probsLine}`;
                       <Badge>Product Images</Badge>
                       <Badge variant="secondary">Optional</Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground">Highâ€‘quality visuals for your product</div>
+                    <div className="text-sm text-muted-foreground">High‑quality visuals for your product</div>
                     <Button
                       variant="secondary"
                       className="w-full"
@@ -2183,7 +2183,7 @@ user problems: ${probsLine}`;
             {v0Phase === 'generating' && (
               <Card className="shadow-machinery">
                 <CardHeader className="text-center">
-                  <CardTitle className="text-xl">Generating your landingâ€¦</CardTitle>
+                  <CardTitle className="text-xl">Generating your landing…</CardTitle>
                   <CardDescription>We're creating a v0 chat and building your landing page. This can take a few moments.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -2225,7 +2225,7 @@ user problems: ${probsLine}`;
                           className="flex-1 px-3 py-2 border rounded bg-background text-foreground"
                         />
                         <Button variant="warning" onClick={handleSendV0Instruction} disabled={isSendingV0}>
-                          {isSendingV0 ? 'Applyingâ€¦' : 'Apply Change'}
+                          {isSendingV0 ? 'Applying…' : 'Apply Change'}
                         </Button>
                       </div>
                       <div className="flex gap-3">
@@ -2295,7 +2295,7 @@ user problems: ${probsLine}`;
                     {[
                       { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: '3 concept images' },
                       { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: 'Different angles/styles' },
-                      { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: 'Highâ€‘resolution previews' },
+                      { icon: <CheckCircle2 className='h-4 w-4 text-emerald-600' />, label: 'High‑resolution previews' },
                     ].map((f, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs bg-muted/40 rounded px-3 py-2">
                         {f.icon}
@@ -2321,7 +2321,7 @@ user problems: ${probsLine}`;
                         <div className="w-full h-2 bg-muted rounded overflow-hidden mb-3 max-w-md">
                           <div className="h-2 bg-primary rounded animate-pulse" style={{ width: '66%' }} />
                         </div>
-                        <div className="text-sm text-muted-foreground">Generating imagesâ€¦ this can take a moment.</div>
+                        <div className="text-sm text-muted-foreground">Generating images… this can take a moment.</div>
                       </div>
                     )}
                     {!isGenerating && (
@@ -2670,7 +2670,7 @@ user problems: ${probsLine}`;
                 </div>
               )}
               {isGenerating && (
-                <div className="text-sm text-muted-foreground">Generating flowâ€¦ this can take a moment.</div>
+                <div className="text-sm text-muted-foreground">Generating flow… this can take a moment.</div>
               )}
               {!isGenerating && serviceDoc && (
             <div className="space-y-6">
