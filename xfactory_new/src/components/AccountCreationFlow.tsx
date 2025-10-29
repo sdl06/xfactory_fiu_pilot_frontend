@@ -1046,12 +1046,11 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                     </div>
                   )}
                   
-                  {availableTeams.length > 0 ? (
-                    <div className="grid gap-4">
-                      {/* Teams with pending addition requests - shown first with green background */}
-                      {availableTeams
-                        .filter(team => additionRequests.some(req => String(req.team) === String(team.id)))
-                        .map((team) => {
+                  <div className="space-y-4">
+                    {/* Teams with pending addition requests - shown first with green background */}
+                    {availableTeams
+                      .filter(team => additionRequests.some(req => String(req.team) === String(team.id)))
+                      .map((team) => {
                           const pendingRequest = additionRequests.find(req => String(req.team) === String(team.id));
                           return (
                             <div
@@ -1155,24 +1154,16 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                           );
                         })}
 
-                      {/* Placeholder for available teams - feature coming soon */}
-                      {availableTeams.filter(team => !additionRequests.some(req => String(req.team) === String(team.id))).length > 0 && (
-                        <div className="text-center py-8 border rounded-lg bg-muted/20">
-                          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                          <h3 className="font-semibold mb-2">Coming Soon</h3>
-                          <p className="text-muted-foreground">
-                            Soon, you'll be able to send team invites and join a team
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
+                    {/* Placeholder for available teams - feature coming soon */}
+                    {/* Always show this placeholder when in join tab */}
+                    <div className="text-center py-8 border rounded-lg bg-muted/20">
                       <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="font-semibold mb-2">No teams available</h3>
-                      <p className="text-muted-foreground">Be the first to create a team!</p>
+                      <h3 className="font-semibold mb-2">Coming Soon</h3>
+                      <p className="text-muted-foreground">
+                        Soon, you'll be able to send team invites and join a team
+                      </p>
                     </div>
-                  )}
+                  </div>
                   
                   {selectedTeam && (
                     <div className="space-y-3 border-t pt-4">
