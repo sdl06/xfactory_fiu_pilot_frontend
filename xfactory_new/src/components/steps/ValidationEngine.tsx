@@ -274,6 +274,18 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const currentTeamId = teamIdStr ? Number(teamIdStr) : null;
       if (!currentTeamId) return;
       
+      // Check if validation station is marked as complete; if not, don't load existing (treat as reset)
+      let shouldLoadValidation = true;
+      try {
+        const roadmap = await apiClient.getTeamRoadmap(currentTeamId);
+        const validation = (roadmap as any)?.data?.validation || {};
+        if (!validation.secondary && !validation.qualitative && !validation.quantitative) {
+          shouldLoadValidation = false;
+        }
+      } catch {}
+      
+      if (!shouldLoadValidation) return;
+      
       try {
         const ev = await apiClient.getValidationEvidence(currentTeamId);
         const d: any = (ev as any)?.data || {};
@@ -295,6 +307,19 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const teamIdStr = localStorage.getItem('xfactoryTeamId');
       const currentTeamId = teamIdStr ? Number(teamIdStr) : null;
       if (!currentTeamId) return;
+      
+      // Check if validation station is marked as complete; if not, don't load existing data (treat as reset)
+      let shouldLoadValidation = true;
+      try {
+        const roadmap = await apiClient.getTeamRoadmap(currentTeamId);
+        const validation = (roadmap as any)?.data?.validation || {};
+        // If validation flags are explicitly false or all missing, don't load existing (treat as reset)
+        if (!validation.secondary && !validation.qualitative && !validation.quantitative) {
+          shouldLoadValidation = false;
+        }
+      } catch {}
+      
+      if (!shouldLoadValidation) return; // Skip loading if station is reset
       
       // Load secondary score
       try {
@@ -347,6 +372,18 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const currentTeamId = teamIdStr ? Number(teamIdStr) : null;
       if (!currentTeamId) return;
       
+      // Check if validation station is marked as complete; if not, don't load existing (treat as reset)
+      let shouldLoadValidation = true;
+      try {
+        const roadmap = await apiClient.getTeamRoadmap(currentTeamId);
+        const validation = (roadmap as any)?.data?.validation || {};
+        if (!validation.secondary && !validation.qualitative && !validation.quantitative) {
+          shouldLoadValidation = false;
+        }
+      } catch {}
+      
+      if (!shouldLoadValidation) return;
+      
       try {
         const qi = await apiClient.getQualInsightsTeam(currentTeamId);
         const qidata: any = (qi as any)?.data || {};
@@ -378,6 +415,18 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         const teamId = teamIdStr ? Number(teamIdStr) : null;
         if (!teamId) return;
         if (deepResearch) return; // already loaded
+
+        // Check if validation station is marked as complete; if not, don't auto-load (treat as reset)
+        let shouldLoadValidation = true;
+        try {
+          const roadmap = await apiClient.getTeamRoadmap(teamId);
+          const validation = (roadmap as any)?.data?.validation || {};
+          if (!validation.secondary && !validation.qualitative && !validation.quantitative) {
+            shouldLoadValidation = false;
+          }
+        } catch {}
+        
+        if (!shouldLoadValidation) return; // Skip auto-loading if station is reset
 
         // Ensure generation is started (safe to POST; backend guards latest idea)
         try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}

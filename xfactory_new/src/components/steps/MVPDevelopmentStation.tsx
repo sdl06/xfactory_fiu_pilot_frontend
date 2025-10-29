@@ -198,6 +198,19 @@ export const MVPDevelopmentStation = ({
         const teamId = await getTeamId();
         if (!teamId) return;
 
+        // Check if MVP station is marked as complete; if not, don't load existing (treat as reset)
+        let shouldLoadMvp = true;
+        try {
+          const roadmap = await apiClient.getTeamRoadmap(teamId);
+          const mvp = (roadmap as any)?.data?.mvp || {};
+          // If MVP flags are explicitly false or all missing, don't load existing (treat as reset)
+          if (!mvp.prototype_built && !mvp.task_plan_generated && !mvp.software_mockup) {
+            shouldLoadMvp = false;
+          }
+        } catch {}
+        
+        if (!shouldLoadMvp) return; // Skip loading if station is reset
+
         const response = await apiClient.getUnifiedMvp(teamId);
         if (response.status >= 200 && response.status < 300) {
           const data = response.data;
@@ -223,6 +236,19 @@ export const MVPDevelopmentStation = ({
     try {
         const teamId = await getTeamId();
         if (!teamId) return;
+
+        // Check if MVP station is marked as complete; if not, don't load existing tasks (treat as reset)
+        let shouldLoadMvp = true;
+        try {
+          const roadmap = await apiClient.getTeamRoadmap(teamId);
+          const mvp = (roadmap as any)?.data?.mvp || {};
+          // If MVP flags are explicitly false or all missing, don't load existing (treat as reset)
+          if (!mvp.prototype_built && !mvp.task_plan_generated && !mvp.software_mockup) {
+            shouldLoadMvp = false;
+          }
+        } catch {}
+        
+        if (!shouldLoadMvp) return; // Skip loading if station is reset
 
         const res = await apiClient.getMvpTasksTeam(teamId);
         if (res.status >= 200 && res.status < 300) {

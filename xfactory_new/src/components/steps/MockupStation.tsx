@@ -1191,20 +1191,33 @@ user problems: ${probsLine}`;
           }
         } catch {}
         if (!teamId) return;
-        // Fetch existing first
-        let chosen: any = null;
+        // Check if mockup station is complete; if not, don't load existing service roadmap (treat as reset)
+        let shouldLoadService = true;
         try {
-          const existing = await apiClient.getServiceRoadmapTeam(teamId);
-          const data = (existing as any)?.data || {};
-          const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
-          if (list.length > 0) {
-            chosen = list.slice().sort((a: any, b: any) => {
-              const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
-              const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
-              return bu - au;
-            })[0];
+          const roadmap = await apiClient.getTeamRoadmap(teamId);
+          const mvp = (roadmap as any)?.data?.mvp || {};
+          // If software_mockup flag is explicitly false or missing, don't load existing (treat as reset)
+          if (mvp.software_mockup === false || (!mvp.software_mockup && !mvp.prototype_built)) {
+            shouldLoadService = false;
           }
         } catch {}
+        
+        // Fetch existing first only if station is complete
+        let chosen: any = null;
+        if (shouldLoadService) {
+          try {
+            const existing = await apiClient.getServiceRoadmapTeam(teamId);
+            const data = (existing as any)?.data || {};
+            const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
+            if (list.length > 0) {
+              chosen = list.slice().sort((a: any, b: any) => {
+                const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
+                const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
+                return bu - au;
+              })[0];
+            }
+          } catch {}
+        }
         if (chosen) {
           setServiceDoc(chosen);
           setStep(2);
@@ -1477,11 +1490,25 @@ user problems: ${probsLine}`;
         teamId = (status as any)?.data?.current_team?.id || null;
       } catch {}
       if (teamId) {
-        try {
-          const existing = await apiClient.getSoftwareMockupTeam(teamId);
-          const ok = (existing as any)?.status >= 200 && (existing as any)?.status < 300;
-          const notFound = (existing as any)?.status === 404;
-          const data: any = ok ? (existing as any)?.data || {} : {};
+        // Check if mockup station is marked as complete; if not, don't load existing mockups (treat as reset)
+        let shouldLoadExisting = !forceNew;
+        if (!forceNew) {
+          try {
+            const roadmap = await apiClient.getTeamRoadmap(teamId);
+            const mvp = (roadmap as any)?.data?.mvp || {};
+            // If software_mockup flag is explicitly false or missing, don't load existing (treat as reset)
+            if (mvp.software_mockup === false || (!mvp.software_mockup && !mvp.prototype_built)) {
+              shouldLoadExisting = false;
+            }
+          } catch {}
+        }
+        
+        if (shouldLoadExisting) {
+          try {
+            const existing = await apiClient.getSoftwareMockupTeam(teamId);
+            const ok = (existing as any)?.status >= 200 && (existing as any)?.status < 300;
+            const notFound = (existing as any)?.status === 404;
+            const data: any = ok ? (existing as any)?.data || {} : {};
           const topLevelDemo = typeof data?.v0_demo_url === 'string' && data.v0_demo_url ? data.v0_demo_url : undefined;
           const mocks: any[] = Array.isArray(data?.mockups) ? data.mockups : [];
           const withDemo = mocks.find((m: any) => m?.v0_demo_url);
@@ -1536,6 +1563,7 @@ user problems: ${probsLine}`;
             }
           }
         } catch {}
+        } // End shouldLoadExisting block
       }
       // If nothing found, generate team-scoped landing
       const landing = await generateV0Landing(forceNew);
@@ -1953,24 +1981,37 @@ user problems: ${probsLine}`;
                             }
                           } catch {}
                           if (teamId) {
-                            // Load existing saved physical mockups (team-scoped)
+                            // Check if mockup station is complete; if not, don't load existing (treat as reset)
+                            let shouldLoadPhysical = true;
                             try {
-                              const existing = await apiClient.getPhysicalMockupsTeam(teamId);
-                              const savedRaw = (existing?.data?.mockups || []).map((m: any, idx: number) => ({ 
-                                id: `phys_${m.id || idx}`, 
-                                type: 'Product Mockup', 
-                                title: m.title, 
-                                url: getBackendMediaUrl(m.image_url || m.url), // Normalize to absolute URL
-                                description: m.description, 
-                                prompt: m.image_prompt 
-                              }));
-                              const saved = dedupeMockups(savedRaw);
-                              if (saved.length > 0) {
-                                setGeneratedMockups(saved);
-                                setStep(2);
-                                return;
+                              const roadmap = await apiClient.getTeamRoadmap(teamId);
+                              const mvp = (roadmap as any)?.data?.mvp || {};
+                              // If software_mockup flag is explicitly false or missing, don't load existing (treat as reset)
+                              if (mvp.software_mockup === false || (!mvp.software_mockup && !mvp.prototype_built)) {
+                                shouldLoadPhysical = false;
                               }
                             } catch {}
+                            
+                            // Load existing saved physical mockups (team-scoped) only if station is complete
+                            if (shouldLoadPhysical) {
+                              try {
+                                const existing = await apiClient.getPhysicalMockupsTeam(teamId);
+                                const savedRaw = (existing?.data?.mockups || []).map((m: any, idx: number) => ({ 
+                                  id: `phys_${m.id || idx}`, 
+                                  type: 'Product Mockup', 
+                                  title: m.title, 
+                                  url: getBackendMediaUrl(m.image_url || m.url), // Normalize to absolute URL
+                                  description: m.description, 
+                                  prompt: m.image_prompt 
+                                }));
+                                const saved = dedupeMockups(savedRaw);
+                                if (saved.length > 0) {
+                                  setGeneratedMockups(saved);
+                                  setStep(2);
+                                  return;
+                                }
+                              } catch {}
+                            }
                             // 1) Create prompts (team)
                             const p = await apiClient.generatePhysicalPromptsTeam(teamId);
                             const prompts = (p.data as any)?.prompts || [];
@@ -2044,21 +2085,33 @@ user problems: ${probsLine}`;
                             }
                           } catch {}
                           if (!teamId) { log.warn('No team available; skipping service roadmap'); return; }
-                          // Try to fetch existing first (team-scoped GET returns { success, roadmaps: [...] })
-                          let chosen: any = null;
+                          // Check if mockup station is complete; if not, don't load existing (treat as reset)
+                          let shouldLoadService = true;
                           try {
-                            const existing = await apiClient.getServiceRoadmapTeam(teamId);
-                            const data = (existing as any)?.data || {};
-                            const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
-                            if (list.length > 0) {
-                              // Pick latest by updated_at or created_at
-                              chosen = list.slice().sort((a: any, b: any) => {
-                                const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
-                                const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
-                                return bu - au;
-                              })[0];
+                            const roadmap = await apiClient.getTeamRoadmap(teamId);
+                            const mvp = (roadmap as any)?.data?.mvp || {};
+                            if (mvp.software_mockup === false || (!mvp.software_mockup && !mvp.prototype_built)) {
+                              shouldLoadService = false;
                             }
                           } catch {}
+                          
+                          // Try to fetch existing first only if station is complete (team-scoped GET returns { success, roadmaps: [...] })
+                          let chosen: any = null;
+                          if (shouldLoadService) {
+                            try {
+                              const existing = await apiClient.getServiceRoadmapTeam(teamId);
+                              const data = (existing as any)?.data || {};
+                              const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
+                              if (list.length > 0) {
+                                // Pick latest by updated_at or created_at
+                                chosen = list.slice().sort((a: any, b: any) => {
+                                  const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
+                                  const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
+                                  return bu - au;
+                                })[0];
+                              }
+                            } catch {}
+                          }
                           if (chosen) {
                             setServiceDoc(chosen);
                             setStep(2);
