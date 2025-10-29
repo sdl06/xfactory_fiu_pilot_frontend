@@ -910,9 +910,30 @@ export const MockupStation = ({
       ideaId = await resolveTeamIdeaId();
     }
     if (!ideaId || !effectiveV0ProjectId) return null;
+    // Determine if we should load any existing chat based on roadmap flag
+    let shouldLoadExisting = !forceNew;
+    try {
+      const status = await apiClient.get('/team-formation/status/');
+      const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+      if (teamId) {
+        try {
+          const roadmap = await apiClient.getTeamRoadmap(teamId);
+          const mvp = (roadmap as any)?.data?.mvp || {};
+          if (mvp.software_mockup !== true) {
+            shouldLoadExisting = false;
+          }
+        } catch {}
+      }
+    } catch {}
+    if (!shouldLoadExisting) {
+      // Clear any cached V0 identifiers so we don't accidentally reuse old landing
+      try { localStorage.removeItem(scopedKey('xfactoryV0ChatId')); } catch {}
+      try { localStorage.removeItem(scopedKey('xfactoryV0ProjectId')); } catch {}
+      try { setHasV0Chat(false); } catch {}
+    }
     // Try to load existing chat metadata from backend and reuse v0 project id if present
     let projectIdToUse: string | undefined = effectiveV0ProjectId;
-    if (!forceNew) {
+    if (!forceNew && shouldLoadExisting) {
       // First, try localStorage chat id and verify with v0
       try {
         const lsChatId = localStorage.getItem(scopedKey('xfactoryV0ChatId'));
@@ -947,7 +968,7 @@ export const MockupStation = ({
         }
       } catch {}
     }
-    if (!forceNew) {
+    if (!forceNew && shouldLoadExisting) {
       try {
         const { apiClient } = await import("@/lib/api");
         let shouldLoadExisting = true;
@@ -1522,6 +1543,11 @@ user problems: ${probsLine}`;
             // Only load existing if software_mockup is explicitly true; otherwise treat as reset
             if (mvp.software_mockup !== true) {
               shouldLoadExisting = false;
+              // Also clear any cached V0 identifiers/state to avoid stale reuse
+              try { localStorage.removeItem(scopedKey('xfactoryV0ChatId')); } catch {}
+              try { localStorage.removeItem(scopedKey('xfactoryV0ProjectId')); } catch {}
+              try { setHasV0Chat(false); } catch {}
+              try { setV0LiveUrl(''); setV0DemoUrl(''); } catch {}
             }
           } catch {}
         }
