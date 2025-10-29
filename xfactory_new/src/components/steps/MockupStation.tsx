@@ -950,26 +950,38 @@ export const MockupStation = ({
     if (!forceNew) {
       try {
         const { apiClient } = await import("@/lib/api");
-        let existing: any = null;
+        let shouldLoadExisting = true;
         try {
           const status = await apiClient.get('/team-formation/status/');
           const teamId = (status as any)?.data?.current_team?.id as number | undefined;
           if (teamId) {
-            existing = await apiClient.getSoftwareMockupTeam(teamId);
+            // Check if mockup station is marked as complete; if not, don't load existing (treat as reset)
+            try {
+              const roadmap = await apiClient.getTeamRoadmap(teamId);
+              const mvp = (roadmap as any)?.data?.mvp || {};
+              // Only load existing if software_mockup is explicitly true; otherwise treat as reset
+              if (mvp.software_mockup !== true) {
+                shouldLoadExisting = false;
+              }
+            } catch {}
+            
+            if (shouldLoadExisting) {
+              const existing = await apiClient.getSoftwareMockupTeam(teamId);
+              // No fallback to idea-scoped fetch; software mockups are team-scoped
+              const existingChatId = existing?.data?.mockups?.find((m: any) => m.v0_chat_id)?.v0_chat_id || existing?.data?.mockups?.[0]?.v0_chat_id;
+              const existingProjectId = existing?.data?.mockups?.find((m: any) => m.v0_project_id)?.v0_project_id || existing?.data?.v0_project_id;
+              if (existingProjectId && typeof existingProjectId === 'string') {
+                projectIdToUse = existingProjectId;
+              }
+              log.debug("createOrResumeV0Chat:existing", { existingChatId, existingProjectId: projectIdToUse });
+              if (existingChatId) {
+                try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), existingChatId); } catch {}
+                try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), String(projectIdToUse || '')); } catch {}
+                return { chatId: existingChatId, existing: true, projectId: projectIdToUse } as any;
+              }
+            }
           }
         } catch {}
-        // No fallback to idea-scoped fetch; software mockups are team-scoped
-        const existingChatId = existing?.data?.mockups?.find((m: any) => m.v0_chat_id)?.v0_chat_id || existing?.data?.mockups?.[0]?.v0_chat_id;
-        const existingProjectId = existing?.data?.mockups?.find((m: any) => m.v0_project_id)?.v0_project_id || existing?.data?.v0_project_id;
-        if (existingProjectId && typeof existingProjectId === 'string') {
-          projectIdToUse = existingProjectId;
-        }
-        log.debug("createOrResumeV0Chat:existing", { existingChatId, existingProjectId: projectIdToUse });
-        if (existingChatId) {
-          try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), existingChatId); } catch {}
-          try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), String(projectIdToUse || '')); } catch {}
-          return { chatId: existingChatId, existing: true, projectId: projectIdToUse } as any;
-        }
       } catch (e) { log.warn("createOrResumeV0Chat:load-existing-failed", e); }
     }
 
@@ -1334,26 +1346,40 @@ user problems: ${probsLine}`;
       // Try team-scoped backend chat id first and existing demo
       let preExistingChatId: string | null = null;
       let preExistingProjectId: string | null = null;
-      try {
-        const ideaId = getIdeaId();
-        let existing: any = null;
-        // Prefer team-scoped fetch
+      if (!forceNew) {
         try {
-          const status = await apiClient.get('/team-formation/status/');
-          const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-          if (teamId) {
-            existing = await apiClient.getSoftwareMockupTeam(teamId);
-          }
-        } catch {}
-        // No fallback to idea-scoped fetch; software mockups are team-scoped
-        if (existing) {
-          const cid = (existing as any)?.data?.v0_chat_id;
-          const latestVid = (existing as any)?.data?.v0_latest_version_id;
-          const pid = (existing as any)?.data?.v0_project_id;
-          if (cid && typeof cid === 'string') preExistingChatId = cid;
-          if (pid && typeof pid === 'string') preExistingProjectId = pid;
-          // Prefer explicitly saved latest version id first
-          if (cid && latestVid) {
+          const ideaId = getIdeaId();
+          let existing: any = null;
+          let shouldLoadExisting = true;
+          // Prefer team-scoped fetch
+          try {
+            const status = await apiClient.get('/team-formation/status/');
+            const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+            if (teamId) {
+              // Check if mockup station is marked as complete; if not, don't load existing (treat as reset)
+              try {
+                const roadmap = await apiClient.getTeamRoadmap(teamId);
+                const mvp = (roadmap as any)?.data?.mvp || {};
+                // Only load existing if software_mockup is explicitly true; otherwise treat as reset
+                if (mvp.software_mockup !== true) {
+                  shouldLoadExisting = false;
+                }
+              } catch {}
+              
+              if (shouldLoadExisting) {
+                existing = await apiClient.getSoftwareMockupTeam(teamId);
+              }
+            }
+          } catch {}
+          // No fallback to idea-scoped fetch; software mockups are team-scoped
+          if (existing) {
+            const cid = (existing as any)?.data?.v0_chat_id;
+            const latestVid = (existing as any)?.data?.v0_latest_version_id;
+            const pid = (existing as any)?.data?.v0_project_id;
+            if (cid && typeof cid === 'string') preExistingChatId = cid;
+            if (pid && typeof pid === 'string') preExistingProjectId = pid;
+            // Prefer explicitly saved latest version id first
+            if (cid && latestVid) {
             try {
               const v = await (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid });
               const vDemo = v?.demoUrl || v?.webUrl || v?.demo;
@@ -1415,8 +1441,8 @@ user problems: ${probsLine}`;
               description: "Live demo loaded from existing software mockup"
             };
           }
-        }
-      } catch {}
+        } catch {}
+      }
 
       const session: any = preExistingChatId
         ? { chatId: preExistingChatId, existing: true, projectId: localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || preExistingProjectId || effectiveV0ProjectId }
@@ -1496,8 +1522,8 @@ user problems: ${probsLine}`;
           try {
             const roadmap = await apiClient.getTeamRoadmap(teamId);
             const mvp = (roadmap as any)?.data?.mvp || {};
-            // If software_mockup flag is explicitly false or missing, don't load existing (treat as reset)
-            if (mvp.software_mockup === false || (!mvp.software_mockup && !mvp.prototype_built)) {
+            // Only load existing if software_mockup is explicitly true; otherwise treat as reset
+            if (mvp.software_mockup !== true) {
               shouldLoadExisting = false;
             }
           } catch {}
