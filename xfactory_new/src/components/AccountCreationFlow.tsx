@@ -1155,65 +1155,16 @@ export const AccountCreationFlow = ({ onComplete, onBack, forceNewAccount = fals
                           );
                         })}
 
-                      {/* Regular available teams - shown below */}
-                      {availableTeams
-                        .filter(team => !additionRequests.some(req => String(req.team) === String(team.id)))
-                        .map((team) => (
-                        <div
-                          key={team.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                            selectedTeam === team.id ? 'border-primary bg-primary/5' : 'border-border'
-                          }`}
-                          onClick={() => setSelectedTeam(team.id)}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold">{team.name}</h3>
-                            <Badge variant="secondary">{team.current_member_count} members</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3">{team.description || "No description provided"}</p>
-                          
-                          {team.needed_archetypes && team.needed_archetypes.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {team.needed_archetypes.map((archetype: string) => (
-                                <Badge key={archetype} variant="outline" className="text-xs">
-                                  {archetype}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* Looking For Section */}
-                          {team.looking_for && team.looking_for.length > 0 && (
-                            <div className="mb-3">
-                              <div className="text-xs font-medium text-muted-foreground mb-2">Looking For:</div>
-                              <div className="space-y-2">
-                                {team.looking_for.map((role: any, index: number) => (
-                                  <div key={index} className="p-2 bg-muted/20 rounded border-l-2 border-primary/20">
-                                    <div className="font-medium text-sm">{role.job_role || "Team Member"}</div>
-                                    {role.keywords && (
-                                      <div className="text-xs text-muted-foreground mt-1">
-                                        Skills: {role.keywords}
-                                      </div>
-                                    )}
-                                    {role.job_description && (
-                                      <div className="text-xs text-muted-foreground mt-1">
-                                        {role.job_description}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="text-xs text-muted-foreground">
-                            <div className="font-medium">Led by: {team.created_by_name}</div>
-                            {team.needed_archetypes && team.needed_archetypes.length > 0 && (
-                              <div>Archetypes needed: {team.needed_archetypes.join(", ")}</div>
-                            )}
-                          </div>
+                      {/* Placeholder for available teams - feature coming soon */}
+                      {availableTeams.filter(team => !additionRequests.some(req => String(req.team) === String(team.id))).length > 0 && (
+                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                          <h3 className="font-semibold mb-2">Coming Soon</h3>
+                          <p className="text-muted-foreground">
+                            Soon, you'll be able to send team invites and join a team
+                          </p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-8">
