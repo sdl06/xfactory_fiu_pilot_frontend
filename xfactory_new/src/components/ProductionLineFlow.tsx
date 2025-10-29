@@ -128,53 +128,92 @@ const StationNode = ({ data }: { data: any }) => {
                       }
                       if (!teamId) return;
                       // Map station IDs to backend section keys and reset payload
+                      // IMPORTANT: Clear ALL flags that contribute to completion status
+                      // Models will remain, but completion flags must be cleared so UI treats station as incomplete
                       const resetPayload: any = {};
                       
                       switch (station.id) {
-                        case 1: // Idea - concept card exists, but can't easily reset via roadmap
-                          alert('Resetting the idea station requires deleting the concept card. This feature is not yet available.');
-                          return;
-                        case 2: // Mockups - part of mvp.software_mockup
-                          resetPayload['mvp'] = { software_mockup: false };
+                        case 1: // Idea - mark ideation as incomplete
+                          resetPayload['ideation'] = { completed: false };
+                          // Note: Concept card model remains, but station won't appear complete
                           break;
-                        case 3: // Validation
-                          resetPayload['validation'] = {};
+                        case 2: // Mockups - clear both flags that could mark it complete
+                          resetPayload['mvp'] = { software_mockup: false, prototype_built: false };
                           break;
-                        case 4: // Pitch Deck
-                          resetPayload['pitch_deck'] = {};
+                        case 3: // Validation - clear all three validation tiers
+                          resetPayload['validation'] = { 
+                            secondary: false, 
+                            qualitative: false, 
+                            quantitative: false 
+                          };
+                          break;
+                        case 4: // Pitch Deck - clear all pitch deck flags
+                          resetPayload['pitch_deck'] = { 
+                            slides_generated: false,
+                            practice_completed: false,
+                            mentor_deck_generated: false,
+                            investor_deck_generated: false,
+                            submission_completed: false
+                          };
                           break;
                         case 5: // Pre-MVP Mentorship
                           resetPayload['mentorship'] = { pre_mvp_completed: false };
                           break;
-                        case 6: // MVP
-                          resetPayload['mvp'] = {};
+                        case 6: // MVP - clear both MVP flags
+                          resetPayload['mvp'] = { 
+                            prototype_built: false, 
+                            task_plan_generated: false,
+                            software_mockup: false
+                          };
                           break;
-                        case 7: // Post-MVP Mentorship (controlled by MVP completion)
-                          resetPayload['mvp'] = {};
+                        case 7: // Testing/Post-MVP (uses testing section flags + mentorship.post_mvp_completed)
+                          resetPayload['testing'] = { 
+                            usability_completed: false,
+                            feedback_collection_completed: false
+                          };
+                          // Also clear post-MVP mentorship flag
+                          resetPayload['mentorship'] = { post_mvp_completed: false };
+                          // Also clear MVP flags since station 7 depends on MVP completion
+                          resetPayload['mvp'] = { 
+                            prototype_built: false, 
+                            task_plan_generated: false 
+                          };
                           break;
                         case 8: // Launch Prep
-                          resetPayload['prelaunch'] = {};
+                          resetPayload['prelaunch'] = { deployment_ready: false };
                           break;
-                        case 9: // Launch Execution
-                          resetPayload['prelaunch'] = {};
+                        case 9: // Launch Execution - also uses prelaunch
+                          resetPayload['prelaunch'] = { deployment_ready: false };
                           break;
                         case 10: // Pre-Investor Mentorship
-                          resetPayload['mentorship'] = {};
+                          resetPayload['mentorship'] = { pre_investor_completed: false };
                           break;
-                        case 11: // Pitch Practice
-                          resetPayload['pitch_deck'] = {};
+                        case 11: // Pitch Practice - uses pitch_deck flags
+                          resetPayload['pitch_deck'] = { 
+                            practice_completed: false,
+                            slides_generated: false,
+                            submission_completed: false
+                          };
                           break;
                         case 12: // Finance Workshop
-                          resetPayload['finance'] = {};
+                          resetPayload['finance'] = { budget_completed: false };
                           break;
                         case 13: // Marketing Workshop
-                          resetPayload['marketing'] = {};
+                          resetPayload['marketing'] = {
+                            submission_completed: false,
+                            strategy_link: '',
+                            branding_link: '',
+                            traction_link: ''
+                          };
                           break;
                         case 14: // Legal Workshop
-                          resetPayload['legal'] = {};
+                          resetPayload['legal'] = { compliance_completed: false };
                           break;
-                        case 15: // Investor Presentation
-                          resetPayload['pitch_deck'] = {};
+                        case 15: // Investor Presentation - uses pitch_deck flags
+                          resetPayload['pitch_deck'] = { 
+                            submission_completed: false,
+                            investor_deck_generated: false
+                          };
                           break;
                         default:
                           alert(`Unknown station ID: ${station.id}`);
@@ -369,53 +408,81 @@ const StationNode = ({ data }: { data: any }) => {
                   }
                   if (!teamId) return;
                   // Map station IDs to backend section keys and reset payload
+                  // IMPORTANT: Clear ALL flags that contribute to completion status
+                  // Models will remain, but completion flags must be cleared so UI treats station as incomplete
                   const resetPayload: any = {};
                   
                   switch (station.id) {
-                    case 1: // Idea - concept card exists, but can't easily reset via roadmap
-                      alert('Resetting the idea station requires deleting the concept card. This feature is not yet available.');
-                      return;
-                    case 2: // Mockups - part of mvp.software_mockup
-                      resetPayload['mvp'] = { software_mockup: false };
+                    case 1: // Idea - mark ideation as incomplete
+                      resetPayload['ideation'] = { completed: false };
+                      // Note: Concept card model remains, but station won't appear complete
                       break;
-                    case 3: // Validation
-                      resetPayload['validation'] = {};
+                    case 2: // Mockups - clear both flags that could mark it complete
+                      resetPayload['mvp'] = { software_mockup: false, prototype_built: false };
                       break;
-                    case 4: // Pitch Deck
-                      resetPayload['pitch_deck'] = {};
+                    case 3: // Validation - clear all three validation tiers
+                      resetPayload['validation'] = { 
+                        secondary: false, 
+                        qualitative: false, 
+                        quantitative: false 
+                      };
+                      break;
+                    case 4: // Pitch Deck - clear all pitch deck flags
+                      resetPayload['pitch_deck'] = { 
+                        slides_generated: false,
+                        practice_completed: false,
+                        mentor_deck_generated: false,
+                        investor_deck_generated: false,
+                        submission_completed: false
+                      };
                       break;
                     case 5: // Pre-MVP Mentorship
                       resetPayload['mentorship'] = { pre_mvp_completed: false };
                       break;
-                    case 6: // MVP
-                      resetPayload['mvp'] = {};
+                    case 6: // MVP - clear both MVP flags
+                      resetPayload['mvp'] = { 
+                        prototype_built: false, 
+                        task_plan_generated: false,
+                        software_mockup: false
+                      };
                       break;
                     case 7: // Post-MVP Mentorship (controlled by MVP completion)
-                      resetPayload['mvp'] = {};
+                      // Clearing MVP flags also resets station 7
+                      resetPayload['mvp'] = { 
+                        prototype_built: false, 
+                        task_plan_generated: false 
+                      };
                       break;
                     case 8: // Launch Prep
-                      resetPayload['prelaunch'] = {};
+                      resetPayload['prelaunch'] = { deployment_ready: false };
                       break;
-                    case 9: // Launch Execution
-                      resetPayload['prelaunch'] = {};
+                    case 9: // Launch Execution - also uses prelaunch
+                      resetPayload['prelaunch'] = { deployment_ready: false };
                       break;
                     case 10: // Pre-Investor Mentorship
-                      resetPayload['mentorship'] = {};
+                      resetPayload['mentorship'] = { pre_investor_completed: false };
                       break;
-                    case 11: // Pitch Practice
-                      resetPayload['pitch_deck'] = {};
+                    case 11: // Pitch Practice - uses pitch_deck flags
+                      resetPayload['pitch_deck'] = { 
+                        practice_completed: false,
+                        slides_generated: false,
+                        submission_completed: false
+                      };
                       break;
                     case 12: // Finance Workshop
-                      resetPayload['finance'] = {};
+                      resetPayload['finance'] = { budget_completed: false };
                       break;
-                    case 13: // Marketing Workshop
+                    case 13: // Marketing Workshop - need to check what flags it uses
                       resetPayload['marketing'] = {};
                       break;
                     case 14: // Legal Workshop
-                      resetPayload['legal'] = {};
+                      resetPayload['legal'] = { compliance_completed: false };
                       break;
-                    case 15: // Investor Presentation
-                      resetPayload['pitch_deck'] = {};
+                    case 15: // Investor Presentation - uses pitch_deck flags
+                      resetPayload['pitch_deck'] = { 
+                        submission_completed: false,
+                        investor_deck_generated: false
+                      };
                       break;
                     default:
                       alert(`Unknown station ID: ${station.id}`);
@@ -610,10 +677,9 @@ export const ProductionLineFlow = ({
     }
     
     // Completion display - always show completed stations as completed
+    // Completion is determined by roadmap flags only, not model existence
+    // This allows reset functionality to work properly - models remain but station appears incomplete
     if (completedStations.includes(stationId)) return 'completed';
-
-    // Treat AI Powered Idea Creation as completed if a concept card exists
-    if (stationId === 1 && ideaCardComplete) return 'completed';
     
     // Locked-by-default gating: only admin unlocks open a station
     const key = sectionKeyForStation(stationId);

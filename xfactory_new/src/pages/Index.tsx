@@ -153,7 +153,10 @@ const Index = () => {
         const finance = trcData?.finance || {};
         const legal = trcData?.legal || {};
         const prelaunch = trcData?.prelaunch || {};
-        const isIdeaDone = true; // treat ideation as done once logged in and onboarded
+        const ideation = trcData?.ideation || {};
+        // Check roadmap flag for ideation completion (allows reset functionality)
+        // If ideation section doesn't exist or has completed: false, treat as incomplete
+        const isIdeaDone = ideation.completed !== false; // Default to true for backward compatibility, but allow reset
         const isMockupDone = !!(mvp.prototype_built || mvp.software_mockup);
         // Only mark validation station complete when ALL tiers are done
         const isValidationComplete = !!(validation.secondary && validation.qualitative && validation.quantitative);
