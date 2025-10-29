@@ -938,15 +938,22 @@ export const PitchPracticeStation = ({
                   )}
                 </Button>
               </div>
-              {/* Inline viewer */}
+              {/* Inline viewer: Use Office web viewer to render PPTX in iframe */}
               {pdfUrl && teamId && (
                 <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
-                  <iframe
-                    title="Pitch Deck PPTX"
-                    src={`${getGammaPdfUrlTeam(teamId)}?cb=${pdfNonce}`}
-                    className="w-full h-full"
-                    style={{ border: 'none' }}
-                  />
+                  {(() => {
+                    const serveUrl = `${getGammaPdfUrlTeam(teamId)}?cb=${pdfNonce}`;
+                    const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(serveUrl)}`;
+                    return (
+                      <iframe
+                        title="Pitch Deck PPTX"
+                        src={viewerUrl}
+                        className="w-full h-full"
+                        style={{ border: 'none' }}
+                        allowFullScreen
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>
