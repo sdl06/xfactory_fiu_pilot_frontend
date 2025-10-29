@@ -957,37 +957,6 @@ export const PitchPracticeStation = ({
                   )}
                 </Button>
               </div>
-              {/* Presentation preview: Direct link since embedded viewers may not work with backend URLs */}
-              {pdfUrl && teamId && (
-                <div className="w-full border rounded-lg overflow-hidden bg-muted/10">
-                  <div className="p-4 bg-muted/50 border-b flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold">Presentation Ready</h4>
-                      <p className="text-sm text-muted-foreground">Your pitch deck has been generated</p>
-                    </div>
-                    <Button 
-                      onClick={() => {
-                        const serveUrl = getGammaPdfUrlTeam(teamId);
-                        window.open(`${serveUrl}?cb=${pdfNonce}`, '_blank');
-                      }}
-                      className="gap-2"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Open in New Tab
-                    </Button>
-                  </div>
-                  <div className="h-[60vh] flex items-center justify-center bg-background">
-                    <div className="text-center space-y-4">
-                      <FileText className="h-16 w-16 text-muted-foreground mx-auto" />
-                      <div>
-                        <p className="text-lg font-semibold">Presentation Generated Successfully</p>
-                        <p className="text-sm text-muted-foreground mt-2">Click "Open in New Tab" above to view your presentation</p>
-                        <p className="text-xs text-muted-foreground mt-1">Or download it using the Download button</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
