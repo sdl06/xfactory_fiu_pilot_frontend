@@ -101,18 +101,64 @@ const StationNode = ({ data }: { data: any }) => {
               </Button>
             )}
             {status === 'completed' && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="h-7 px-3 border-success text-success"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEnter(station.id, true);
-                }}
-              >
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Review
-              </Button>
+              <>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="h-7 px-3 border-success text-success"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEnter(station.id, true);
+                  }}
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Review
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-7 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const teamIdStr = localStorage.getItem('xfactoryTeamId');
+                      let teamId = teamIdStr ? Number(teamIdStr) : NaN;
+                      if (!teamId || Number.isNaN(teamId)) {
+                        try { const status = await apiClient.get('/team-formation/status/'); teamId = (status as any)?.data?.current_team?.id; } catch {}
+                      }
+                      if (!teamId) return;
+                      const key = ((): string => {
+                        switch (station.id) {
+                          case 1: return 'idea';
+                          case 2: return 'mockups';
+                          case 3: return 'validation';
+                          case 4: return 'pitch_deck';
+                          case 5: return 'mentorship_pre';
+                          case 6: return 'mvp';
+                          case 7: return 'mentorship_post';
+                          case 8: return 'launch_prep';
+                          case 9: return 'launch_execution';
+                          case 10: return 'mentorship_pre_investor';
+                          case 11: return 'pitch_practice';
+                          case 12: return 'finance';
+                          case 13: return 'marketing';
+                          case 14: return 'legal';
+                          case 15: return 'investor_presentation';
+                          default: return `station_${station.id}`;
+                        }
+                      })();
+                      // Reset the section by sending an empty object for that key
+                      await apiClient.updateTeamRoadmap(teamId, { [key]: {} });
+                      // Soft feedback; parent will refresh completed list
+                      try { (window as any)?.toast?.({ title: 'Reset', description: `${station.title} has been reset.` }); } catch {}
+                    } catch {}
+                  }}
+                  title="Reset this step"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Reset
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -242,35 +288,79 @@ const StationNode = ({ data }: { data: any }) => {
         )}
         
         {status === 'completed' && (
-          <Button 
-            size="sm" 
-            variant="outline"
-            className="w-full border-success text-success"
-            onClick={async (e) => {
-              e.stopPropagation();
-              // Prefetch concept card when reviewing AI Powered Idea Creation (station 1)
-              if (station.id === 1) {
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="w-full border-success text-success"
+              onClick={async (e) => {
+                e.stopPropagation();
+                // Prefetch concept card when reviewing AI Powered Idea Creation (station 1)
+                if (station.id === 1) {
+                  try {
+                    const teamIdStr = localStorage.getItem('xfactoryTeamId');
+                    const teamId = teamIdStr ? Number(teamIdStr) : null;
+                    if (teamId) {
+                      let res: any = await apiClient.getTeamConceptCard(teamId);
+                      const ok = res && res.status >= 200 && res.status < 300 && (res as any).data;
+                      if (!ok) {
+                        try { await apiClient.generateTeamConceptCard(teamId); } catch {}
+                        try { res = await apiClient.getTeamConceptCard(teamId); } catch {}
+                      }
+                      // Also prefetch elevator pitch submission so review shows saved state
+                      try { await apiClient.getElevatorPitchSubmission(teamId); } catch {}
+                    }
+                  } catch {}
+                }
+                onEnter(station.id, true); // Pass true for review mode
+              }}
+            >
+              <CheckCircle className="h-3 w-3 mr-2" />
+              Review
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={async (e) => {
+                e.stopPropagation();
                 try {
                   const teamIdStr = localStorage.getItem('xfactoryTeamId');
-                  const teamId = teamIdStr ? Number(teamIdStr) : null;
-                  if (teamId) {
-                    let res: any = await apiClient.getTeamConceptCard(teamId);
-                    const ok = res && res.status >= 200 && res.status < 300 && (res as any).data;
-                    if (!ok) {
-                      try { await apiClient.generateTeamConceptCard(teamId); } catch {}
-                      try { res = await apiClient.getTeamConceptCard(teamId); } catch {}
-                    }
-                    // Also prefetch elevator pitch submission so review shows saved state
-                    try { await apiClient.getElevatorPitchSubmission(teamId); } catch {}
+                  let teamId = teamIdStr ? Number(teamIdStr) : NaN;
+                  if (!teamId || Number.isNaN(teamId)) {
+                    try { const status = await apiClient.get('/team-formation/status/'); teamId = (status as any)?.data?.current_team?.id; } catch {}
                   }
+                  if (!teamId) return;
+                  const key = ((): string => {
+                    switch (station.id) {
+                      case 1: return 'idea';
+                      case 2: return 'mockups';
+                      case 3: return 'validation';
+                      case 4: return 'pitch_deck';
+                      case 5: return 'mentorship_pre';
+                      case 6: return 'mvp';
+                      case 7: return 'mentorship_post';
+                      case 8: return 'launch_prep';
+                      case 9: return 'launch_execution';
+                      case 10: return 'mentorship_pre_investor';
+                      case 11: return 'pitch_practice';
+                      case 12: return 'finance';
+                      case 13: return 'marketing';
+                      case 14: return 'legal';
+                      case 15: return 'investor_presentation';
+                      default: return `station_${station.id}`;
+                    }
+                  })();
+                  await apiClient.updateTeamRoadmap(teamId, { [key]: {} });
+                  try { (window as any)?.toast?.({ title: 'Reset', description: `${station.title} has been reset.` }); } catch {}
                 } catch {}
-              }
-              onEnter(station.id, true); // Pass true for review mode
-            }}
-          >
-            <CheckCircle className="h-3 w-3 mr-2" />
-            Review
-          </Button>
+              }}
+              title="Reset this step"
+            >
+              <RefreshCw className="h-3 w-3 mr-2" />
+              Reset
+            </Button>
+          </div>
         )}
         
       </div>
