@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Lightbulb, FlaskConical, UserCheck, Building, Milestone, HelpCircle, Heart, DollarSign, FileText, Loader2, Download, X, User, Settings, LogOut } from "lucide-react";
+import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Lightbulb, FlaskConical, UserCheck, Building, Milestone, HelpCircle, Heart, DollarSign, FileText, Loader2, Download, X, User, Settings, LogOut, ExternalLink } from "lucide-react";
 import { StationFlowManager } from "@/lib/stationFlow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient, getGammaPdfUrlTeam } from "@/lib/api";
@@ -873,9 +873,24 @@ export const PitchPracticeStation = ({
                     if (!tId) { setIsGenerating(false); return; }
                     // Manually force a new job by enqueuing with force_regenerate=true
                     const enqueue = await apiClient.enqueueGammaTeam(tId, true);
-                    if ((enqueue as any)?.status === 202 || (enqueue as any)?.status === 200) {
-                      // If it's mode: "existing", reject and wait for new generation
-                      if ((enqueue as any)?.data?.mode === 'existing') {
+                    const enqueueData = (enqueue as any)?.data;
+                    const enqueueStatus = (enqueue as any)?.status;
+                    
+                    // Handle immediate completion (synchronous regeneration)
+                    if (enqueueStatus === 200 && enqueueData?.mode === 'immediate_complete' && enqueueData?.pdf_url) {
+                      const ok = await waitForPptxAccessible(enqueueData.pdf_url);
+                      if (ok) {
+                        setPdfUrl(enqueueData.pdf_url);
+                        setPdfNonce(Date.now());
+                        setGeneratedPDF(true);
+                        setIsGenerating(false);
+                        return;
+                      }
+                    }
+                    
+                    if (enqueueStatus === 202 || enqueueStatus === 200) {
+                      // If it's mode: "existing", skip and poll for new generation
+                      if (enqueueData?.mode === 'existing') {
                         // Keep polling until NEW job completes
                         const start = Date.now();
                         const timeoutMs = 6 * 60 * 1000;
@@ -885,13 +900,15 @@ export const PitchPracticeStation = ({
                           await pollDelay(delay);
                           const latest = await apiClient.getLatestGammaTeam(tId);
                           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
-                          if (url && url !== pdfUrl) {
+                          // Accept any URL (since we cleared pdfUrl, any URL is "new")
+                          if (url) {
                             const ok = await waitForPptxAccessible(url);
                             if (ok) {
                               setPdfUrl(url);
                               setPdfNonce(Date.now());
                               setGeneratedPDF(true);
-                              break;
+                              setIsGenerating(false);
+                              return;
                             }
                           }
                           delay = Math.min(Math.floor(delay * 1.5), 15000);
@@ -903,18 +920,20 @@ export const PitchPracticeStation = ({
                         const pollDelay = async (ms: number) => new Promise(r => setTimeout(r, ms));
                         let delay = 4000;
                         while (Date.now() - start < timeoutMs) {
+                          await pollDelay(delay);
                           const latest = await apiClient.getLatestGammaTeam(tId);
                           const url = (latest as any)?.data?.pdf_url || (latest as any)?.pdf_url;
-                          if (url && url !== pdfUrl) {
+                          // Accept any URL (since we cleared pdfUrl, any URL is "new")
+                          if (url) {
                             const ok = await waitForPptxAccessible(url);
                             if (ok) {
                               setPdfUrl(url);
                               setPdfNonce(Date.now());
                               setGeneratedPDF(true);
-                              break;
+                              setIsGenerating(false);
+                              return;
                             }
                           }
-                          await pollDelay(delay);
                           delay = Math.min(Math.floor(delay * 1.5), 15000);
                         }
                       }
@@ -938,22 +957,35 @@ export const PitchPracticeStation = ({
                   )}
                 </Button>
               </div>
-              {/* Inline viewer: Use Office web viewer to render PPTX in iframe */}
+              {/* Presentation preview: Direct link since embedded viewers may not work with backend URLs */}
               {pdfUrl && teamId && (
-                <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
-                  {(() => {
-                    const serveUrl = `${getGammaPdfUrlTeam(teamId)}?cb=${pdfNonce}`;
-                    const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(serveUrl)}`;
-                    return (
-                      <iframe
-                        title="Pitch Deck PPTX"
-                        src={viewerUrl}
-                        className="w-full h-full"
-                        style={{ border: 'none' }}
-                        allowFullScreen
-                      />
-                    );
-                  })()}
+                <div className="w-full border rounded-lg overflow-hidden bg-muted/10">
+                  <div className="p-4 bg-muted/50 border-b flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">Presentation Ready</h4>
+                      <p className="text-sm text-muted-foreground">Your pitch deck has been generated</p>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        const serveUrl = getGammaPdfUrlTeam(teamId);
+                        window.open(`${serveUrl}?cb=${pdfNonce}`, '_blank');
+                      }}
+                      className="gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open in New Tab
+                    </Button>
+                  </div>
+                  <div className="h-[60vh] flex items-center justify-center bg-background">
+                    <div className="text-center space-y-4">
+                      <FileText className="h-16 w-16 text-muted-foreground mx-auto" />
+                      <div>
+                        <p className="text-lg font-semibold">Presentation Generated Successfully</p>
+                        <p className="text-sm text-muted-foreground mt-2">Click "Open in New Tab" above to view your presentation</p>
+                        <p className="text-xs text-muted-foreground mt-1">Or download it using the Download button</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
