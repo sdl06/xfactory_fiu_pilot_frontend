@@ -1339,7 +1339,6 @@ user problems: ${probsLine}`;
   };
 
   const generateV0Landing = async (forceNew = false): Promise<any|null> => {
-    try {
       // Allow landing generation for any idea type if v0 is configured
       if (!effectiveV0ApiKey || !effectiveV0ProjectId) { log.error("generateV0Landing:missing-config"); return null; }
       log.info("generateV0Landing:start", { forceNew });
@@ -1347,9 +1346,8 @@ user problems: ${probsLine}`;
       let preExistingChatId: string | null = null;
       let preExistingProjectId: string | null = null;
       if (!forceNew) {
-        try {
-          const ideaId = getIdeaId();
-          let existing: any = null;
+        const ideaId = getIdeaId();
+        let existing: any = null;
           let shouldLoadExisting = true;
           // Prefer team-scoped fetch
           try {
@@ -1441,7 +1439,6 @@ user problems: ${probsLine}`;
               description: "Live demo loaded from existing software mockup"
             };
           }
-        } catch {}
       }
 
       const session: any = preExistingChatId
@@ -1501,7 +1498,7 @@ user problems: ${probsLine}`;
       }
       log.warn("generateV0Landing:no-demo-url");
       return null;
-    } catch (e) { log.error("generateV0Landing:error", e); return null; }
+    }
   };
 
   // Try to open an existing landing first; if missing, generate it
