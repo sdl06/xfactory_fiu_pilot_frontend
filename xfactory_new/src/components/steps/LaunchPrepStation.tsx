@@ -382,7 +382,7 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => window.open('https://squareup.com/us/en/signup', '_blank')}
+                            onClick={() => window.open('https://app.squareup.com/signup/en-US', '_blank')}
                           >
                             <ExternalLink className="mr-2 h-4 w-4" />
                             Setup Square
@@ -427,12 +427,26 @@ export const LaunchPrepStation = ({ mvpData, onComplete, onBack }: LaunchPrepSta
                       <Card className="p-4">
                         <h4 className="font-medium mb-2">Google Analytics</h4>
                         <p className="text-sm text-muted-foreground mb-3">Track website visitors and behavior</p>
-                        <Button variant="outline" size="sm">Setup GA4</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open('https://analytics.google.com/', '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Setup GA4
+                        </Button>
                       </Card>
                       <Card className="p-4">
                         <h4 className="font-medium mb-2">Facebook Pixel</h4>
                         <p className="text-sm text-muted-foreground mb-3">Track conversions for ads</p>
-                        <Button variant="outline" size="sm">Setup Pixel</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open('https://business.facebook.com/events_manager', '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Setup Pixel
+                        </Button>
                       </Card>
                     </div>
                   </div>
