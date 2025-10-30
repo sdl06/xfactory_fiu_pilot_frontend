@@ -319,62 +319,6 @@ export const OnboardingFlow = ({ onComplete, onBack }: OnboardingFlowProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Factory Header */}
-      <header className="border-b border-border bg-gradient-conveyor relative w-full">
-        {/* Logos positioned at absolute left edge */}
-        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
-          <img 
-            src="/logos/prov_logo_white.png" 
-            alt="xFactory Logo" 
-            className="h-8 w-auto object-contain"
-          />
-          <img 
-            src="/logos/fiualonetransreverse.png" 
-            alt="FIU Logo" 
-            className="h-8 w-auto object-contain"
-          />
-        </div>
-
-        {/* User controls positioned at absolute right edge */}
-        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Exit
-          </Button>
-        </div>
-
-        {/* Middle Section - Station Info and Step Indicators */}
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-                <Lightbulb className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Idea Generation</h1>
-                <p className="text-sm text-white/80">Build your startup concept</p>
-              </div>
-            </div>
-            
-            {/* Step indicators on the right side of station info */}
-            <div className="flex items-center gap-2 ml-6">
-              <Badge variant={step >= 1 ? "default" : "secondary"} className={step >= 1 ? "bg-green-600 hover:bg-green-700" : ""}>1</Badge>
-              <div className="w-8 h-0.5 bg-white/30"></div>
-              <Badge variant={step >= 2 ? "default" : "secondary"} className={step >= 2 ? "bg-green-600 hover:bg-green-700" : ""}>2</Badge>
-              <div className="w-8 h-0.5 bg-white/30"></div>
-              <Badge variant={step >= 3 ? "default" : "secondary"} className={step >= 3 ? "bg-green-600 hover:bg-green-700" : ""}>3</Badge>
-              <div className="w-8 h-0.5 bg-white/30"></div>
-              <Badge variant={step >= 4 ? "default" : "secondary"} className={step >= 4 ? "bg-green-600 hover:bg-green-700" : ""}>4</Badge>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className={`${step === 2.5 ? "px-2 sm:px-4 lg:px-6 xl:px-8 py-0" : "p-6"}`}>
         <div className={step === 4 ? "max-w-[1450px] mx-auto" : step === 2.5 ? "w-full" : "max-w-2xl mx-auto"}>
           {/* Back Button */}
