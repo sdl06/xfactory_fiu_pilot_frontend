@@ -1077,7 +1077,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       
       const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
       const report = (reportRes.data as any)?.report;
-      if (report) {
+      if (report && (report.content || report.report_content)) {  // Ensure report has content before processing
         // Mark as complete if backend says it's complete
         markSecondaryFromReport(report, isBackendComplete);
         
@@ -1861,12 +1861,23 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     return () => { pollingAbortRef.current = true; };
   }, []);
 
-  // When selecting Secondary tier, if a saved report exists, show it as completed
+  // When selecting Secondary tier, always load existing report if available
   useEffect(() => {
-    if (currentTier === 'secondary' && !hasSecondaryScore()) {
+    if (currentTier === 'secondary') {
       loadExistingSecondaryIfAny();
     }
   }, [currentTier]);
+
+  // Also load when showing validation results to ensure report is displayed
+  useEffect(() => {
+    if (showValidationResults) {
+      const hasSecondary = validationScores.some(s => s.tier === 'secondary');
+      if (hasSecondary) {
+        // Report already loaded, but refresh to ensure latest data
+        loadExistingSecondaryIfAny();
+      }
+    }
+  }, [showValidationResults]);
 
   // Markdown tables plugin intentionally omitted; install 'remark-gfm' and wire it if needed
 
@@ -2712,12 +2723,16 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                           Key Insights
                                         </h4>
                                        <ul className="space-y-2">
-                                         {score.insights.map((insight, idx) => (
-                                           <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                                             <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                                             {insight}
-                                           </li>
-                                         ))}
+                                         {(score.insights && score.insights.length > 0) ? (
+                                           score.insights.map((insight, idx) => (
+                                             <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                               <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                                               {insight}
+                                             </li>
+                                           ))
+                                         ) : (
+                                           <li className="text-sm text-muted-foreground">No insights available yet. Generate a report to see key findings.</li>
+                                         )}
                                        </ul>
                                      </div>
 
@@ -2740,10 +2755,15 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                                const teamId = teamIdStr ? Number(teamIdStr) : null;
                                                if (teamId) {
                                                  try {
+                                                   // Wait a moment for backend to finish saving
+                                                   await new Promise(r => setTimeout(r, 1000));
                                                    const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
                                                    const report = (reportRes.data as any)?.report;
                                                    if (report) {
                                                      markSecondaryFromReport(report, true); // Mark complete after regeneration
+                                                     // Ensure results are shown
+                                                     setShowValidationResults(true);
+                                                     setIsReportExpanded(true);
                                                    }
                                                  } catch (error) {
                                                    console.error('Failed to refresh report after regeneration:', error);
@@ -2800,7 +2820,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                                      tr: ({children}) => <tr className="odd:bg-background even:bg-muted/10">{children}</tr>,
                                                    }}
                                                  >
-                                                   {score.data.report || "No detailed report available."}
+                                                   {score.data?.report || score.data?.content || "No detailed report available. Please generate a secondary research report."}
                                                  </ReactMarkdown>
                                                </div>
                                              </div>
