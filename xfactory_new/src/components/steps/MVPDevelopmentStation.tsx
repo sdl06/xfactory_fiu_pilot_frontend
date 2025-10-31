@@ -866,9 +866,6 @@ export const MVPDevelopmentStation = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Ivie Assistant */}
-      <FactorAI currentStation={4} userData={{ mvpData }} context="mvp-development" />
     </div>
   );
 };

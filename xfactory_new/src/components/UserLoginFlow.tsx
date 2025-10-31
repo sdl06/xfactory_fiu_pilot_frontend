@@ -177,30 +177,16 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
               </Button>
             </form>
             
-            <div className="mt-6 text-center space-y-3">
+            <div className="mt-6 text-center">
               <Button
-                variant="link"
+                variant="ghost"
                 size="sm"
+                onClick={onBack}
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  // Placeholder for forgot password functionality
-                  console.log('Forgot password clicked');
-                }}
               >
-                Forgot Password? - Under development
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Landing
               </Button>
-              
-              <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onBack}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Landing
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>

@@ -686,6 +686,9 @@ export const ProductionLineFlow = ({
     // Completion is determined by roadmap flags only, not model existence
     // This allows reset functionality to work properly - models remain but station appears incomplete
     if (completedStations.includes(stationId)) return 'completed';
+
+    // Treat AI Powered Idea Creation as completed if a concept card exists
+    if (stationId === 1 && ideaCardComplete) return 'completed';
     
     // Locked-by-default gating: only admin unlocks open a station
     const key = sectionKeyForStation(stationId);
