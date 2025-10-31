@@ -407,7 +407,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     loadQuantitativeInsights();
   }, []);
 
-  // Auto-generate + poll Deep Research; then fetch report, score, and populate bullets
+  // Load existing Deep Research report (NO auto-generation - user must click button)
   useEffect(() => {
     const run = async () => {
       try {
@@ -428,74 +428,91 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         
         if (!shouldLoadValidation) return; // Skip auto-loading if station is reset
 
-        // Check if report already exists before generating
+        // ONLY fetch existing report - NEVER auto-generate
         try {
           const statusRes = await apiClient.getDeepResearchStatusTeam(teamId);
           const status = (statusRes.data as any)?.status;
+          
           if (status === 'completed') {
-            // Report already exists, just load it
+            // Report exists and is completed - load it
             const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
             const report = (reportRes.data as any)?.report;
             if (report && (report.content || report.report_content)) {
               markSecondaryFromReport(report, true);
-              return;
+              setDeepResearch(report);
+              // Compute + fetch secondary score if missing
+              try { await apiClient.computeSecondaryScoreTeam(teamId); } catch {}
+              try {
+                const sec = await apiClient.getSecondaryScoreTeam(teamId);
+                const s: any = (sec as any)?.data?.score;
+                if (s && typeof s.final_score_20 === 'number') {
+                  const sc = Number(s.final_score_20);
+                  setSecondaryScore20(sc);
+                  // Populate a secondary ValidationScore entry if absent
+                  setValidationScores(prev => {
+                    if (prev.some(v => v.tier === 'secondary')) return prev;
+                    const bullets = Array.isArray(report?.key_findings) && report.key_findings.length > 0
+                      ? report.key_findings
+                      : (Array.isArray(report?.market_insights) ? report.market_insights : []);
+                    const status: any = sc >= 17 ? 'excellent' : sc >= 14 ? 'good' : sc >= 11 ? 'fair' : 'poor';
+                    return [...prev, { tier: 'secondary', score: sc, status, insights: bullets.slice(0, 4), data: { report, score: s } }];
+                  });
+                  setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
+                }
+              } catch {}
             }
           } else if (status === 'pending' || status === 'processing') {
-            // Generation already in progress, just poll
-            // Continue to polling below
-          } else {
-            // No report exists, generate one
-            try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}
+            // Report is being generated - just resume polling (don't start new generation)
+            // Poll status until completed or timeout (~2 minutes)
+            let attempts = 0;
+            while (attempts < 40) {
+              try {
+                const st = await apiClient.getDeepResearchStatusTeam(teamId);
+                const status = (st as any)?.data?.status;
+                if (status === 'completed') {
+                  // Now fetch the completed report
+                  const rep = await apiClient.getDeepResearchReportTeam(teamId);
+                  const report = (rep as any)?.data?.report;
+                  if (report && (report.content || report.report_content)) {
+                    markSecondaryFromReport(report, true);
+                    setDeepResearch(report);
+                    // Compute + fetch secondary score if missing
+                    try { await apiClient.computeSecondaryScoreTeam(teamId); } catch {}
+                    try {
+                      const sec = await apiClient.getSecondaryScoreTeam(teamId);
+                      const s: any = (sec as any)?.data?.score;
+                      if (s && typeof s.final_score_20 === 'number') {
+                        const sc = Number(s.final_score_20);
+                        setSecondaryScore20(sc);
+                        const bullets = Array.isArray(report?.key_findings) && report.key_findings.length > 0
+                          ? report.key_findings
+                          : (Array.isArray(report?.market_insights) ? report.market_insights : []);
+                        const status: any = sc >= 17 ? 'excellent' : sc >= 14 ? 'good' : sc >= 11 ? 'fair' : 'poor';
+                        setValidationScores(prev => {
+                          if (prev.some(v => v.tier === 'secondary')) {
+                            return prev.map(v => v.tier === 'secondary' ? { ...v, score: sc, status, insights: bullets.slice(0, 4), data: { report, score: s } } : v);
+                          }
+                          return [...prev, { tier: 'secondary', score: sc, status, insights: bullets.slice(0, 4), data: { report, score: s } }];
+                        });
+                        setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
+                      }
+                    } catch {}
+                  }
+                  break;
+                }
+                if (status === 'failed') break;
+              } catch {}
+              await new Promise(r => setTimeout(r, 3000));
+              attempts += 1;
+            }
           }
+          // If status is anything else or check fails, do NOTHING - user must click button to generate
         } catch (e) {
-          // If status check fails, try generating anyway
-          try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}
-        }
-
-        // Poll status until completed or timeout (~2 minutes)
-        let attempts = 0;
-        while (attempts < 40) {
-          try {
-            const st = await apiClient.get(`/validation/teams/${teamId}/deep-research/status/`);
-            const status = (st as any)?.data?.status;
-            if (status === 'completed') break;
-          } catch {}
-          await new Promise(r => setTimeout(r, 3000));
-          attempts += 1;
-        }
-
-        // Fetch final report
-        try {
-          const rep = await apiClient.get(`/validation/teams/${teamId}/deep-research/`);
-          const report = (rep as any)?.data?.report;
-          if (report) {
-            setDeepResearch(report);
-            // Compute + fetch secondary score if missing
-            try { await apiClient.computeSecondaryScoreTeam(teamId); } catch {}
-            try {
-              const sec = await apiClient.getSecondaryScoreTeam(teamId);
-              const s: any = (sec as any)?.data?.score;
-              if (s && typeof s.final_score_20 === 'number') {
-                const sc = Number(s.final_score_20);
-                setSecondaryScore20(sc);
-                // Populate a secondary ValidationScore entry if absent
-                setValidationScores(prev => {
-                  if (prev.some(v => v.tier === 'secondary')) return prev;
-                  const bullets = Array.isArray(report?.key_findings) && report.key_findings.length > 0
-                    ? report.key_findings
-                    : (Array.isArray(report?.market_insights) ? report.market_insights : []);
-                  const status: any = sc >= 17 ? 'excellent' : sc >= 14 ? 'good' : sc >= 11 ? 'fair' : 'poor';
-                  return [...prev, { tier: 'secondary', score: sc, status, insights: bullets.slice(0, 4), data: { report, score: s } }];
-                });
-                setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
-              }
-            } catch {}
-          }
-        } catch (e) {
-          console.error('Failed to fetch deep research report', e);
+          // If status check fails, do NOT auto-generate - user must click button
+          console.log('Failed to check deep research status:', e);
         }
       } catch (e) {
-        console.error('Deep research generation failed', e);
+        console.error('Failed to load deep research report', e);
       }
     };
     run();
@@ -1926,21 +1943,66 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
   return (
     <div className="min-h-screen bg-background">
       {/* Station Header */}
-      <div className="border-b border-border bg-gradient-success">
+      <div className="border-b border-border bg-gradient-success relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackIcon = document.createElement('div');
+                fallbackIcon.innerHTML = '<svg class="h-8 w-8 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                parent.appendChild(fallbackIcon);
+              }
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackText = document.createElement('span');
+                fallbackText.textContent = 'FIU';
+                fallbackText.className = 'text-white font-bold text-lg';
+                parent.appendChild(fallbackText);
+              }
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
         <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-success rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-success rounded-lg flex items-center justify-center">
                 <Target className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-primary-foreground">Validation Engine</h1>
-                <p className="text-sm text-primary-foreground/80">
-                  3-Tier Market Validation System
-                </p>
+                <p className="text-sm text-primary-foreground/80">3-Tier Market Validation System</p>
               </div>
             </div>
-            <Badge variant="success">Station 3</Badge>
           </div>
         </div>
       </div>
