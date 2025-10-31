@@ -985,7 +985,47 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         }
         if (fullText) {
           lines.push('', '## Full Report');
-          lines.push(fullText);
+          // Remove duplicate sections from fullText that are already shown above
+          let cleanedFullText = fullText;
+          
+          // Remove duplicate title at the start if it matches the report title (with or without markdown heading)
+          const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const titleRegex = new RegExp(`^#+\\s*${escapedTitle}\\s*$`, 'im');
+          cleanedFullText = cleanedFullText.replace(titleRegex, '').trim();
+          
+          // Remove duplicate Executive Summary section (non-greedy, stop at next major section)
+          const execSummaryRegex = /##+\s*Executive\s+Summary\s*[\r\n]+[\s\S]*?(?=\n##+\s*(?:Market\s+Research|Target\s+Market|Market\s+Sizing|User\s+Personas|Competitive|SWOT|Key\s+Market|User\s+Pain|Opportunities|References|Full\s+Report|$))/i;
+          cleanedFullText = cleanedFullText.replace(execSummaryRegex, '').trim();
+          
+          // Remove duplicate Market Sizing section (with various formats)
+          const marketSizingRegex = /##+\s*Market\s+Sizing\s*[\r\n]+[\s\S]*?(?=\n##+\s*(?:Target\s+Market|User\s+Personas|Competitive|SWOT|Key\s+Market|User\s+Pain|Opportunities|References|Full\s+Report|$))/i;
+          cleanedFullText = cleanedFullText.replace(marketSizingRegex, '').trim();
+          
+          // Remove duplicate "Market Size (TAM / SAM / SOM)" section
+          const marketSizeRegex = /##+\s*Market\s+Size\s*\(?TAM\s*[\/\\]\s*SAM\s*[\/\\]\s*SOM\)?\s*[\r\n]+[\s\S]*?(?=\n##+\s*(?:Target\s+Market|User\s+Personas|Competitive|SWOT|Key\s+Market|User\s+Pain|Opportunities|References|Full\s+Report|$))/i;
+          cleanedFullText = cleanedFullText.replace(marketSizeRegex, '').trim();
+          
+          // Remove duplicate Personas section (User Personas or just Personas)
+          const personasRegex = /##+\s*(?:User\s+)?Personas\s*[\r\n]+[\s\S]*?(?=\n##+\s*(?:Competitive|Market\s+Size|SWOT|Key\s+Market|User\s+Pain|Opportunities|References|Full\s+Report|$))/i;
+          cleanedFullText = cleanedFullText.replace(personasRegex, '').trim();
+          
+          // Remove duplicate Competitors/Competitive Landscape section
+          const competitorsRegex = /##+\s*Competitive\s+(?:Landscape|Analysis)\s*[\r\n]+[\s\S]*?(?=\n##+\s*(?:SWOT|Key\s+Market|User\s+Pain|Opportunities|References|Full\s+Report|$))/i;
+          cleanedFullText = cleanedFullText.replace(competitorsRegex, '').trim();
+          
+          // Remove any standalone "TAM:", "SAM:", "SOM:" lines that might be leftover (with N/A or empty values)
+          cleanedFullText = cleanedFullText.replace(/^\s*(TAM|SAM|SOM):\s*(?:N\/A|\s*)$/gim, '').trim();
+          
+          // Remove any duplicate "Market Research Report:" title lines
+          cleanedFullText = cleanedFullText.replace(/^Market\s+Research\s+Report:\s*[\w\s]+\s*$/gim, '').trim();
+          
+          // Clean up multiple consecutive blank lines
+          cleanedFullText = cleanedFullText.replace(/\n{3,}/g, '\n\n').trim();
+          
+          // Only add if there's still meaningful content after cleaning (more than just whitespace/short text)
+          if (cleanedFullText && cleanedFullText.length > 100) {
+            lines.push(cleanedFullText);
+          }
         }
         return lines.join('\n');
       })(),
@@ -1026,10 +1066,36 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const teamIdStr = localStorage.getItem('xfactoryTeamId');
       const teamId = teamIdStr ? Number(teamIdStr) : null;
       if (!teamId) return;
+      
+      // Check if backend marks secondary as complete
+      let isBackendComplete = false;
+      try {
+        const roadmap = await apiClient.getTeamRoadmap(teamId);
+        const validation = (roadmap as any)?.data?.validation || {};
+        isBackendComplete = validation.secondary === true;
+      } catch {}
+      
       const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
       const report = (reportRes.data as any)?.report;
       if (report) {
-        markSecondaryFromReport(report);
+        // Mark as complete if backend says it's complete
+        markSecondaryFromReport(report, isBackendComplete);
+        
+        // Also load the secondary score if it exists
+        if (isBackendComplete) {
+          try {
+            const sec = await apiClient.getSecondaryScoreTeam(teamId);
+            const s: any = (sec as any)?.data?.score;
+            if (s && typeof s.final_score_20 === 'number') {
+              const target = Math.max(0, Math.min(20, Number(s.final_score_20) || 0));
+              setSecondaryScore20(target);
+              setSecondaryScoreAnim(target);
+              const percent = Math.round(target * 5);
+              const mappedStatus = target >= 17 ? 'excellent' : target >= 14 ? 'good' : target >= 11 ? 'warning' : 'poor';
+              setValidationScores(prev => prev.map(sv => sv.tier === 'secondary' ? { ...sv, score: percent, status: mappedStatus as any } : sv));
+            }
+          } catch {}
+        }
       }
     } catch {}
   };
