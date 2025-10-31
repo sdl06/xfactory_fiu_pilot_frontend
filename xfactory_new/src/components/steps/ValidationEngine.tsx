@@ -2753,7 +2753,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                                setIsRedoingSecondary(false);
                                              }
                                            }}
-                                           disabled={isRedoingSecondary || isValidating}
+                                           disabled={isRedoingSecondary}
                                          >
                                            {isRedoingSecondary ? (
                                              <>
