@@ -985,36 +985,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         }
         if (fullText) {
           lines.push('', '## Full Report');
-          // Remove duplicate title and executive summary from fullText if present
-          let cleanedFullText = fullText;
-          // Check if fullText starts with the same title (case-insensitive)
-          const titlePattern = new RegExp(`^#\\s*${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
-          if (titlePattern.test(cleanedFullText)) {
-            // Remove the duplicate title line
-            cleanedFullText = cleanedFullText.replace(titlePattern, '').trim();
-          }
-          // Remove duplicate Executive Summary section if we already showed abstract
-          if (abstract && cleanedFullText.toLowerCase().includes('executive summary')) {
-            // Find and remove the Executive Summary section (until next ## heading)
-            const execSummaryRegex = /##?\s*Executive\s+Summary\s*\n+([^#]*)/i;
-            cleanedFullText = cleanedFullText.replace(execSummaryRegex, '');
-          }
-          // Remove duplicate Market Sizing section if present
-          if (tam || sam || som) {
-            const marketSizingRegex = /##?\s*Market\s+Sizing[^#]*(?=##|\n*$)/is;
-            cleanedFullText = cleanedFullText.replace(marketSizingRegex, '');
-          }
-          // Remove duplicate Personas section if we showed personas
-          if (normPersonas.length > 0) {
-            const personasRegex = /##?\s*Personas[^#]*(?=##|\n*$)/is;
-            cleanedFullText = cleanedFullText.replace(personasRegex, '');
-          }
-          // Remove duplicate Competitors section if we showed competitive
-          if (normCompetitive.length > 0) {
-            const competitorsRegex = /##?\s*Competitors?[^#]*(?=##|\n*$)/is;
-            cleanedFullText = cleanedFullText.replace(competitorsRegex, '');
-          }
-          lines.push(cleanedFullText.trim());
+          lines.push(fullText);
         }
         return lines.join('\n');
       })(),
@@ -1055,20 +1026,10 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const teamIdStr = localStorage.getItem('xfactoryTeamId');
       const teamId = teamIdStr ? Number(teamIdStr) : null;
       if (!teamId) return;
-      
-      // Check backend completion status
-      let isBackendComplete = false;
-      try {
-        const roadmap = await apiClient.getTeamRoadmap(teamId);
-        const validation = (roadmap as any)?.data?.validation || {};
-        isBackendComplete = !!validation.secondary;
-      } catch {}
-      
       const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
       const report = (reportRes.data as any)?.report;
       if (report) {
-        // Mark as complete if backend says it's complete
-        markSecondaryFromReport(report, isBackendComplete);
+        markSecondaryFromReport(report);
       }
     } catch {}
   };

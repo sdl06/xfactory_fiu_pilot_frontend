@@ -696,6 +696,9 @@ export const LegalStation = ({
           </div>
         </Tabs>
       </div>
+      
+      {/* Ivie Assistant */}
+      <FactorAI currentStation={6} userData={{ mvpData }} context="legal" />
     </div>
   );
 };

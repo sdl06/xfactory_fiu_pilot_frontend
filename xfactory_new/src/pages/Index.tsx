@@ -1831,6 +1831,22 @@ const Index = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Pivot Confirmation Dialog */}
+        <Dialog open={isPivotingConcept} onOpenChange={setIsPivotingConcept}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Pivot Concept</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground py-4">
+              Are you sure you want to pivot and start fresh? This will regenerate your concept card from scratch and overwrite the existing data. Your other sections won't be affected.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsPivotingConcept(false)}>Cancel</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600" onClick={handlePivotConcept}>Confirm Pivot</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

@@ -290,7 +290,3 @@ export const InvestorPresentationStation = ({
     </div>
   );
 };
-      <FactorAI currentStation={12} userData={{ pitchData, mvpData, financialData }} context="investor-presentation" />
-    </div>
-  );
-};

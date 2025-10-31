@@ -80,3 +80,4 @@ export const ConceptCardVersionNavigation: React.FC<ConceptCardVersionNavigation
     </div>
   );
 };
+

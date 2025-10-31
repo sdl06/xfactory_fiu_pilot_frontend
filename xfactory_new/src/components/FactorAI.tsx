@@ -499,7 +499,7 @@ What would you like to work on today?`;
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Ask FactorAI anything..."
+                  placeholder="Ask Ivie anything..."
                   disabled={isLoading}
                   className="flex-1"
                 />
