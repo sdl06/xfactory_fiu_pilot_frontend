@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TestTube, ArrowLeft, ChevronUp, ChevronDown, Brain, AlertTriangle, Lightbulb, FlaskConical, UserCheck, Building, Milestone, HelpCircle, Heart, DollarSign, FileText, Loader2, Download, X, User, Settings, LogOut, ExternalLink } from "lucide-react";
 import { StationFlowManager } from "@/lib/stationFlow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiClient, getGammaPdfUrlTeam } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { FactorAI } from "../FactorAI";
 import InfoButton from "@/components/info-button";
 
