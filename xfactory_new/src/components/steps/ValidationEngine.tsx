@@ -428,8 +428,29 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         
         if (!shouldLoadValidation) return; // Skip auto-loading if station is reset
 
-        // Ensure generation is started (safe to POST; backend guards latest idea)
-        try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}
+        // Check if report already exists before generating
+        try {
+          const statusRes = await apiClient.getDeepResearchStatusTeam(teamId);
+          const status = (statusRes.data as any)?.status;
+          if (status === 'completed') {
+            // Report already exists, just load it
+            const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
+            const report = (reportRes.data as any)?.report;
+            if (report && (report.content || report.report_content)) {
+              markSecondaryFromReport(report, true);
+              return;
+            }
+          } else if (status === 'pending' || status === 'processing') {
+            // Generation already in progress, just poll
+            // Continue to polling below
+          } else {
+            // No report exists, generate one
+            try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}
+          }
+        } catch (e) {
+          // If status check fails, try generating anyway
+          try { await apiClient.post(`/validation/teams/${teamId}/deep-research/`, {}); } catch {}
+        }
 
         // Poll status until completed or timeout (~2 minutes)
         let attempts = 0;
@@ -1157,6 +1178,27 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const teamIdStr = localStorage.getItem('xfactoryTeamId');
       const teamId = teamIdStr ? Number(teamIdStr) : null;
       if (!teamId) throw new Error('Missing team id');
+
+      // Check if report already exists and is completed
+      try {
+        const statusRes = await apiClient.getDeepResearchStatusTeam(teamId);
+        const status = (statusRes.data as any)?.status;
+        if (status === 'completed') {
+          // Report already exists, just load it
+          const reportRes = await apiClient.getDeepResearchReportTeam(teamId);
+          const report = (reportRes.data as any)?.report;
+          if (report && (report.content || report.report_content)) {
+            markSecondaryFromReport(report, true);
+            setShowValidationResults(true);
+            setIsReportExpanded(true);
+            setIsValidating(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // If status check fails, proceed with generation
+        console.log('Status check failed, proceeding with generation:', e);
+      }
 
       // Kick off deep research (team-scoped)
       await apiClient.generateDeepResearchTeam(teamId);
