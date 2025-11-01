@@ -159,17 +159,53 @@ export const LaunchExecutionStation = ({ launchPrepData, onComplete, onBack }: L
   return (
     <div className="min-h-screen bg-background">
       {/* Station Header */}
-      <div className="border-b border-border bg-gradient-to-r from-primary to-primary/80">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Rocket className="h-8 w-8 text-primary-foreground" />
+      <div className="border-b border-border bg-gradient-to-r from-primary to-primary/80 relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-primary-foreground hover:bg-white/10 rounded-full"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Rocket className="h-6 w-6 text-primary-foreground" />
+              </div>
               <div>
                 <h1 className="text-xl font-bold text-primary-foreground">Launch Execution Station</h1>
                 <p className="text-sm text-primary-foreground/80">Go live with all your assets</p>
               </div>
             </div>
-            <Badge variant="secondary">Station 9</Badge>
           </div>
         </div>
       </div>

@@ -77,17 +77,53 @@ export const MonitoringStation = ({ launchData, onComplete, onBack }: Monitoring
   return (
     <div className="min-h-screen bg-background">
       {/* Station Header */}
-      <div className="border-b border-border bg-gradient-success">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Activity className="h-8 w-8 text-success-foreground" />
+      <div className="border-b border-border bg-gradient-success relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-success-foreground hover:bg-white/10 rounded-full"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Activity className="h-6 w-6 text-success-foreground" />
+              </div>
               <div>
                 <h1 className="text-xl font-bold text-success-foreground">Monitoring Station</h1>
                 <p className="text-sm text-success-foreground/80">Track Performance & Analytics</p>
               </div>
             </div>
-            <Badge variant="success">Station 9</Badge>
           </div>
         </div>
       </div>

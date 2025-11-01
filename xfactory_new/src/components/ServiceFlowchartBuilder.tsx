@@ -533,9 +533,6 @@ export const ServiceFlowchartBuilder = ({
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
-          <Badge variant="outline" className="text-sm bg-white/10 border-white/20 text-white">
-            Step {mainSection} of {totalSteps}
-          </Badge>
           <Button
             variant="ghost"
             size="icon"
@@ -554,8 +551,8 @@ export const ServiceFlowchartBuilder = ({
                 <Workflow className="h-6 w-6 text-accent-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-accent-foreground">Service Experience Flowchart</h1>
-                <p className="text-sm text-accent-foreground/80">Walk through creating your service flowchart</p>
+                <h1 className="text-xl font-bold text-accent-foreground">Service Flowchart Builder</h1>
+                <p className="text-sm text-accent-foreground/80">Map your service journey step by step</p>
               </div>
             </div>
           </div>
