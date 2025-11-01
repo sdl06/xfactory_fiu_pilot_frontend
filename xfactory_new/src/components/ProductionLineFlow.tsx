@@ -772,25 +772,7 @@ export const ProductionLineFlow = ({
   const finalNodes = useMemo(() => {
     const nodesNext: any[] = [];
     
-    // Top workshops row
-    workshopIds.forEach((wid, idx) => {
-      const station = stations.find(s => s.id === wid)!;
-      nodesNext.push({
-        id: `work-${wid}`,
-        type: 'station',
-        position: { x: 80 + idx * 460, y: 80 },
-        data: {
-          station,
-          status: getStationStatus(wid),
-          onEnter: onEnterStation,
-          isFirst: false,
-          isLast: false,
-          isWorkshop: true,
-        },
-      });
-    });
-    
-    // Pipeline grid
+    // Pipeline grid (workshops removed from top row as they're repeated in pipeline)
     pipelineOrder.forEach((sid, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
@@ -799,7 +781,7 @@ export const ProductionLineFlow = ({
       nodesNext.push({
         id: isWorkshopClone ? `pipe-${sid}` : `${sid}`,
         type: 'station',
-        position: { x: col * 380 + 120, y: row * 240 + 220 },
+        position: { x: col * 380 + 120, y: row * 240 + 80 },
         data: {
           station,
           status: getStationStatus(sid),

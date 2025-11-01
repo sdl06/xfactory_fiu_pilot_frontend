@@ -333,10 +333,9 @@ export const LegalStation = ({
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Station Header */}
-        <div className="border-b border-border bg-gradient-to-r from-primary/80 to-accent/80 relative mb-8 -mx-6 px-6 py-4">
+    <div className="min-h-screen bg-background">
+      {/* Station Header */}
+      <div className="border-b border-border bg-gradient-to-r from-slate-700 to-slate-900 relative">
           {/* Logos positioned at absolute left edge */}
           <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
             <img 
@@ -364,23 +363,23 @@ export const LegalStation = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 text-primary-foreground hover:bg-white/10 rounded-full"
+              className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
               onClick={onBack}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </div>
 
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center">
               {/* Left: Section name and icon (bounded left) */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
-                  <Scale className="h-6 w-6 text-primary-foreground" />
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Scale className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-primary-foreground">Legal Workshop</h1>
-                  <p className="text-sm text-primary-foreground/80">
+                  <h1 className="text-xl font-bold text-white">Legal Workshop</h1>
+                  <p className="text-sm text-white/80">
                     Build your legal foundation with guided tools and templates
                   </p>
                 </div>
@@ -389,6 +388,7 @@ export const LegalStation = ({
           </div>
         </div>
 
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="trademark" className="flex items-center gap-1">

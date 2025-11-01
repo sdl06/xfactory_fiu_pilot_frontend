@@ -839,7 +839,7 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
   return (
     <div className="min-h-screen bg-background">
       {/* Station Header */}
-      <div className="border-b border-border bg-gradient-to-r from-primary to-accent relative">
+      <div className="border-b border-border bg-gradient-to-r from-emerald-600 to-teal-600 relative">
         {/* Logos positioned at absolute left edge */}
         <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
           <img 
@@ -867,7 +867,7 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 text-primary-foreground hover:bg-white/10 rounded-full"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
             onClick={onBack}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -878,12 +878,12 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
           <div className="flex items-center">
             {/* Left: Section name and icon (bounded left) */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-foreground rounded-lg flex items-center justify-center">
-                <Calculator className="h-6 w-6 text-primary" />
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Calculator className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-primary-foreground">Financial Workshop</h1>
-                <p className="text-sm text-primary-foreground/80">
+                <h1 className="text-xl font-bold text-white">Financial Workshop</h1>
+                <p className="text-sm text-white/80">
                   Build comprehensive financial projections and business models
                 </p>
               </div>
