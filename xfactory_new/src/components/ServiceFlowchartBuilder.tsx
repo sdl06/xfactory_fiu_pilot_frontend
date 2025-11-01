@@ -488,25 +488,8 @@ export const ServiceFlowchartBuilder = ({
 
   const handleFinalComplete = async () => {
     await autoSave();
-    const flowchartData = {
-      journeyType,
-      selectedPersonas,
-      specificDescription,
-      processes: generatedProcesses.filter(p => p.checked),
-      stakeholders: {
-        primaryCustomers,
-        frontstageData,
-        backstageData,
-        externalPartners
-      },
-      phases: {
-        mappings: phaseMappings,
-        timelineType,
-        durations: phaseDurations
-      },
-      completedAt: new Date().toISOString()
-    };
-    onComplete(flowchartData);
+    // Close the builder and return to main menu
+    onClose();
   };
 
   return (

@@ -1956,7 +1956,12 @@ user problems: ${probsLine}`;
         <ServiceFlowchartBuilder
           ideaCard={ideaCard}
           onComplete={handleFlowchartComplete}
-          onClose={() => setShowFlowchartBuilder(false)}
+          onClose={() => {
+            setShowFlowchartBuilder(false);
+            // Ensure we're back at the main menu
+            setSelectionMode('menu');
+            setStep(1);
+          }}
         />
       )}
       
