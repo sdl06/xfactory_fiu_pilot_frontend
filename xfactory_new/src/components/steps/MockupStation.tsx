@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Image, Smartphone, Monitor, Palette, Download, ArrowRight, ArrowLeft, Zap, Eye, ExternalLink, CheckCircle2, LayoutDashboard, Sparkles, Timer, AlertTriangle, ZoomIn, ZoomOut, Plus, Minus, Info } from "lucide-react";
 import { FactorAI } from "../FactorAI";
 import { ServiceFlowchartBuilder } from "../ServiceFlowchartBuilder";
+import { ServiceFlowchart } from "../ServiceFlowchart";
 import { v0 } from 'v0-sdk';
 import { createLogger } from "@/lib/logger";
 import { apiClient, toAbsoluteMediaUrl } from "@/lib/api";
@@ -1207,10 +1208,13 @@ user problems: ${probsLine}`;
     return { chatId: chat.id, existing: false, projectId: projectIdToUse } as any;
   };
 
+  // LEGACY: Old Service Roadmap auto-generation - DISABLED
   // When user switches to Service view, try to fetch existing; on 404 or empty, generate.
+  // This old code is disabled - use ServiceFlowchartBuilder instead (opens when clicking "Generate Flowchart")
   useEffect(() => {
     (async () => {
-      if (selectionMode !== 'service') return;
+      // DISABLED: Old service roadmap system - do not auto-generate
+      if (true || selectionMode !== 'service') return; // Always return early to disable
       if (serviceDoc || isGenerating || serviceAutoLoaded) return;
       setServiceAutoLoaded(true);
       setIsGenerating(true);
@@ -1927,15 +1931,18 @@ user problems: ${probsLine}`;
             title: 'Service Experience Flowchart',
             description: 'AI-generated service flowchart'
           });
-          setSelectionMode('service');
-          setServiceSection('flowchart');
-          setStep(2);
+          // Don't set selectionMode to 'service' - keep the new builder open to show the flowchart
+          // The ServiceFlowchartBuilder will display the completed flowchart
+          // setSelectionMode('service'); // LEGACY: Old service flowchart UI disabled
+          // setServiceSection('flowchart');
+          // setStep(2);
         }
       } catch (e) {
         log.error('Error loading generated flowchart:', e);
       }
       
-      setShowFlowchartBuilder(false);
+      // Keep the builder open so user can see the generated flowchart
+      // setShowFlowchartBuilder(false); // Keep builder modal open to show flowchart
     } catch (error) {
       log.error('Error handling flowchart completion:', error);
       setShowFlowchartBuilder(false);
@@ -2737,8 +2744,12 @@ user problems: ${probsLine}`;
           </>
         )}
 
-        {/* Service Flowchart Flow */}
-        {selectionMode === 'service' && (
+        {/* LEGACY: Old Service Flowchart UI - DISABLED
+            The old inline service flowchart UI with editing capabilities is disabled.
+            Use ServiceFlowchartBuilder component instead (opens when clicking "Generate Flowchart" button).
+            Keeping this code as legacy reference only - do not use.
+        */}
+        {false && selectionMode === 'service' && (
           <Card className="shadow-machinery">
             <CardHeader>
               <CardTitle>Service Experience Flowchart</CardTitle>
