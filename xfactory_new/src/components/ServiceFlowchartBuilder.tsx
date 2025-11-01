@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ArrowLeft, ArrowRight, Plane, Settings, Users, Monitor, 
-  Building2, Lightbulb, Sparkles, CheckCircle2, Plus, X 
+  Building2, Lightbulb, Sparkles, CheckCircle2, Plus, X, Workflow
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -106,10 +106,15 @@ export const ServiceFlowchartBuilder = ({
     loadPersonas();
   }, [teamId]);
 
+  // Auto-save timeout ref
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Load existing flowchart data on mount
+  const [isLoadingExisting, setIsLoadingExisting] = useState(false);
   useEffect(() => {
     const loadExisting = async () => {
       if (!teamId) return;
+      setIsLoadingExisting(true);
       try {
         const response = await apiClient.getServiceFlowchartTeam(teamId);
         if (response.data?.success && response.data?.flowchart) {
@@ -130,34 +135,53 @@ export const ServiceFlowchartBuilder = ({
         }
       } catch (error) {
         console.error('Error loading existing flowchart:', error);
+      } finally {
+        setIsLoadingExisting(false);
       }
     };
     loadExisting();
   }, [teamId]);
 
-  // Auto-save function
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+  
   const autoSave = async () => {
     if (!teamId) return;
-    try {
-      await apiClient.saveServiceFlowchartTeam(teamId, {
-        journey_type: journeyType,
-        selected_personas: selectedPersonas,
-        specific_description: specificDescription,
-        generated_processes: generatedProcesses,
-        primary_customers: primaryCustomers,
-        frontstage_data: frontstageData,
-        backstage_data: backstageData,
-        external_partners: externalPartners,
-        phase_mappings: phaseMappings,
-        timeline_type: timelineType,
-        phase_durations: phaseDurations,
-        current_section: mainSection,
-        current_sub_step: subStep,
-        status: mainSection === 4 ? 'completed' : `section${mainSection}`
-      });
-    } catch (error) {
-      console.error('Auto-save failed:', error);
+    
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
     }
+    
+    // Debounce auto-save by 1 second
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await apiClient.saveServiceFlowchartTeam(teamId, {
+          journey_type: journeyType,
+          selected_personas: selectedPersonas,
+          specific_description: specificDescription,
+          generated_processes: generatedProcesses,
+          primary_customers: primaryCustomers,
+          frontstage_data: frontstageData,
+          backstage_data: backstageData,
+          external_partners: externalPartners,
+          phase_mappings: phaseMappings,
+          timeline_type: timelineType,
+          phase_durations: phaseDurations,
+          current_section: mainSection,
+          current_sub_step: subStep,
+          status: mainSection === 4 ? 'completed' : `section${mainSection}`
+        });
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      }
+    }, 1000);
   };
 
   // AI generation for Section 1
@@ -167,10 +191,28 @@ export const ServiceFlowchartBuilder = ({
       return;
     }
     
+    // For team-scoped requests, we need to get the idea_id first
+    let actualIdeaId = ideaId;
+    if (!actualIdeaId && teamId) {
+      try {
+        const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
+        if (ideaResponse.data?.id) {
+          actualIdeaId = ideaResponse.data.id;
+        }
+      } catch (e) {
+        console.error('Could not fetch idea ID:', e);
+      }
+    }
+    
+    if (!actualIdeaId) {
+      toast({ title: "Error", description: "Could not find idea. Please ensure idea generation is complete.", variant: "destructive" });
+      return;
+    }
+    
     setIsGenerating(true);
     try {
       const response = await apiClient.generateProcesses({
-        idea_id: ideaId || 0, // Will be resolved from team_id on backend
+        idea_id: actualIdeaId,
         journey_type: journeyType!,
         selected_personas: journeyType === 'entire' ? selectedPersonas : undefined,
         specific_description: journeyType === 'specific' ? specificDescription : undefined
@@ -223,10 +265,28 @@ export const ServiceFlowchartBuilder = ({
   const generateFinalFlowchart = async () => {
     if (!ideaId && !teamId) return;
     
+    // Get actual idea_id if using team_id
+    let actualIdeaId = ideaId;
+    if (!actualIdeaId && teamId) {
+      try {
+        const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
+        if (ideaResponse.data?.id) {
+          actualIdeaId = ideaResponse.data.id;
+        }
+      } catch (e) {
+        console.error('Could not fetch idea ID:', e);
+      }
+    }
+    
+    if (!actualIdeaId) {
+      toast({ title: "Error", description: "Could not find idea. Please ensure idea generation is complete.", variant: "destructive" });
+      return;
+    }
+    
     setIsGenerating(true);
     try {
       const response = await apiClient.generateFlowchart({
-        idea_id: ideaId || 0,
+        idea_id: actualIdeaId,
         section1_data: {
           journey_type: journeyType,
           selected_personas: selectedPersonas,
@@ -288,29 +348,80 @@ export const ServiceFlowchartBuilder = ({
 
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+      {/* Station Header - Matching MockupStation */}
+      <div className="border-b border-border bg-gradient-warning relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackIcon = document.createElement('div');
+                fallbackIcon.innerHTML = '<svg class="h-8 w-8 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                parent.appendChild(fallbackIcon);
+              }
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+              const parent = imgElement.parentElement;
+              if (parent) {
+                const fallbackText = document.createElement('span');
+                fallbackText.textContent = 'FIU';
+                fallbackText.className = 'text-white font-bold text-lg';
+                parent.appendChild(fallbackText);
+              }
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Badge variant="outline" className="text-sm bg-white/10 border-white/20 text-white">
+            Step {mainSection} of {totalSteps}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+            onClick={onClose}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
+              <div className="w-10 h-10 bg-gradient-warning rounded-lg flex items-center justify-center">
+                <Workflow className="h-6 w-6 text-accent-foreground" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold">Service Experience Flowchart</h1>
-                <p className="text-sm text-muted-foreground">
-                  Walk through creating your service flowchart
-                </p>
+                <h1 className="text-xl font-bold text-accent-foreground">Service Experience Flowchart</h1>
+                <p className="text-sm text-accent-foreground/80">Walk through creating your service flowchart</p>
               </div>
             </div>
-            <Badge variant="outline">Step {mainSection} of {totalSteps}</Badge>
           </div>
-          <Progress value={progress} className="h-1" />
+        </div>
+        
+        {/* Progress bar */}
+        <div className="max-w-6xl mx-auto px-6 pb-2">
+          <Progress value={progress} className="h-1 bg-white/20" />
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* SECTION 1: What Are You Mapping? */}
         {mainSection === 1 && (
           <div className="space-y-6">
@@ -381,7 +492,7 @@ export const ServiceFlowchartBuilder = ({
                             ))
                           ) : (
                             <div className="text-sm text-muted-foreground">
-                              No personas found. Create personas in the validation section first.
+                              No personas found. Complete the idea generation questionnaire to define personas.
                             </div>
                           )}
                         </div>

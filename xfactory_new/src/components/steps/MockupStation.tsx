@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Image, Smartphone, Monitor, Palette, Download, ArrowRight, ArrowLeft, Zap, Eye, ExternalLink, CheckCircle2, LayoutDashboard, Sparkles, Timer, AlertTriangle, ZoomIn, ZoomOut, Plus, Minus, Info } from "lucide-react";
 import { FactorAI } from "../FactorAI";
+import { ServiceFlowchartBuilder } from "../ServiceFlowchartBuilder";
 import { v0 } from 'v0-sdk';
 import { createLogger } from "@/lib/logger";
 import { apiClient, toAbsoluteMediaUrl } from "@/lib/api";
@@ -97,6 +98,8 @@ export const MockupStation = ({
   const [showTimelineInfo, setShowTimelineInfo] = useState(false);
   const [showMilestonesInfo, setShowMilestonesInfo] = useState(false);
   const [showPhasesInfo, setShowPhasesInfo] = useState(false);
+  // Service Flowchart Builder modal
+  const [showFlowchartBuilder, setShowFlowchartBuilder] = useState(false);
   // Journeys edit mode
   const [journeysEditMode, setJourneysEditMode] = useState<boolean>(false);
   const [timelineEditMode, setTimelineEditMode] = useState<boolean>(false);
@@ -1892,8 +1895,64 @@ user problems: ${probsLine}`;
     );
   }
 
+  // Handle flowchart builder completion
+  const handleFlowchartComplete = async (flowchartData: any) => {
+    try {
+      // Get team ID
+      let teamId: number | null = null;
+      try {
+        const cached = localStorage.getItem('xfactoryTeamId');
+        teamId = cached ? Number(cached) : null;
+        if (!teamId) {
+          const status = await apiClient.get('/team-formation/status/');
+          teamId = (status as any)?.data?.current_team?.id || null;
+          if (teamId) { try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {} }
+        }
+      } catch {}
+      
+      if (!teamId) {
+        log.warn('No team available; cannot save flowchart');
+        setShowFlowchartBuilder(false);
+        return;
+      }
+      
+      // Load the generated flowchart data and switch to service view
+      try {
+        const flowchartResponse = await apiClient.getServiceFlowchartTeam(teamId);
+        if (flowchartResponse.data?.success && flowchartResponse.data?.flowchart?.flowchart_data) {
+          // Create service doc structure compatible with existing view
+          const flowData = flowchartResponse.data.flowchart.flowchart_data;
+          setServiceDoc({
+            service_flowchart: flowData,
+            title: 'Service Experience Flowchart',
+            description: 'AI-generated service flowchart'
+          });
+          setSelectionMode('service');
+          setServiceSection('flowchart');
+          setStep(2);
+        }
+      } catch (e) {
+        log.error('Error loading generated flowchart:', e);
+      }
+      
+      setShowFlowchartBuilder(false);
+    } catch (error) {
+      log.error('Error handling flowchart completion:', error);
+      setShowFlowchartBuilder(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Service Flowchart Builder Modal */}
+      {showFlowchartBuilder && (
+        <ServiceFlowchartBuilder
+          ideaCard={ideaCard}
+          onComplete={handleFlowchartComplete}
+          onClose={() => setShowFlowchartBuilder(false)}
+        />
+      )}
+      
       {/* Station Header */}
       <div className="border-b border-border bg-gradient-warning relative">
         {/* Logos positioned at absolute left edge */}
@@ -2115,63 +2174,8 @@ user problems: ${probsLine}`;
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={async () => {
-                        // Switch to service flow view and ensure v0 screen is hidden
-                        setSelectionMode('service');
-                        try { setShowV0LandingScreen(false); } catch {}
-                        try { setServiceDoc(null); } catch {}
-                        setIsGenerating(true);
-                        try {
-                          // Team-scoped only for service roadmap
-                          let teamId: number | null = null;
-                          try {
-                            const cached = localStorage.getItem('xfactoryTeamId');
-                            teamId = cached ? Number(cached) : null;
-                            if (!teamId) {
-                              const status = await apiClient.get('/team-formation/status/');
-                              teamId = (status as any)?.data?.current_team?.id || null;
-                              if (teamId) { try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {} }
-                            }
-                          } catch {}
-                          if (!teamId) { log.warn('No team available; skipping service roadmap'); return; }
-                          // Check if mockup station is complete; if not, don't load existing (treat as reset)
-                          let shouldLoadService = true;
-                          try {
-                            const roadmap = await apiClient.getTeamRoadmap(teamId);
-                            const mvp = (roadmap as any)?.data?.mvp || {};
-                            if (mvp.software_mockup === false || (!mvp.software_mockup && !mvp.prototype_built)) {
-                              shouldLoadService = false;
-                            }
-                          } catch {}
-                          
-                          // Try to fetch existing first only if station is complete (team-scoped GET returns { success, roadmaps: [...] })
-                          let chosen: any = null;
-                          if (shouldLoadService) {
-                            try {
-                              const existing = await apiClient.getServiceRoadmapTeam(teamId);
-                              const data = (existing as any)?.data || {};
-                              const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
-                              if (list.length > 0) {
-                                // Pick latest by updated_at or created_at
-                                chosen = list.slice().sort((a: any, b: any) => {
-                                  const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
-                                  const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
-                                  return bu - au;
-                                })[0];
-                              }
-                            } catch {}
-                          }
-                          if (chosen) {
-                            setServiceDoc(chosen);
-                            setStep(2);
-                          } else {
-                            const res = await apiClient.generateServiceRoadmapTeam(teamId);
-                            const data = (res.data as any);
-                            setServiceDoc(data?.roadmap_data || data?.roadmap || data);
-                            setStep(2);
-                          }
-                        } catch (e) { log.error('service flow generation failed', e); }
-                        finally { setIsGenerating(false); }
+                      onClick={() => {
+                        setShowFlowchartBuilder(true);
                       }}
                     >
                       Generate Flowchart
