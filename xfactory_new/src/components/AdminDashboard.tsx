@@ -1888,6 +1888,8 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [isMatchingMentors, setIsMatchingMentors] = useState(false);
   const [isMatchingInvestors, setIsMatchingInvestors] = useState(false);
   const [isAutoForming, setIsAutoForming] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isLoadingNotifs, setIsLoadingNotifs] = useState(false);
 
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserName, setNewUserName] = useState("");
@@ -1908,6 +1910,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   useEffect(() => {
     loadAllowedUsers();
     loadTeams();
+    loadNotifications();
   }, []);
 
   const loadAllowedUsers = async () => {
@@ -1941,6 +1944,45 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         setTeams(teamsWithScores);
       }
     } catch {}
+  };
+
+  const loadNotifications = async () => {
+    try {
+      setIsLoadingNotifs(true);
+      const res = await apiClient.getAdminNotifications();
+      const items = (res as any)?.data?.notifications || [];
+      setNotifications(items);
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to load notifications', variant: 'destructive' });
+    } finally { setIsLoadingNotifs(false); }
+  };
+
+  const approveNotification = async (id: number) => {
+    try {
+      const res = await apiClient.approveAdminNotification(id);
+      if ((res as any)?.status >= 200 && (res as any)?.status < 300) {
+        toast({ title: 'Approved', description: 'User licensed and (if pending) account created' });
+        await Promise.all([loadNotifications(), loadAllowedUsers()]);
+      } else {
+        toast({ title: 'Approve failed', description: (res as any)?.error || 'Unknown error', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Approve failed', description: 'Network or permission error', variant: 'destructive' });
+    }
+  };
+
+  const dismissNotification = async (id: number) => {
+    try {
+      const res = await apiClient.dismissAdminNotification(id);
+      if ((res as any)?.status >= 200 && (res as any)?.status < 300) {
+        toast({ title: 'Dismissed', description: 'Notification dismissed' });
+        await loadNotifications();
+      } else {
+        toast({ title: 'Dismiss failed', description: (res as any)?.error || 'Unknown error', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Dismiss failed', description: 'Network or permission error', variant: 'destructive' });
+    }
   };
 
   const openTeamModal = (team: any) => {
@@ -2334,6 +2376,50 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        {/* Notifications */}
+        <Card className="shadow-industrial">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>Approve unlicensed registrations</CardDescription>
+            </div>
+            <Button variant="outline" onClick={loadNotifications} disabled={isLoadingNotifs}>
+              {isLoadingNotifs ? 'Refreshing…' : 'Refresh'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {notifications.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No notifications</div>
+            ) : (
+              <div className="space-y-3">
+                {notifications.map((n: any) => (
+                  <div key={n.id} className="flex items-center justify-between border rounded-md p-3">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium">{n.type === 'unlicensed_registration' ? 'Unlicensed Registration' : n.type}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {(n.payload?.email) ? `Email: ${n.payload.email}` : ''}{' '}
+                        {(n.payload?.first_name || n.payload?.last_name) ? `Name: ${(n.payload.first_name||'')} ${(n.payload.last_name||'')}` : ''}
+                      </div>
+                      {n.message ? <div className="text-xs text-muted-foreground">{n.message}</div> : null}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!n.resolved && (
+                        <>
+                          <Button size="sm" variant="success" onClick={() => approveNotification(n.id)}>Approve</Button>
+                          <Button size="sm" variant="outline" onClick={() => dismissNotification(n.id)}>Dismiss</Button>
+                        </>
+                      )}
+                      {n.resolved && (
+                        <span className="text-xs text-success">Resolved</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Admin Controls */}
         <Card className="shadow-industrial">
           <CardHeader className="flex flex-row items-center justify-between">

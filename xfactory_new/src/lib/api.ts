@@ -250,6 +250,17 @@ class ApiClient {
     });
   }
 
+  // Admin notifications
+  async getAdminNotifications() {
+    return this.get('/auth/notifications/');
+  }
+  async approveAdminNotification(notifId: number) {
+    return this.post(`/auth/notifications/${notifId}/approve/`, {});
+  }
+  async dismissAdminNotification(notifId: number) {
+    return this.post(`/auth/notifications/${notifId}/dismiss/`, {});
+  }
+
   async checkDeadlines() {
     return this.request('/auth/check-deadlines/');
   }
