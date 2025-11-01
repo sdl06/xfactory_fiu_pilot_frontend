@@ -1848,19 +1848,69 @@ user problems: ${probsLine}`;
   if (showV0LandingScreen) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <div className="border-b border-border bg-gradient-warning/60">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowV0LandingScreen(false)}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <span className="text-sm text-muted-foreground">V0 Landing</span>
+        {/* Station Header - Matching main MockupStation header */}
+        <div className="border-b border-border bg-gradient-warning relative">
+          {/* Logos positioned at absolute left edge */}
+          <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+            <img 
+              src="/logos/prov_logo_white.png" 
+              alt="xFactory Logo" 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const imgElement = e.target as HTMLImageElement;
+                imgElement.style.display = 'none';
+              }}
+            />
+            <img 
+              src="/logos/fiualonetransreverse.png" 
+              alt="FIU Logo" 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const imgElement = e.target as HTMLImageElement;
+                imgElement.style.display = 'none';
+              }}
+            />
+          </div>
+
+          {/* User controls positioned at absolute right edge */}
+          <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+            <UserMenu />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+              onClick={() => setShowV0LandingScreen(false)}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <div className="flex items-center">
+              {/* Left: Section name and icon (bounded left) */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-warning rounded-lg flex items-center justify-center">
+                  <LayoutDashboard className="h-6 w-6 text-accent-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Landing Page Mockup</h1>
+                  <p className="text-sm text-white/80">Interactive landing page preview</p>
+                </div>
+              </div>
+              {/* Right: External link if available */}
+              {(v0LiveUrl || v0DemoUrl) && (
+                <div className="ml-auto">
+                  <a 
+                    href={(v0LiveUrl || v0DemoUrl)!} 
+                    target="_blank" 
+                    rel="noreferrer noopener" 
+                    className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" /> Open Live
+                  </a>
+                </div>
+              )}
             </div>
-            {(v0LiveUrl || v0DemoUrl) && (
-              <a href={(v0LiveUrl || v0DemoUrl)!} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border">
-                <ExternalLink className="h-4 w-4" /> Open Live
-              </a>
-            )}
           </div>
         </div>
 
