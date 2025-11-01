@@ -215,11 +215,6 @@ const Index = () => {
             if (sid) merged.add(sid);
           }
           
-          // Post-MVP mentorship (station 7) is only available after MVP completion
-          const mvp = trcData?.mvp || {};
-          if (mvp.prototype_built || mvp.task_plan_generated) {
-            merged.add(7); // Post-MVP mentorship becomes available
-          }
           const mergedArr = Array.from(merged).sort((a,b)=>a-b);
           // Determine next station to unlock (main sequence)
           // Main progression sequence now includes workshops (12,13,14) after post‑MVP mentorship (7)
@@ -1141,6 +1136,12 @@ const Index = () => {
   };
 
   const handleEnterStation = async (stationId: number, reviewMode = false) => {
+    // Mentorship stations (5 = Pre-MVP, 7 = Post-MVP, 10 = Pre-Investor) redirect to Google Form
+    if (stationId === 5 || stationId === 7 || stationId === 10) {
+      window.open('https://docs.google.com/forms/d/e/1FAIpQLSerWSBzORcSgMcP2D0nFGYhcs5qpLDjnpRY9F1xIF1Hnr-FZA/viewform', '_blank');
+      return;
+    }
+
     // If dashboard Review is clicked for Station 1, open popup here without navigating
     if (stationId === 1 && reviewMode) {
       await loadIdeaReviewData();
@@ -1314,9 +1315,7 @@ const Index = () => {
           8: 'prelaunch',
         };
         const section = map[stationId];
-        if (section === 'mvp' && !isPreMvpMentorshipDone) {
-          // Don’t mark MVP without pre‑MVP
-        } else if (section) {
+        if (section) {
           await apiClient.markSectionCompleted(section);
         }
         // When Pitch Deck station (4) completes, update team roadmap completion snapshot
@@ -1385,14 +1384,7 @@ const Index = () => {
     }
   };
 
-  // Gating helpers
-  const isPitchDeckDone = !!(trcSnapshot?.pitch_deck?.slides_generated || trcSnapshot?.pitch_deck?.practice_completed || trcSnapshot?.pitch_deck?.mentor_deck_generated || trcSnapshot?.pitch_deck?.investor_deck_generated || trcSnapshot?.pitch_deck?.submission_completed);
-  const isPreMvpMentorshipDone = !!(trcSnapshot?.mentorship?.pre_mvp_completed);
-  const isMvpDone = !!(trcSnapshot?.mvp?.task_plan_generated || trcSnapshot?.mvp?.prototype_built);
-
-  const canEnterPreMvp = isPitchDeckDone; // station 5
-  const canEnterMvp = isPitchDeckDone && isPreMvpMentorshipDone; // station 6
-  const canEnterPostMvpMentorship = true; // Always allow post-MVP mentorship if user navigates back
+  // Gating helpers removed - all stations are now accessible without completion requirements
 
   if (appState === "landing") {
     return (
@@ -1904,19 +1896,12 @@ const Index = () => {
     }
     
     if (currentStation === 5) {
-      if (!canEnterPreMvp) return <div className="p-6 text-sm text-muted-foreground">Complete the Investor Pitch Deck first to unlock this station.</div>;
-      return (
-        <MentorshipStation 
-          sessionType="pre-mvp"
-          context={{ ideaCard: stationData.ideaCard, mockups: stationData.mockups }}
-          onComplete={(data) => handleStationComplete(5, data)}
-          onBack={handleBackToDashboard}
-        />
-      );
+      // Redirect to Google Form instead of showing internal station
+      window.open('https://docs.google.com/forms/d/e/1FAIpQLSerWSBzORcSgMcP2D0nFGYhcs5qpLDjnpRY9F1xIF1Hnr-FZA/viewform', '_blank');
+      return null;
     }
     
     if (currentStation === 6) {
-      if (!canEnterMvp) return <div className="p-6 text-sm text-muted-foreground">Complete the Pre‑MVP Mentorship Session to unlock this station.</div>;
       return (
         <MVPDevelopmentStation 
           mentorshipData={null}
@@ -1929,14 +1914,9 @@ const Index = () => {
     }
     
     if (currentStation === 7) {
-      return (
-        <MentorshipStation 
-          sessionType="post-mvp"
-          context={{ mvpData: stationData.mvpData, testingData: stationData.testingData }}
-          onComplete={(data) => handleStationComplete(7, data)}
-          onBack={handleBackToDashboard}
-        />
-      );
+      // Redirect to Google Form instead of showing internal station
+      window.open('https://docs.google.com/forms/d/e/1FAIpQLSerWSBzORcSgMcP2D0nFGYhcs5qpLDjnpRY9F1xIF1Hnr-FZA/viewform', '_blank');
+      return null;
     }
     
     if (currentStation === 8) {
@@ -1960,13 +1940,9 @@ const Index = () => {
     }
     
     if (currentStation === 10) {
-      return (
-        <MonitoringStation 
-          launchData={stationData.launchData}
-          onComplete={(data) => handleStationComplete(10, data)}
-          onBack={handleBackToDashboard}
-        />
-      );
+      // Redirect to Google Form instead of showing internal station (Pre-Investor Mentorship)
+      window.open('https://docs.google.com/forms/d/e/1FAIpQLSerWSBzORcSgMcP2D0nFGYhcs5qpLDjnpRY9F1xIF1Hnr-FZA/viewform', '_blank');
+      return null;
     }
     
     if (currentStation === 11) {

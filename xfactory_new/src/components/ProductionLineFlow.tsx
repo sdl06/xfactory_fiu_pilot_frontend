@@ -667,37 +667,14 @@ export const ProductionLineFlow = ({
   };
 
   const getStationStatus = useCallback((stationId: number) => {
-    // Debug logging for workshop stations
-    if (stationId >= 12 && stationId <= 14) {
-      console.log(`🔍 Station ${stationId} status check:`, {
-        stationId,
-        completedStations,
-        currentStation,
-        isCompleted: completedStations.includes(stationId),
-        isCurrent: stationId === currentStation,
-        financeCompleted: completedStations.includes(12),
-        marketingCompleted: completedStations.includes(13),
-        postMvpCompleted: completedStations.includes(7),
-        adminDataLoaded: Object.keys(adminLocks).length > 0 || Object.keys(adminUnlocks).length > 0
-      });
-    }
-    
-    // Completion display - always show completed stations as completed
-    // Completion is determined by roadmap flags only, not model existence
-    // This allows reset functionality to work properly - models remain but station appears incomplete
+    // Show completed stations as completed
     if (completedStations.includes(stationId)) return 'completed';
     
-    // Locked-by-default gating: only admin unlocks open a station
-    const key = sectionKeyForStation(stationId);
-    const explicitlyUnlocked = adminUnlocks?.[key] === true;
-    const explicitlyLocked = adminLocks?.[key] === true;
-
-    // Current station is active only if explicitly unlocked (and not explicitly locked)
-    if (stationId === currentStation) return (explicitlyUnlocked && !explicitlyLocked) ? 'active' : 'locked';
-
-    // Other stations are unlocked only if explicitly unlocked (and not explicitly locked)
-    return (explicitlyUnlocked && !explicitlyLocked) ? 'unlocked' : 'locked';
-  }, [completedStations, currentStation, adminLocks, adminUnlocks, ideaCardComplete]);
+    // All stations are unlocked by default (no completion requirements)
+    if (stationId === currentStation) return 'active';
+    
+    return 'unlocked';
+  }, [completedStations, currentStation]);
 
   // Build pipeline order: after 7, include workshops 12-14, then continue 8..11, and 15
   const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15], []);
