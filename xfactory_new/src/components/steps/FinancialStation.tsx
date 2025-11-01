@@ -15,6 +15,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import InfoButton from "@/components/info-button";
 import { FactorAI } from "../FactorAI";
+import { UserMenu } from "../UserMenu";
 
 interface FinancialStationProps {
   onComplete: (data: any) => void;
@@ -864,6 +865,7 @@ export const FinancialStation = ({ onComplete, onBack, previousData, reviewMode 
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"

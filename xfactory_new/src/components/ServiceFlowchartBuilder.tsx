@@ -17,6 +17,7 @@ import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceFlowchart } from "@/components/ServiceFlowchart";
 import { RefreshCw } from "lucide-react";
+import { UserMenu } from "./UserMenu";
 
 interface ServiceFlowchartBuilderProps {
   ideaCard: any;
@@ -241,7 +242,7 @@ export const ServiceFlowchartBuilder = ({
       
       if (response.data?.success && response.data?.processes) {
         setGeneratedProcesses(response.data.processes);
-        setSubStep(2);
+    setSubStep(2);
         await autoSave();
       } else {
         throw new Error(response.data?.error || 'Failed to generate processes');
@@ -533,6 +534,7 @@ export const ServiceFlowchartBuilder = ({
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"
@@ -615,23 +617,23 @@ export const ServiceFlowchartBuilder = ({
                             <div className="text-sm text-muted-foreground">Loading personas...</div>
                           ) : availablePersonas.length > 0 ? (
                             availablePersonas.map((persona: string) => (
-                              <div key={persona} className="flex items-center space-x-2">
-                                <Checkbox 
-                                  id={persona}
-                                  checked={selectedPersonas.includes(persona) || selectedPersonas.includes("all")}
-                                  disabled={selectedPersonas.includes("all")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedPersonas(prev => [...prev.filter(p => p !== "all"), persona]);
-                                    } else {
-                                      setSelectedPersonas(prev => prev.filter(p => p !== persona));
-                                    }
-                                  }}
-                                />
-                                <label htmlFor={persona} className="text-sm">
-                                  {persona}
-                                </label>
-                              </div>
+                            <div key={persona} className="flex items-center space-x-2">
+                              <Checkbox 
+                                id={persona}
+                                checked={selectedPersonas.includes(persona) || selectedPersonas.includes("all")}
+                                disabled={selectedPersonas.includes("all")}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedPersonas(prev => [...prev.filter(p => p !== "all"), persona]);
+                                  } else {
+                                    setSelectedPersonas(prev => prev.filter(p => p !== persona));
+                                  }
+                                }}
+                              />
+                              <label htmlFor={persona} className="text-sm">
+                                {persona}
+                              </label>
+                            </div>
                             ))
                           ) : (
                             <div className="text-sm text-muted-foreground">
@@ -783,7 +785,7 @@ export const ServiceFlowchartBuilder = ({
                 <CardContent className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="main-customers">Who are your main customers or users?</Label>
+                    <Label htmlFor="main-customers">Who are your main customers or users?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -805,7 +807,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="problem">What problem or need do they have?</Label>
+                    <Label htmlFor="problem">What problem or need do they have?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -846,7 +848,7 @@ export const ServiceFlowchartBuilder = ({
                 <CardContent className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="interactions">Where does the customer interact with your service?</Label>
+                    <Label htmlFor="interactions">Where does the customer interact with your service?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -868,7 +870,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="actions">What actions do they take?</Label>
+                    <Label htmlFor="actions">What actions do they take?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -891,7 +893,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="tools">What tools support these actions?</Label>
+                    <Label htmlFor="tools">What tools support these actions?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -931,7 +933,7 @@ export const ServiceFlowchartBuilder = ({
                 <CardContent className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="teams">Who works behind the scenes?</Label>
+                    <Label htmlFor="teams">Who works behind the scenes?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -953,7 +955,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="roles">What roles do they play?</Label>
+                    <Label htmlFor="roles">What roles do they play?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -976,7 +978,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="dependencies">Any dependencies or coordination needed?</Label>
+                    <Label htmlFor="dependencies">Any dependencies or coordination needed?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1017,7 +1019,7 @@ export const ServiceFlowchartBuilder = ({
                 <CardContent className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="systems">What external systems or tools do you rely on?</Label>
+                    <Label htmlFor="systems">What external systems or tools do you rely on?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1039,7 +1041,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="purpose">What do they do?</Label>
+                    <Label htmlFor="purpose">What do they do?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1062,7 +1064,7 @@ export const ServiceFlowchartBuilder = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="critical">Which ones are mission-critical?</Label>
+                    <Label htmlFor="critical">Which ones are mission-critical?</Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1235,7 +1237,7 @@ export const ServiceFlowchartBuilder = ({
                     ].map((phase) => (
                       <div key={phase.key}>
                         <div className="flex items-center gap-2 mb-2">
-                          <Label htmlFor={phase.key} className="text-base font-semibold">{phase.label}</Label>
+                        <Label htmlFor={phase.key} className="text-base font-semibold">{phase.label}</Label>
                           <Button
                             type="button"
                             variant="ghost"
@@ -1380,9 +1382,9 @@ export const ServiceFlowchartBuilder = ({
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-bold mb-2">Your Service Flowchart</h2>
-                <p className="text-muted-foreground">
-                  AI-generated layered diagram of your service flow
-                </p>
+              <p className="text-muted-foreground">
+                AI-generated layered diagram of your service flow
+              </p>
               </div>
               {flowchartCompleted && (
                 <Button 
@@ -1417,13 +1419,13 @@ export const ServiceFlowchartBuilder = ({
               if (hasValidFlowchart && !isGenerating) {
                 // Show the flowchart
                 return (
-                  <Card>
-                <CardHeader>
+            <Card>
+              <CardHeader>
                   <CardTitle>Service Experience Flowchart</CardTitle>
-                  <CardDescription>
+                <CardDescription>
                     Complete visualization of your service journey with stakeholders, phases, and interactions
-                  </CardDescription>
-                </CardHeader>
+                </CardDescription>
+              </CardHeader>
                 <CardContent>
                   <div className="border rounded-lg p-4 bg-background overflow-auto">
                     <ServiceFlowchart 
@@ -1473,7 +1475,7 @@ export const ServiceFlowchartBuilder = ({
                     <p className="text-muted-foreground text-center max-w-md">
                       AI is creating your service flowchart. This may take a moment.
                     </p>
-                  </div>
+                </div>
                 </CardContent>
               </Card>
                 );
@@ -1492,25 +1494,25 @@ export const ServiceFlowchartBuilder = ({
                     <p className="text-muted-foreground text-center">
                       Complete sections 1-3 and click "Confirm & Generate Flowchart" to create your flowchart.
                     </p>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
                 );
               }
             })()}
 
             <div className="flex justify-between mt-8">
               {!flowchartCompleted && (
-                <Button variant="outline" onClick={() => { setMainSection(3); setSubStep(3); }}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
+              <Button variant="outline" onClick={() => { setMainSection(3); setSubStep(3); }}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
               )}
               {flowchartCompleted && (
-                <Button variant="default" size="lg" onClick={handleFinalComplete}>
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Complete Flowchart Builder
-                </Button>
+              <Button variant="default" size="lg" onClick={handleFinalComplete}>
+                <CheckCircle2 className="mr-2 h-5 w-5" />
+                Complete Flowchart Builder
+              </Button>
               )}
             </div>
           </div>

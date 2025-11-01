@@ -14,6 +14,7 @@ import {
   Star
 } from "lucide-react";
 import { FactorAI } from "../FactorAI";
+import { UserMenu } from "../UserMenu";
 
 interface LaunchStationProps {
   scalingData: any;
@@ -98,6 +99,7 @@ export const LaunchStation = ({ scalingData, onComplete, onBack }: LaunchStation
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"

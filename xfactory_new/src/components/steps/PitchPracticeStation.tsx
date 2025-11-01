@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient, getGammaPdfUrlTeam } from "@/lib/api";
 import { FactorAI } from "../FactorAI";
 import InfoButton from "@/components/info-button";
+import { UserMenu } from "../UserMenu";
 
 interface PitchPracticeStationProps {
   onComplete: (data: any) => void;
@@ -607,6 +608,7 @@ export const PitchPracticeStation = ({
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"

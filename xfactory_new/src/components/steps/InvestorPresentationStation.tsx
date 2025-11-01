@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { TrendingUp, Clock, Calendar, MessageSquare, ArrowLeft, ArrowRight, CheckCircle, Star, DollarSign, Target, Mail, Briefcase } from "lucide-react";
 import { FactorAI } from "../FactorAI";
+import { UserMenu } from "../UserMenu";
 
 interface InvestorPresentationProps {
   onComplete: (data: any) => void;
@@ -79,6 +80,7 @@ export const InvestorPresentationStation = ({
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"

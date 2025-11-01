@@ -236,6 +236,20 @@ class ApiClient {
     return this.request('/auth/profile/');
   }
 
+  async updateUserProfile(data: { first_name?: string; last_name?: string; preferred_archetype?: string }) {
+    return this.request('/auth/user/', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(data: { current_password: string; new_password: string }) {
+    return this.request('/auth/change-password/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async checkDeadlines() {
     return this.request('/auth/check-deadlines/');
   }

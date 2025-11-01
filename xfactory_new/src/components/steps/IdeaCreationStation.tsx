@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { OutputCard } from "@/components/OutputCard";
 import { StationFlowManager } from "@/lib/stationFlow";
+import { UserMenu } from "../UserMenu";
 import { 
   Lightbulb, 
   Brain, 
@@ -989,13 +990,7 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"

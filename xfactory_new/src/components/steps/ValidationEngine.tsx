@@ -34,6 +34,7 @@ import {
 import { FactorAI } from "../FactorAI";
 import { apiClient } from "@/lib/api";
 import { lsGetScoped } from "@/lib/teamScope";
+import { UserMenu } from "../UserMenu";
 
 interface ValidationEngineProps {
   ideaCard: any;
@@ -1981,6 +1982,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"

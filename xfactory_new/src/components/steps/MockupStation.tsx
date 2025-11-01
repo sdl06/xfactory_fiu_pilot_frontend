@@ -10,6 +10,7 @@ import { Image, Smartphone, Monitor, Palette, Download, ArrowRight, ArrowLeft, Z
 import { FactorAI } from "../FactorAI";
 import { ServiceFlowchartBuilder } from "../ServiceFlowchartBuilder";
 import { ServiceFlowchart } from "../ServiceFlowchart";
+import { UserMenu } from "../UserMenu";
 import { v0 } from 'v0-sdk';
 import { createLogger } from "@/lib/logger";
 import { apiClient, toAbsoluteMediaUrl } from "@/lib/api";
@@ -2004,6 +2005,7 @@ user problems: ${probsLine}`;
 
         {/* User controls positioned at absolute right edge */}
         <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <UserMenu />
           <Button
             variant="ghost"
             size="icon"
