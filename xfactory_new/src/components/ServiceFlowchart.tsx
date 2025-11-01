@@ -36,12 +36,12 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
     return map;
   }, [lanes]);
 
-  const approxTextWidth = (s: string, size = 11) => Math.max(8, Math.min(180, Math.round(String(s||'').length * (size * 0.6))));
+  const approxTextWidth = (s: string, size = 10) => Math.max(8, Math.min(140, Math.round(String(s||'').length * (size * 0.6))));
   const measureNode = (label: string) => {
-    const base = 100;
-    const max = 160;
-    const w = Math.min(max, Math.max(base, approxTextWidth(label, 11) + 16));
-    const h = 42;
+    const base = 85;
+    const max = 130;
+    const w = Math.min(max, Math.max(base, approxTextWidth(label, 10) + 12));
+    const h = 36;
     return { w, h };
   };
 
@@ -68,14 +68,15 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
   const maxCol = Math.max(0, ...Object.values(col));
   nodes.forEach(n => { if (col[n.id] === undefined) col[n.id] = maxCol + 1; });
 
-  // Layout constants - reduced sizes to prevent squeezing
-  const laneH = 100; const lanePad = 30; const colW = 140; const gPad = 15;
+  // Layout constants - reduced sizes to prevent squeezing with more spacing
+  const laneH = 90; const lanePad = 25; const colW = 160; const gPad = 20;
 
-  // Compute positions honoring saved x/y
+  // Compute positions honoring saved x/y with increased horizontal spacing
   const xy: Record<string, { x: number; y: number }> = {};
   nodes.forEach(n => {
     const li = laneIndex[n.lane || lanes[0]] || 0;
-    const autoX = gPad + 60 + (col[n.id] || 0) * colW + colW/2;
+    // Increased spacing: gPad + 80 instead of 60, and use colW spacing
+    const autoX = gPad + 80 + (col[n.id] || 0) * colW;
     const autoY = lanePad + li * laneH + laneH/2;
     const x = (typeof n.x === 'number') ? n.x : autoX;
     const y = (typeof n.y === 'number') ? n.y : autoY;
@@ -96,7 +97,7 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
   const tx = -bounds.minX;
   const ty = -bounds.minY;
 
-  const wrapLabel = (label: string, maxChars = 16): string[] => {
+  const wrapLabel = (label: string, maxChars = 14): string[] => {
     const words = String(label || '').split(/\s+/);
     const lines: string[] = [];
     let cur = '';
@@ -121,7 +122,7 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
             {lanes.map((l, i) => (
               <g key={l}>
                 <rect x={0} y={lanePad + i * laneH - laneH/2 + laneH/2} width={width} height={laneH} fill={i % 2 === 0 ? '#fafafa' : '#ffffff'} stroke="#f3f4f6" />
-                <text x={12} y={lanePad + i * laneH + 18} fill="#6b7280" fontSize={11} fontWeight={700}>{l}</text>
+                <text x={12} y={lanePad + i * laneH + 16} fill="#6b7280" fontSize={10} fontWeight={700}>{l}</text>
               </g>
             ))}
             {/* Edges (orthogonal elbows) */}
@@ -139,11 +140,11 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
                   <path d={path} fill="none" stroke="#9ca3af" strokeWidth={2} markerEnd="url(#svc-edge)" />
                   {e.label && (() => {
                     const txl = midX; const tyl = (a.y + b.y) / 2 - 6;
-                    const tw = approxTextWidth(String(e.label), 11) + 8; const th = 14;
+                    const tw = approxTextWidth(String(e.label), 10) + 8; const th = 14;
                     return (
                       <g>
                         <rect x={txl - tw/2} y={tyl - th + 4} width={tw} height={th} rx={3} ry={3} fill="#ffffff" opacity={0.9} />
-                        <text x={txl} y={tyl} textAnchor="middle" fill="#6b7280" fontSize="11">{e.label}</text>
+                        <text x={txl} y={tyl} textAnchor="middle" fill="#6b7280" fontSize="10">{e.label}</text>
                       </g>
                     );
                   })()}
@@ -160,18 +161,18 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
                   <g key={n.id}>
                     <ellipse cx={p.x} cy={p.y} rx={w/2} ry={h/2} fill="#fff" stroke="#e5e7eb" />
                     {wrapLabel(n.label).map((line, i) => (
-                      <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label).length-1)/2) * 12} dominantBaseline="middle" textAnchor="middle" fill="#111827" fontSize="11" fontWeight={600}>{line}</text>
+                      <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label).length-1)/2) * 11} dominantBaseline="middle" textAnchor="middle" fill="#111827" fontSize="10" fontWeight={500}>{line}</text>
                     ))}
                   </g>
                 );
               }
               if (type === 'decision') {
-                const s = 40;
+                const s = 32;
                 return (
                   <g key={n.id}>
                     <polygon points={`${p.x},${p.y - s} ${p.x + s},${p.y} ${p.x},${p.y + s} ${p.x - s},${p.y}`} fill="#fff" stroke="#f59e0b" />
-                    {wrapLabel(n.label, 16).map((line, i) => (
-                      <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label,16).length-1)/2) * 12} dominantBaseline="middle" textAnchor="middle" fill="#92400e" fontSize="11" fontWeight={600}>{line}</text>
+                    {wrapLabel(n.label, 14).map((line, i) => (
+                      <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label,14).length-1)/2) * 11} dominantBaseline="middle" textAnchor="middle" fill="#92400e" fontSize="10" fontWeight={500}>{line}</text>
                     ))}
                   </g>
                 );
@@ -182,7 +183,7 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
                   <g key={n.id}>
                     <polygon points={`${p.x - w/2 + skew},${p.y - h/2} ${p.x + w/2 + skew},${p.y - h/2} ${p.x + w/2 - skew},${p.y + h/2} ${p.x - w/2 - skew},${p.y + h/2}`} fill="#ecfeff" stroke="#06b6d4" />
                     {wrapLabel(n.label).map((line, i) => (
-                      <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label).length-1)/2) * 12} dominantBaseline="middle" textAnchor="middle" fill="#0e7490" fontSize="11" fontWeight={600}>{line}</text>
+                      <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label).length-1)/2) * 11} dominantBaseline="middle" textAnchor="middle" fill="#0e7490" fontSize="10" fontWeight={500}>{line}</text>
                     ))}
                   </g>
                 );
@@ -191,7 +192,7 @@ export const ServiceFlowchart: React.FC<ServiceFlowchartProps> = ({ flow, zoom =
                 <g key={n.id}>
                   <rect x={p.x - w/2} y={p.y - h/2} width={w} height={h} rx={8} ry={8} fill="#fff" stroke="#e5e7eb" />
                   {wrapLabel(n.label).map((line, i) => (
-                    <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label).length-1)/2) * 12} dominantBaseline="middle" textAnchor="middle" fill="#111827" fontSize="11" fontWeight={600}>{line}</text>
+                    <text key={i} x={p.x} y={p.y + (i - (wrapLabel(n.label).length-1)/2) * 11} dominantBaseline="middle" textAnchor="middle" fill="#111827" fontSize="10" fontWeight={500}>{line}</text>
                   ))}
                 </g>
               );
