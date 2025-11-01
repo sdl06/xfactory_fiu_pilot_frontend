@@ -15,6 +15,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { ServiceFlowchart } from "@/components/ServiceFlowchart";
+import { RefreshCw } from "lucide-react";
 
 interface ServiceFlowchartBuilderProps {
   ideaCard: any;
@@ -79,6 +81,8 @@ export const ServiceFlowchartBuilder = ({
   const [availablePersonas, setAvailablePersonas] = useState<string[]>([]);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [generatingField, setGeneratingField] = useState<string | null>(null);
+  const [flowchartData, setFlowchartData] = useState<any>(null);
+  const [flowchartCompleted, setFlowchartCompleted] = useState(false);
   const { toast } = useToast();
 
   const totalSteps = 4;
@@ -120,19 +124,35 @@ export const ServiceFlowchartBuilder = ({
         const response = await apiClient.getServiceFlowchartTeam(teamId);
         if (response.data?.success && response.data?.flowchart) {
           const f = response.data.flowchart;
-          if (f.journey_type) setJourneyType(f.journey_type);
-          if (f.selected_personas) setSelectedPersonas(f.selected_personas);
-          if (f.specific_description) setSpecificDescription(f.specific_description);
-          if (f.generated_processes) setGeneratedProcesses(f.generated_processes);
-          if (f.primary_customers) setPrimaryCustomers(f.primary_customers);
-          if (f.frontstage_data) setFrontstageData(f.frontstage_data);
-          if (f.backstage_data) setBackstageData(f.backstage_data);
-          if (f.external_partners) setExternalPartners(f.external_partners);
-          if (f.phase_mappings) setPhaseMappings(f.phase_mappings);
-          if (f.timeline_type) setTimelineType(f.timeline_type);
-          if (f.phase_durations) setPhaseDurations(f.phase_durations);
-          if (f.current_section) setMainSection(f.current_section);
-          if (f.current_sub_step) setSubStep(f.current_sub_step);
+          
+          // Check if flowchart is completed
+          const isCompleted = f.status === 'completed' && f.flowchart_data && 
+                              f.flowchart_data.nodes && 
+                              Array.isArray(f.flowchart_data.nodes) && 
+                              f.flowchart_data.nodes.length > 0;
+          
+          if (isCompleted) {
+            // Flowchart is completed - show it immediately
+            setFlowchartData(f.flowchart_data);
+            setFlowchartCompleted(true);
+            setMainSection(4); // Go directly to section 4 to show flowchart
+          } else {
+            // Load partial data if available
+            if (f.journey_type) setJourneyType(f.journey_type);
+            if (f.selected_personas) setSelectedPersonas(f.selected_personas);
+            if (f.specific_description) setSpecificDescription(f.specific_description);
+            if (f.generated_processes) setGeneratedProcesses(f.generated_processes);
+            if (f.primary_customers) setPrimaryCustomers(f.primary_customers);
+            if (f.frontstage_data) setFrontstageData(f.frontstage_data);
+            if (f.backstage_data) setBackstageData(f.backstage_data);
+            if (f.external_partners) setExternalPartners(f.external_partners);
+            if (f.phase_mappings) setPhaseMappings(f.phase_mappings);
+            if (f.timeline_type) setTimelineType(f.timeline_type);
+            if (f.phase_durations) setPhaseDurations(f.phase_durations);
+            if (f.current_section) setMainSection(f.current_section);
+            if (f.current_sub_step) setSubStep(f.current_sub_step);
+            if (f.flowchart_data) setFlowchartData(f.flowchart_data);
+          }
         }
       } catch (error) {
         console.error('Error loading existing flowchart:', error);
@@ -398,6 +418,21 @@ export const ServiceFlowchartBuilder = ({
       });
       
       if (response.data?.success) {
+        // Store the generated flowchart data
+        const generatedFlowchart = response.data?.flowchart || response.data?.flowchart_data;
+        if (generatedFlowchart) {
+          setFlowchartData(generatedFlowchart);
+          setFlowchartCompleted(true);
+          // Reload the full flowchart data to ensure we have the latest version
+          try {
+            const fullResponse = await apiClient.getServiceFlowchartTeam(teamId);
+            if (fullResponse.data?.success && fullResponse.data?.flowchart?.flowchart_data) {
+              setFlowchartData(fullResponse.data.flowchart.flowchart_data);
+            }
+          } catch (e) {
+            console.error('Error reloading flowchart:', e);
+          }
+        }
         toast({ title: "Success", description: "Flowchart generated successfully!" });
       } else {
         throw new Error(response.data?.error || 'Failed to generate flowchart');
@@ -1325,68 +1360,118 @@ export const ServiceFlowchartBuilder = ({
         {/* SECTION 4: Plot the Flowchart */}
         {mainSection === 4 && (
           <div className="space-y-6">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold mb-2">Plot Your Service Flowchart</h2>
-              <p className="text-muted-foreground">
-                AI-generated layered diagram of your service flow
-              </p>
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold mb-2">Your Service Flowchart</h2>
+                <p className="text-muted-foreground">
+                  AI-generated layered diagram of your service flow
+                </p>
+              </div>
+              {flowchartCompleted && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    // Reset to start the flowchart process over
+                    setFlowchartData(null);
+                    setFlowchartCompleted(false);
+                    setMainSection(1);
+                    setSubStep(1);
+                  }}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Redo Flowchart
+                </Button>
+              )}
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Flowchart is Ready!</CardTitle>
-                <CardDescription>
-                  Review your complete service experience flowchart
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-muted/30 rounded-lg p-8 min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed">
-                  <CheckCircle2 className="h-16 w-16 text-primary mb-4" />
-                  <h3 className="text-2xl font-bold mb-2">Flowchart Generated!</h3>
-                  <p className="text-muted-foreground text-center max-w-md mb-6">
-                    Your service experience flowchart has been created with all stakeholders, 
-                    phases, and timelines mapped out.
-                  </p>
+            {flowchartData && flowchartData.nodes && flowchartData.nodes.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Experience Flowchart</CardTitle>
+                  <CardDescription>
+                    Complete visualization of your service journey with stakeholders, phases, and interactions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg p-4 bg-background overflow-auto">
+                    <ServiceFlowchart 
+                      flow={{
+                        nodes: flowchartData.nodes || [],
+                        edges: flowchartData.edges || [],
+                        lanes: flowchartData.lanes || flowchartData.layers?.map((l: any) => l.name || l) || []
+                      }} 
+                      height={600} 
+                      zoom={1} 
+                    />
+                  </div>
                   
-                  <div className="grid grid-cols-3 gap-4 w-full max-w-2xl text-center">
-                    <div className="p-4 bg-background rounded-lg">
+                  <div className="mt-6 grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg text-center">
                       <div className="text-2xl font-bold text-primary">{generatedProcesses.filter(p => p.checked).length}</div>
                       <div className="text-sm text-muted-foreground">Processes</div>
                     </div>
-                    <div className="p-4 bg-background rounded-lg">
+                    <div className="p-4 bg-muted/50 rounded-lg text-center">
                       <div className="text-2xl font-bold text-primary">5</div>
                       <div className="text-sm text-muted-foreground">Phases</div>
                     </div>
-                    <div className="p-4 bg-background rounded-lg">
+                    <div className="p-4 bg-muted/50 rounded-lg text-center">
                       <div className="text-2xl font-bold text-primary">
-                        {Object.values(phaseDurations).reduce((sum, val) => sum + parseInt(val), 0)}
+                        {Object.values(phaseDurations).reduce((sum, val) => sum + parseInt(val || '0'), 0)}
                       </div>
                       <div className="text-sm text-muted-foreground">Weeks Total</div>
                     </div>
                   </div>
-                </div>
-
-                <div className="p-4 bg-primary/10 rounded-lg">
-                  <h4 className="font-semibold mb-2">✨ What's Included:</h4>
-                  <ul className="space-y-1 text-sm">
-                    <li>• Customer journey mapping across all phases</li>
-                    <li>• Stakeholder and system interactions</li>
-                    <li>• Timeline and milestone planning</li>
-                    <li>• Process flow documentation</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : isGenerating ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generating Your Flowchart</CardTitle>
+                  <CardDescription>
+                    Creating your service experience flowchart with all stakeholders and phases
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="bg-muted/30 rounded-lg p-8 min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed">
+                    <Sparkles className="h-16 w-16 text-primary mb-4 animate-spin" />
+                    <h3 className="text-2xl font-bold mb-2">Generating Flowchart...</h3>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      AI is creating your service flowchart. This may take a moment.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Flowchart Not Generated</CardTitle>
+                  <CardDescription>
+                    Please complete the previous sections to generate your flowchart
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted/30 rounded-lg p-8 min-h-[200px] flex flex-col items-center justify-center border-2 border-dashed">
+                    <p className="text-muted-foreground text-center">
+                      Complete sections 1-3 and click "Confirm & Generate Flowchart" to create your flowchart.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={() => { setMainSection(3); setSubStep(3); }}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button variant="default" size="lg" onClick={handleFinalComplete}>
-                <CheckCircle2 className="mr-2 h-5 w-5" />
-                Complete Flowchart Builder
-              </Button>
+              {!flowchartCompleted && (
+                <Button variant="outline" onClick={() => { setMainSection(3); setSubStep(3); }}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              {flowchartCompleted && (
+                <Button variant="default" size="lg" onClick={handleFinalComplete}>
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                  Complete Flowchart Builder
+                </Button>
+              )}
             </div>
           </div>
         )}
