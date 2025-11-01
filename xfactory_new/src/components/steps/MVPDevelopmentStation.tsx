@@ -280,29 +280,57 @@ export const MVPDevelopmentStation = ({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={onBack}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
+      {/* Station Header */}
+      <div className="border-b border-border bg-gradient-conveyor relative">
+        {/* Logos positioned at absolute left edge */}
+        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+          <img 
+            src="/logos/prov_logo_white.png" 
+            alt="xFactory Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+            }}
+          />
+          <img 
+            src="/logos/fiualonetransreverse.png" 
+            alt="FIU Logo" 
+            className="h-8 w-auto object-contain"
+            onError={(e) => {
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.style.display = 'none';
+            }}
+          />
+        </div>
+
+        {/* User controls positioned at absolute right edge */}
+        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center">
+            {/* Left: Section name and icon (bounded left) */}
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <Code className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-50">MVP Development Station</h1>
-                <p className="text-sm text-slate-50">AI-powered MVP generation and task management</p>
+                <h1 className="text-xl font-bold text-white">MVP Development Station</h1>
+                <p className="text-sm text-white/80">AI-powered MVP generation and task management</p>
               </div>
             </div>
-            <Badge variant="accent" className="text-lg px-4 py-2">
-              <Rocket className="h-4 w-4 mr-2" />
-              Build MVP
-            </Badge>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <Tabs defaultValue="mvp" className="space-y-6">

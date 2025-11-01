@@ -706,27 +706,10 @@ export const ProductionLineFlow = ({
   const isUltraNarrow = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 420px)').matches : false;
   const FIXED_CONTAINER_HEIGHT = isUltraNarrow ? (typeof window !== 'undefined' ? Math.max(Math.floor(window.innerHeight * 0.7), 560) : 560) : 1400;
 
-  // Memoize nodes calculation (top workshops + pipeline grid)
+  // Memoize nodes calculation (pipeline grid only - workshops removed from top row as they're repeated in pipeline)
   const initialNodes: any[] = useMemo(() => {
     const nodes: any[] = [];
-    // Top workshops row (wide cards)
-    workshopIds.forEach((wid, idx) => {
-      const station = stations.find(s => s.id === wid)!;
-      nodes.push({
-        id: `work-${wid}`,
-        type: 'station',
-        position: { x: 80 + idx * 460, y: 80 },
-        data: {
-          station,
-          status: getStationStatus(wid),
-          onEnter: onEnterStation,
-          isFirst: false,
-          isLast: false,
-          isWorkshop: true,
-        },
-      });
-    });
-    // Pipeline grid (3 per row; include workshop clones after 7)
+    // Pipeline grid (3 per row; include workshops after 7)
     pipelineOrder.forEach((sid, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
@@ -735,7 +718,7 @@ export const ProductionLineFlow = ({
       nodes.push({
         id: isWorkshopClone ? `pipe-${sid}` : `${sid}`,
         type: 'station',
-        position: { x: col * 380 + 120, y: row * 240 + 220 },
+        position: { x: col * 380 + 120, y: row * 240 + 80 },
         data: {
           station,
           status: getStationStatus(sid),

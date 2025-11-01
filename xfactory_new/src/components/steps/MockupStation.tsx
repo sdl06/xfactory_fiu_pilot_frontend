@@ -987,23 +987,23 @@ export const MockupStation = ({
               // Only load existing if software_mockup is explicitly true; otherwise treat as reset
               if (mvp.software_mockup !== true) {
                 shouldLoadExisting = false;
-              }
-            } catch {}
+          }
+        } catch {}
             
             if (shouldLoadExisting) {
               const existing = await apiClient.getSoftwareMockupTeam(teamId);
-              // No fallback to idea-scoped fetch; software mockups are team-scoped
-              const existingChatId = existing?.data?.mockups?.find((m: any) => m.v0_chat_id)?.v0_chat_id || existing?.data?.mockups?.[0]?.v0_chat_id;
-              const existingProjectId = existing?.data?.mockups?.find((m: any) => m.v0_project_id)?.v0_project_id || existing?.data?.v0_project_id;
-              if (existingProjectId && typeof existingProjectId === 'string') {
-                projectIdToUse = existingProjectId;
-              }
-              log.debug("createOrResumeV0Chat:existing", { existingChatId, existingProjectId: projectIdToUse });
-              if (existingChatId) {
-                try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), existingChatId); } catch {}
-                try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), String(projectIdToUse || '')); } catch {}
-                return { chatId: existingChatId, existing: true, projectId: projectIdToUse } as any;
-              }
+        // No fallback to idea-scoped fetch; software mockups are team-scoped
+        const existingChatId = existing?.data?.mockups?.find((m: any) => m.v0_chat_id)?.v0_chat_id || existing?.data?.mockups?.[0]?.v0_chat_id;
+        const existingProjectId = existing?.data?.mockups?.find((m: any) => m.v0_project_id)?.v0_project_id || existing?.data?.v0_project_id;
+        if (existingProjectId && typeof existingProjectId === 'string') {
+          projectIdToUse = existingProjectId;
+        }
+        log.debug("createOrResumeV0Chat:existing", { existingChatId, existingProjectId: projectIdToUse });
+        if (existingChatId) {
+          try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), existingChatId); } catch {}
+          try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), String(projectIdToUse || '')); } catch {}
+          return { chatId: existingChatId, existing: true, projectId: projectIdToUse } as any;
+        }
             }
           }
         } catch {}
@@ -1245,18 +1245,18 @@ user problems: ${probsLine}`;
         // Fetch existing first only if station is complete
         let chosen: any = null;
         if (shouldLoadService) {
-          try {
-            const existing = await apiClient.getServiceRoadmapTeam(teamId);
-            const data = (existing as any)?.data || {};
-            const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
-            if (list.length > 0) {
-              chosen = list.slice().sort((a: any, b: any) => {
-                const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
-                const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
-                return bu - au;
-              })[0];
-            }
-          } catch {}
+        try {
+          const existing = await apiClient.getServiceRoadmapTeam(teamId);
+          const data = (existing as any)?.data || {};
+          const list: any[] = Array.isArray(data?.roadmaps) ? data.roadmaps : [];
+          if (list.length > 0) {
+            chosen = list.slice().sort((a: any, b: any) => {
+              const au = new Date(a?.updated_at || a?.created_at || 0).getTime();
+              const bu = new Date(b?.updated_at || b?.created_at || 0).getTime();
+              return bu - au;
+            })[0];
+          }
+        } catch {}
         }
         if (chosen) {
           setServiceDoc(chosen);
@@ -1377,11 +1377,11 @@ user problems: ${probsLine}`;
         const ideaId = getIdeaId();
         let existing: any = null;
           let shouldLoadExisting = true;
-          // Prefer team-scoped fetch
-          try {
-            const status = await apiClient.get('/team-formation/status/');
-            const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-            if (teamId) {
+        // Prefer team-scoped fetch
+        try {
+          const status = await apiClient.get('/team-formation/status/');
+          const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+          if (teamId) {
               // Check if mockup station is marked as complete; if not, don't load existing (treat as reset)
               try {
                 const roadmap = await apiClient.getTeamRoadmap(teamId);
@@ -1393,19 +1393,19 @@ user problems: ${probsLine}`;
               } catch {}
               
               if (shouldLoadExisting) {
-                existing = await apiClient.getSoftwareMockupTeam(teamId);
+            existing = await apiClient.getSoftwareMockupTeam(teamId);
               }
-            }
-          } catch {}
-          // No fallback to idea-scoped fetch; software mockups are team-scoped
-          if (existing) {
-            const cid = (existing as any)?.data?.v0_chat_id;
-            const latestVid = (existing as any)?.data?.v0_latest_version_id;
-            const pid = (existing as any)?.data?.v0_project_id;
-            if (cid && typeof cid === 'string') preExistingChatId = cid;
-            if (pid && typeof pid === 'string') preExistingProjectId = pid;
-            // Prefer explicitly saved latest version id first
-            if (cid && latestVid) {
+          }
+        } catch {}
+        // No fallback to idea-scoped fetch; software mockups are team-scoped
+        if (existing) {
+          const cid = (existing as any)?.data?.v0_chat_id;
+          const latestVid = (existing as any)?.data?.v0_latest_version_id;
+          const pid = (existing as any)?.data?.v0_project_id;
+          if (cid && typeof cid === 'string') preExistingChatId = cid;
+          if (pid && typeof pid === 'string') preExistingProjectId = pid;
+          // Prefer explicitly saved latest version id first
+          if (cid && latestVid) {
             try {
               const v = await (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid });
               const vDemo = v?.demoUrl || v?.webUrl || v?.demo;
@@ -1467,7 +1467,7 @@ user problems: ${probsLine}`;
               description: "Live demo loaded from existing software mockup"
             };
           }
-      }
+        }
 
       const session: any = preExistingChatId
         ? { chatId: preExistingChatId, existing: true, projectId: localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || preExistingProjectId || effectiveV0ProjectId }
@@ -1560,11 +1560,11 @@ user problems: ${probsLine}`;
         }
         
         if (shouldLoadExisting) {
-          try {
-            const existing = await apiClient.getSoftwareMockupTeam(teamId);
-            const ok = (existing as any)?.status >= 200 && (existing as any)?.status < 300;
-            const notFound = (existing as any)?.status === 404;
-            const data: any = ok ? (existing as any)?.data || {} : {};
+        try {
+          const existing = await apiClient.getSoftwareMockupTeam(teamId);
+          const ok = (existing as any)?.status >= 200 && (existing as any)?.status < 300;
+          const notFound = (existing as any)?.status === 404;
+          const data: any = ok ? (existing as any)?.data || {} : {};
           const topLevelDemo = typeof data?.v0_demo_url === 'string' && data.v0_demo_url ? data.v0_demo_url : undefined;
           const mocks: any[] = Array.isArray(data?.mockups) ? data.mockups : [];
           const withDemo = mocks.find((m: any) => m?.v0_demo_url);
@@ -2114,23 +2114,23 @@ user problems: ${probsLine}`;
                             
                             // Load existing saved physical mockups (team-scoped) only if station is complete
                             if (shouldLoadPhysical) {
-                              try {
-                                const existing = await apiClient.getPhysicalMockupsTeam(teamId);
-                                const savedRaw = (existing?.data?.mockups || []).map((m: any, idx: number) => ({ 
-                                  id: `phys_${m.id || idx}`, 
-                                  type: 'Product Mockup', 
-                                  title: m.title, 
-                                  url: getBackendMediaUrl(m.image_url || m.url), // Normalize to absolute URL
-                                  description: m.description, 
-                                  prompt: m.image_prompt 
-                                }));
-                                const saved = dedupeMockups(savedRaw);
-                                if (saved.length > 0) {
-                                  setGeneratedMockups(saved);
-                                  setStep(2);
-                                  return;
-                                }
-                              } catch {}
+                            try {
+                              const existing = await apiClient.getPhysicalMockupsTeam(teamId);
+                              const savedRaw = (existing?.data?.mockups || []).map((m: any, idx: number) => ({ 
+                                id: `phys_${m.id || idx}`, 
+                                type: 'Product Mockup', 
+                                title: m.title, 
+                                url: getBackendMediaUrl(m.image_url || m.url), // Normalize to absolute URL
+                                description: m.description, 
+                                prompt: m.image_prompt 
+                              }));
+                              const saved = dedupeMockups(savedRaw);
+                              if (saved.length > 0) {
+                                setGeneratedMockups(saved);
+                                setStep(2);
+                                return;
+                              }
+                            } catch {}
                             }
                             // 1) Create prompts (team)
                             const p = await apiClient.generatePhysicalPromptsTeam(teamId);

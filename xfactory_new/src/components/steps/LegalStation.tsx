@@ -335,24 +335,58 @@ export const LegalStation = ({
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+        {/* Station Header */}
+        <div className="border-b border-border bg-gradient-to-r from-primary/80 to-accent/80 relative mb-8 -mx-6 px-6 py-4">
+          {/* Logos positioned at absolute left edge */}
+          <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
+            <img 
+              src="/logos/prov_logo_white.png" 
+              alt="xFactory Logo" 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const imgElement = e.target as HTMLImageElement;
+                imgElement.style.display = 'none';
+              }}
+            />
+            <img 
+              src="/logos/fiualonetransreverse.png" 
+              alt="FIU Logo" 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const imgElement = e.target as HTMLImageElement;
+                imgElement.style.display = 'none';
+              }}
+            />
+          </div>
+
+          {/* User controls positioned at absolute right edge */}
+          <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-primary-foreground hover:bg-white/10 rounded-full"
+              onClick={onBack}
+            >
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
-                <Scale className="h-8 w-8 text-primary" />
-                Legal Workshop
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Build your legal foundation with guided tools and templates
-              </p>
+          </div>
+
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center">
+              {/* Left: Section name and icon (bounded left) */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
+                  <Scale className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-primary-foreground">Legal Workshop</h1>
+                  <p className="text-sm text-primary-foreground/80">
+                    Build your legal foundation with guided tools and templates
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          <Badge variant="outline" className="text-sm">Station 10/11</Badge>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
