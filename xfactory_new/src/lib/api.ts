@@ -501,6 +501,10 @@ class ApiClient {
   async validateFlowchart(data: { idea_id: number; flowchart_data: any }) {
     return this.post(`/ideation/service-flowchart/validate/`, data);
   }
+
+  async generateFlowchartField(data: { idea_id: number; field_type: string; context?: any }) {
+    return this.post(`/ideation/service-flowchart/generate-field/`, data);
+  }
   
   async saveServiceRoadmapTeam(teamId: number, roadmap: any) {
     const payload: any = {

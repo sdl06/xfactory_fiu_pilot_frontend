@@ -78,6 +78,7 @@ export const ServiceFlowchartBuilder = ({
 
   const [availablePersonas, setAvailablePersonas] = useState<string[]>([]);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
+  const [generatingField, setGeneratingField] = useState<string | null>(null);
   const { toast } = useToast();
 
   const totalSteps = 4;
@@ -241,6 +242,96 @@ export const ServiceFlowchartBuilder = ({
     setGeneratedProcesses(prev => 
       prev.map(p => p.id === id ? { ...p, checked: !p.checked } : p)
     );
+  };
+
+  // Generate field content with AI
+  const generateFieldContent = async (fieldType: string, context?: any) => {
+    if (!teamId) {
+      toast({
+        title: "Error",
+        description: "Team ID not found",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setGeneratingField(fieldType);
+    try {
+      // Get actual idea ID
+      let actualIdeaId = ideaId;
+      if (!actualIdeaId) {
+        try {
+          const ideaResponse = await apiClient.getTeamLatestIdeaId(teamId);
+          actualIdeaId = ideaResponse.data?.id || ideaResponse.data?.idea_id;
+        } catch (e) {
+          console.error('Failed to get idea ID:', e);
+        }
+      }
+
+      if (!actualIdeaId) {
+        throw new Error('Idea ID not available');
+      }
+
+      const response = await apiClient.generateFlowchartField({
+        idea_id: actualIdeaId,
+        field_type: fieldType,
+        context: context || {}
+      });
+
+      if (response.data?.success && response.data?.content) {
+        // Update the appropriate field based on fieldType
+        const content = response.data.content;
+        
+        if (fieldType === 'primary_customers') {
+          setPrimaryCustomers(prev => ({ ...prev, mainCustomers: content }));
+        } else if (fieldType === 'primary_customers_problem') {
+          setPrimaryCustomers(prev => ({ ...prev, problem: content }));
+        } else if (fieldType === 'frontstage_interactions') {
+          setFrontstageData(prev => ({ ...prev, interactions: content }));
+        } else if (fieldType === 'frontstage_actions') {
+          setFrontstageData(prev => ({ ...prev, actions: content }));
+        } else if (fieldType === 'frontstage_tools') {
+          setFrontstageData(prev => ({ ...prev, tools: content }));
+        } else if (fieldType === 'backstage_teams') {
+          setBackstageData(prev => ({ ...prev, teams: content }));
+        } else if (fieldType === 'backstage_roles') {
+          setBackstageData(prev => ({ ...prev, roles: content }));
+        } else if (fieldType === 'backstage_dependencies') {
+          setBackstageData(prev => ({ ...prev, dependencies: content }));
+        } else if (fieldType === 'external_systems') {
+          setExternalPartners(prev => ({ ...prev, systems: content }));
+        } else if (fieldType === 'external_purpose') {
+          setExternalPartners(prev => ({ ...prev, purpose: content }));
+        } else if (fieldType === 'external_critical') {
+          setExternalPartners(prev => ({ ...prev, critical: content }));
+        } else if (fieldType === 'phase_awareness') {
+          setPhaseMappings(prev => ({ ...prev, awareness: content }));
+        } else if (fieldType === 'phase_onboarding') {
+          setPhaseMappings(prev => ({ ...prev, onboarding: content }));
+        } else if (fieldType === 'phase_engagement') {
+          setPhaseMappings(prev => ({ ...prev, engagement: content }));
+        } else if (fieldType === 'phase_fulfillment') {
+          setPhaseMappings(prev => ({ ...prev, fulfillment: content }));
+        } else if (fieldType === 'phase_feedback') {
+          setPhaseMappings(prev => ({ ...prev, feedback: content }));
+        } else if (fieldType === 'specific_description') {
+          setSpecificDescription(content);
+        }
+
+        toast({
+          title: "Content Generated",
+          description: "AI-generated content has been filled in",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate content. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingField(null);
+    }
   };
 
   const handleSection1Complete = async () => {
@@ -515,7 +606,19 @@ export const ServiceFlowchartBuilder = ({
                     </CardHeader>
                     {journeyType === "specific" && (
                       <CardContent>
-                        <Label className="mb-2 block">Describe the specific moment</Label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label className="block">Describe the specific moment</Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => generateFieldContent('specific_description')}
+                            disabled={generatingField === 'specific_description'}
+                            className="h-6 px-2"
+                          >
+                            <Sparkles className={`h-3 w-3 ${generatingField === 'specific_description' ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
                         <Textarea 
                           placeholder="Example: onboarding for mentors, user checkout flow, feedback request"
                           value={specificDescription}
@@ -627,25 +730,47 @@ export const ServiceFlowchartBuilder = ({
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="main-customers">Who are your main customers or users?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="main-customers">Who are your main customers or users?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('primary_customers')}
+                        disabled={generatingField === 'primary_customers'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'primary_customers' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Input 
                       id="main-customers"
                       placeholder="Students, Parents, Delivery drivers, SMB owners"
                       value={primaryCustomers.mainCustomers}
                       onChange={(e) => setPrimaryCustomers(prev => ({ ...prev, mainCustomers: e.target.value }))}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="problem">What problem or need do they have?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="problem">What problem or need do they have?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('primary_customers_problem')}
+                        disabled={generatingField === 'primary_customers_problem'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'primary_customers_problem' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Textarea 
                       id="problem"
                       placeholder="Describe the problem your solution addresses"
                       value={primaryCustomers.problem}
                       onChange={(e) => setPrimaryCustomers(prev => ({ ...prev, problem: e.target.value }))}
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
 
@@ -668,36 +793,69 @@ export const ServiceFlowchartBuilder = ({
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="interactions">Where does the customer interact with your service?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="interactions">Where does the customer interact with your service?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('frontstage_interactions')}
+                        disabled={generatingField === 'frontstage_interactions'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'frontstage_interactions' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Input 
                       id="interactions"
                       placeholder="Website, mobile app, physical location"
                       value={frontstageData.interactions}
                       onChange={(e) => setFrontstageData(prev => ({ ...prev, interactions: e.target.value }))}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="actions">What actions do they take?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="actions">What actions do they take?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('frontstage_actions')}
+                        disabled={generatingField === 'frontstage_actions'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'frontstage_actions' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Textarea 
                       id="actions"
                       placeholder="Sign up, browse products, make purchases, submit feedback"
                       value={frontstageData.actions}
                       onChange={(e) => setFrontstageData(prev => ({ ...prev, actions: e.target.value }))}
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="tools">What tools support these actions?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="tools">What tools support these actions?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('frontstage_tools')}
+                        disabled={generatingField === 'frontstage_tools'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'frontstage_tools' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Input 
                       id="tools"
                       placeholder="Website, chatbot, social media, email"
                       value={frontstageData.tools}
                       onChange={(e) => setFrontstageData(prev => ({ ...prev, tools: e.target.value }))}
-                      className="mt-2"
                     />
                   </div>
 
@@ -720,37 +878,70 @@ export const ServiceFlowchartBuilder = ({
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="teams">Who works behind the scenes?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="teams">Who works behind the scenes?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('backstage_teams')}
+                        disabled={generatingField === 'backstage_teams'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'backstage_teams' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Input 
                       id="teams"
                       placeholder="Customer support, operations, product team"
                       value={backstageData.teams}
                       onChange={(e) => setBackstageData(prev => ({ ...prev, teams: e.target.value }))}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="roles">What roles do they play?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="roles">What roles do they play?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('backstage_roles')}
+                        disabled={generatingField === 'backstage_roles'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'backstage_roles' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Textarea 
                       id="roles"
                       placeholder="Processing orders, managing inventory, providing support"
                       value={backstageData.roles}
                       onChange={(e) => setBackstageData(prev => ({ ...prev, roles: e.target.value }))}
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="dependencies">Any dependencies or coordination needed?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="dependencies">Any dependencies or coordination needed?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('backstage_dependencies')}
+                        disabled={generatingField === 'backstage_dependencies'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'backstage_dependencies' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Textarea 
                       id="dependencies"
                       placeholder="Cross-team communication, approval workflows"
                       value={backstageData.dependencies}
                       onChange={(e) => setBackstageData(prev => ({ ...prev, dependencies: e.target.value }))}
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
 
@@ -773,36 +964,69 @@ export const ServiceFlowchartBuilder = ({
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="systems">What external systems or tools do you rely on?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="systems">What external systems or tools do you rely on?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('external_systems')}
+                        disabled={generatingField === 'external_systems'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'external_systems' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Input 
                       id="systems"
                       placeholder="Payment processors, cloud services, APIs"
                       value={externalPartners.systems}
                       onChange={(e) => setExternalPartners(prev => ({ ...prev, systems: e.target.value }))}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="purpose">What do they do?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="purpose">What do they do?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('external_purpose')}
+                        disabled={generatingField === 'external_purpose'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'external_purpose' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Textarea 
                       id="purpose"
                       placeholder="e.g., Stripe for payments, Zapier for automation, AWS for hosting"
                       value={externalPartners.purpose}
                       onChange={(e) => setExternalPartners(prev => ({ ...prev, purpose: e.target.value }))}
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="critical">Which ones are mission-critical?</Label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label htmlFor="critical">Which ones are mission-critical?</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateFieldContent('external_critical')}
+                        disabled={generatingField === 'external_critical'}
+                        className="h-6 px-2"
+                      >
+                        <Sparkles className={`h-3 w-3 ${generatingField === 'external_critical' ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <Input 
                       id="critical"
                       placeholder="Services you can't operate without"
                       value={externalPartners.critical}
                       onChange={(e) => setExternalPartners(prev => ({ ...prev, critical: e.target.value }))}
-                      className="mt-2"
                     />
                   </div>
 
@@ -958,7 +1182,19 @@ export const ServiceFlowchartBuilder = ({
                       { key: "feedback" as const, label: "Feedback", question: "How do you collect feedback and maintain relationships?" }
                     ].map((phase) => (
                       <div key={phase.key}>
-                        <Label htmlFor={phase.key} className="text-base font-semibold">{phase.label}</Label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label htmlFor={phase.key} className="text-base font-semibold">{phase.label}</Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => generateFieldContent(`phase_${phase.key}`)}
+                            disabled={generatingField === `phase_${phase.key}`}
+                            className="h-6 px-2"
+                          >
+                            <Sparkles className={`h-3 w-3 ${generatingField === `phase_${phase.key}` ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
                         <p className="text-sm text-muted-foreground mb-2">{phase.question}</p>
                         <Textarea 
                           id={phase.key}
