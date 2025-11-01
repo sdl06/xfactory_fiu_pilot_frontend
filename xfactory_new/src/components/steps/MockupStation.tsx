@@ -1284,18 +1284,25 @@ user problems: ${probsLine}`;
   const pollV0ForDemo = async (chatId: string, maxWaitMs = 20000) => {
     log.info("pollV0ForDemo:start", { chatId, maxWaitMs });
     const start = Date.now();
+    let lastStatus: any = null;
     while (Date.now() - start < maxWaitMs) {
       try {
-        const chat = await v0.chats.getById({ chatId });
+        const chat: any = await v0.chats.getById({ chatId });
+        lastStatus = chat?.latestVersion?.status || null;
         const demo = chat?.latestVersion?.demoUrl || chat?.webUrl || chat?.demo;
         if (demo) {
           log.info("pollV0ForDemo:found", { demo });
           return demo;
         }
+        // If version is failed, don't keep polling
+        if (lastStatus === 'failed') {
+          log.warn("pollV0ForDemo:version-failed");
+          return null;
+        }
       } catch (e) { log.warn("pollV0ForDemo:error", e); }
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 2000)); // Check every 2 seconds instead of 1.2
     }
-    log.warn("pollV0ForDemo:timeout");
+    log.warn("pollV0ForDemo:timeout", { lastStatus, elapsed: Date.now() - start });
     return null;
   };
 
@@ -1405,10 +1412,50 @@ user problems: ${probsLine}`;
           const pid = (existing as any)?.data?.v0_project_id;
           if (cid && typeof cid === 'string') preExistingChatId = cid;
           if (pid && typeof pid === 'string') preExistingProjectId = pid;
-          // Prefer explicitly saved latest version id first
+          // Fast path: Check saved demo URLs first (no v0 API calls needed)
+          const mocks: any[] = Array.isArray((existing as any)?.data?.mockups) ? (existing as any).data.mockups : [];
+          const topLevelDemo = (existing as any)?.data?.v0_demo_url as string | undefined;
+          if (topLevelDemo) {
+            try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), preExistingChatId || ''); } catch {}
+            try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), preExistingProjectId || effectiveV0ProjectId || ''); } catch {}
+            const raw = stripTs(topLevelDemo);
+            setV0LiveUrl(raw);
+            setV0DemoUrl(cacheBust(raw));
+            setV0Phase('preview');
+            return {
+              id: `v0_landing_${Date.now()}`,
+              type: "Landing Page (v0)",
+              title: `${ideaCard.productName || ideaCard.title || 'Landing Page'} (v0)`,
+              url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop",
+              liveUrl: topLevelDemo,
+              description: "Live demo loaded from existing software mockup"
+            } as any;
+          }
+          const withDemo = mocks.find((m: any) => m?.v0_demo_url);
+          if (withDemo?.v0_demo_url) {
+            try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), preExistingChatId || ''); } catch {}
+            try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), preExistingProjectId || effectiveV0ProjectId || ''); } catch {}
+            const raw = stripTs(withDemo.v0_demo_url);
+            setV0LiveUrl(raw);
+            setV0DemoUrl(cacheBust(raw));
+            setV0Phase('preview');
+            return {
+              id: `v0_landing_${Date.now()}`,
+              type: "Landing Page (v0)",
+              title: `${ideaCard.productName || ideaCard.title || 'Landing Page'} (v0)`,
+              url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop",
+              liveUrl: withDemo.v0_demo_url,
+              description: "Live demo loaded from existing software mockup"
+            };
+          }
+          
+          // Slower path: Only query v0 API if no saved demo URL exists (with timeout)
           if (cid && latestVid) {
             try {
-              const v = await (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid });
+              const v = await Promise.race([
+                (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+              ]) as any;
               const vDemo = v?.demoUrl || v?.webUrl || v?.demo;
               if (vDemo) {
                 try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), preExistingChatId || ''); } catch {}
@@ -1428,46 +1475,6 @@ user problems: ${probsLine}`;
               }
             } catch {}
           }
-          // If any mockup has a demo url, reuse it immediately
-          const mocks: any[] = Array.isArray((existing as any)?.data?.mockups) ? (existing as any).data.mockups : [];
-          const topLevelDemo = (existing as any)?.data?.v0_demo_url as string | undefined;
-          if (topLevelDemo) {
-            try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), preExistingChatId || ''); } catch {}
-            try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), preExistingProjectId || effectiveV0ProjectId || ''); } catch {}
-            {
-              const raw = stripTs(topLevelDemo);
-              setV0LiveUrl(raw);
-              setV0DemoUrl(cacheBust(raw));
-            }
-            setV0Phase('preview');
-            return {
-              id: `v0_landing_${Date.now()}`,
-              type: "Landing Page (v0)",
-              title: `${ideaCard.productName || ideaCard.title || 'Landing Page'} (v0)`,
-              url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop",
-              liveUrl: topLevelDemo,
-              description: "Live demo loaded from existing software mockup"
-            } as any;
-          }
-          const withDemo = mocks.find((m: any) => m?.v0_demo_url);
-          if (withDemo?.v0_demo_url) {
-            try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), preExistingChatId || ''); } catch {}
-            try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), preExistingProjectId || effectiveV0ProjectId || ''); } catch {}
-            {
-              const raw = stripTs(withDemo.v0_demo_url);
-              setV0LiveUrl(raw);
-              setV0DemoUrl(cacheBust(raw));
-            }
-            setV0Phase('preview');
-            return {
-              id: `v0_landing_${Date.now()}`,
-              type: "Landing Page (v0)",
-              title: `${ideaCard.productName || ideaCard.title || 'Landing Page'} (v0)`,
-              url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop",
-              liveUrl: withDemo.v0_demo_url,
-              description: "Live demo loaded from existing software mockup"
-            };
-          }
         }
 
       const session: any = preExistingChatId
@@ -1485,7 +1492,8 @@ user problems: ${probsLine}`;
       if (!demoUrl) {
         // Optionally send a tiny nudge message to refine only when creating new or no demo found
         await sendV0Message(session.chatId, 'Ensure the landing page includes hero, features, pricing, and CTA.');
-        demoUrl = await pollV0ForDemo(session.chatId);
+        // Use longer timeout for landing page generation (60 seconds)
+        demoUrl = await pollV0ForDemo(session.chatId, 60000);
       }
 
       // Save demo URL back to backend
@@ -1566,17 +1574,41 @@ user problems: ${probsLine}`;
           const ok = (existing as any)?.status >= 200 && (existing as any)?.status < 300;
           const notFound = (existing as any)?.status === 404;
           const data: any = ok ? (existing as any)?.data || {} : {};
+          
+          // Early return: Check saved demo URL first (fastest path)
           const topLevelDemo = typeof data?.v0_demo_url === 'string' && data.v0_demo_url ? data.v0_demo_url : undefined;
+          if (topLevelDemo) {
+            const raw = stripTs(topLevelDemo);
+            setV0LiveUrl(raw);
+            setV0DemoUrl(cacheBust(raw));
+            setV0Phase('preview');
+            return;
+          }
+          
+          // Check mockups array for demo URL (second fastest path)
           const mocks: any[] = Array.isArray(data?.mockups) ? data.mockups : [];
           const withDemo = mocks.find((m: any) => m?.v0_demo_url);
           const withDemoAlt = mocks.find((m: any) => typeof m?.demo_url === 'string' && m.demo_url);
-          // If we have a chat id, prefer the latest version from V0 API
+          const mockDemo = withDemo?.v0_demo_url || withDemoAlt?.demo_url || null;
+          if (mockDemo) {
+            const raw = stripTs(mockDemo);
+            setV0LiveUrl(raw);
+            setV0DemoUrl(cacheBust(raw));
+            setV0Phase('preview');
+            return;
+          }
+          
+          // Only query v0 API if we have chat/version IDs and no saved demo (slower path)
           const cid: string | undefined = (data?.v0_chat_id as string | undefined)
             || (mocks.find((m: any) => m?.v0_chat_id)?.v0_chat_id as string | undefined);
           const latestVid: string | undefined = data?.v0_latest_version_id as string | undefined;
+          
           if (cid && latestVid) {
             try {
-              const v = await (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid });
+              const v = await Promise.race([
+                (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+              ]) as any;
               const vDemo = v?.demoUrl || v?.webUrl || v?.demo;
               if (vDemo) {
                 const raw = stripTs(vDemo);
@@ -1589,7 +1621,10 @@ user problems: ${probsLine}`;
           }
           if (cid && !latestVid) {
             try {
-              const latest = await (v0 as any).chats.getById({ chatId: cid });
+              const latest = await Promise.race([
+                (v0 as any).chats.getById({ chatId: cid }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+              ]) as any;
               const vDemo = latest?.latestVersion?.demoUrl || latest?.webUrl || latest?.demo;
               if (vDemo) {
                 const raw = stripTs(vDemo);
@@ -1600,14 +1635,7 @@ user problems: ${probsLine}`;
               }
             } catch {}
           }
-          const demo = topLevelDemo || withDemo?.v0_demo_url || withDemoAlt?.demo_url || null;
-          if (demo) {
-            const raw = stripTs(demo);
-            setV0LiveUrl(raw);
-            setV0DemoUrl(cacheBust(raw));
-            setV0Phase('preview');
-            return;
-          }
+          
           if (notFound) {
             // Generate a fresh landing using team-scoped concept card
             const landing = await generateV0Landing(forceNew);
@@ -1619,7 +1647,9 @@ user problems: ${probsLine}`;
               return;
             }
           }
-        } catch {}
+        } catch (e) {
+          log.warn('openOrGenerateLanding:load-existing-failed', e);
+        }
         } // End shouldLoadExisting block
       }
       // If nothing found, generate team-scoped landing
