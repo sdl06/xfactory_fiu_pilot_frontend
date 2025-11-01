@@ -1096,7 +1096,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     });
     // Only mark as completed if explicitly requested (e.g., after user action)
     if (shouldMarkComplete) {
-      setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
+    setCompletedTiers(prev => prev.includes('secondary') ? prev : [...prev, 'secondary']);
     }
   };
   const loadExistingSecondaryIfAny = async () => {
@@ -1268,7 +1268,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
       const status = 'warning' as const;
     
     const validationScore: ValidationScore = {
-      tier: 'secondary',
+        tier: 'secondary',
       score,
       status,
       insights: normalized.insights.slice(0,4),
@@ -1294,20 +1294,20 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
         const sec = await apiClient.getSecondaryScoreTeam(teamId);
         const s: any = (sec as any)?.data?.score;
         if (s && typeof s.final_score_20 === 'number') {
-          setSecondaryScore20(Number(s.final_score_20) || 0);
-          let current = 0;
-          setSecondaryScoreAnim(0);
-          const target = Math.max(0, Math.min(20, Number(s.final_score_20) || 0));
-          const step = Math.max(1, Math.round(target / 20));
-          const timer = setInterval(() => {
-            current += step;
-            if (current >= target) { current = target; clearInterval(timer); }
-            setSecondaryScoreAnim(current);
-          }, 40);
-          // Sync percentage in validationScores from the /20 score
-          const percent = Math.round(target * 5);
-          const mappedStatus = target >= 17 ? 'excellent' : target >= 14 ? 'good' : target >= 11 ? 'warning' : 'poor';
-          setValidationScores(prev => prev.map(sv => sv.tier === 'secondary' ? { ...sv, score: percent, status: mappedStatus as any } : sv));
+              setSecondaryScore20(Number(s.final_score_20) || 0);
+              let current = 0;
+              setSecondaryScoreAnim(0);
+              const target = Math.max(0, Math.min(20, Number(s.final_score_20) || 0));
+              const step = Math.max(1, Math.round(target / 20));
+              const timer = setInterval(() => {
+                current += step;
+                if (current >= target) { current = target; clearInterval(timer); }
+                setSecondaryScoreAnim(current);
+              }, 40);
+              // Sync percentage in validationScores from the /20 score
+              const percent = Math.round(target * 5);
+              const mappedStatus = target >= 17 ? 'excellent' : target >= 14 ? 'good' : target >= 11 ? 'warning' : 'poor';
+              setValidationScores(prev => prev.map(sv => sv.tier === 'secondary' ? { ...sv, score: percent, status: mappedStatus as any } : sv));
         }
       } catch {}
       setCompletedTiers(prev => [...prev, 'secondary']);
@@ -1320,7 +1320,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     } catch (e: any) {
       console.error('Secondary research failed', e);
     } finally {
-      setIsValidating(false);
+    setIsValidating(false);
     }
   };
 
@@ -2034,8 +2034,8 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                       </>
                     ) : (
                       <>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Show Validation Results
+                    <Eye className="mr-2 h-4 w-4" />
+                    Show Validation Results
                       </>
                     )}
                   </Button>
@@ -2060,8 +2060,8 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                         </div>
                       ) : (
                         <>
-                          {/* Overall Score Card */}
-                          <Card className="bg-gradient-machinery text-primary-foreground">
+                      {/* Overall Score Card */}
+                      <Card className="bg-gradient-machinery text-primary-foreground">
                         <CardHeader className="text-center">
                           <CardTitle className="text-3xl font-bold">
                             {calculateOverallScore()} / 100
@@ -2829,10 +2829,10 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                        <ul className="space-y-2">
                                          {(score.insights && score.insights.length > 0) ? (
                                            score.insights.map((insight, idx) => (
-                                             <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                                               <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                                               {insight}
-                                             </li>
+                                           <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                             <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                                             {insight}
+                                           </li>
                                            ))
                                          ) : (
                                            <li className="text-sm text-muted-foreground">No insights available yet. Generate a report to see key findings.</li>
@@ -2886,7 +2886,7 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
                                              </>
                                            ) : (
                                              <>
-                                               ↻ Redo Secondary Analysis
+                                           ↻ Redo Secondary Analysis
                                              </>
                                            )}
                                          </Button>

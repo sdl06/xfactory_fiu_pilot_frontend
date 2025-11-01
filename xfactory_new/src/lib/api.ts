@@ -466,6 +466,42 @@ class ApiClient {
   // Service mockups (use roadmap for now)
   async generateServiceRoadmapTeam(teamId: number) { return this.post(`/ideation/teams/${teamId}/service-roadmap/generate/`, {}); }
   async getServiceRoadmapTeam(teamId: number) { return this.get(`/ideation/teams/${teamId}/service-roadmap/`); }
+  
+  // Service Flowchart Builder endpoints
+  async getServiceFlowchart(ideaId: number) {
+    return this.get(`/ideation/service-flowchart/${ideaId}/`);
+  }
+  async getServiceFlowchartTeam(teamId: number) {
+    return this.get(`/ideation/teams/${teamId}/service-flowchart/`);
+  }
+  async saveServiceFlowchart(ideaId: number, flowchartData: any) {
+    return this.post(`/ideation/service-flowchart/${ideaId}/save/`, flowchartData);
+  }
+  async saveServiceFlowchartTeam(teamId: number, flowchartData: any) {
+    return this.post(`/ideation/teams/${teamId}/service-flowchart/`, flowchartData);
+  }
+  async getFlowchartPersonas(ideaId: number) {
+    return this.get(`/ideation/service-flowchart/${ideaId}/personas/`);
+  }
+  async getFlowchartPersonasTeam(teamId: number) {
+    return this.get(`/ideation/teams/${teamId}/service-flowchart/personas/`);
+  }
+  async generateProcesses(data: { idea_id: number; journey_type: 'entire' | 'specific'; selected_personas?: string[]; specific_description?: string }) {
+    return this.post(`/ideation/service-flowchart/generate-processes/`, data);
+  }
+  async enhanceStakeholders(data: { idea_id: number; primary_customers: any; frontstage_data: any; backstage_data: any; external_partners: any }) {
+    return this.post(`/ideation/service-flowchart/enhance-stakeholders/`, data);
+  }
+  async enhanceTimeline(data: { idea_id: number; phase_mappings: any; phase_durations: any; timeline_type: 'relative' | 'absolute'; program_duration_weeks?: number }) {
+    return this.post(`/ideation/service-flowchart/enhance-timeline/`, data);
+  }
+  async generateFlowchart(data: { idea_id: number; section1_data: any; section2_data: any; section3_data: any }) {
+    return this.post(`/ideation/service-flowchart/generate/`, data);
+  }
+  async validateFlowchart(data: { idea_id: number; flowchart_data: any }) {
+    return this.post(`/ideation/service-flowchart/validate/`, data);
+  }
+  
   async saveServiceRoadmapTeam(teamId: number, roadmap: any) {
     const payload: any = {
       title: roadmap?.title || 'Service Roadmap',
