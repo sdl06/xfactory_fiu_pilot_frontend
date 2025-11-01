@@ -420,32 +420,69 @@ export const ServiceFlowchartBuilder = ({
       if (response.data?.success) {
         // Store the generated flowchart data
         const generatedFlowchart = response.data?.flowchart || response.data?.flowchart_data;
-        if (generatedFlowchart) {
+        console.log('Generated flowchart response:', response.data);
+        console.log('Generated flowchart data:', generatedFlowchart);
+        
+        // First, set the flowchart from the immediate response if available
+        if (generatedFlowchart && generatedFlowchart.nodes && Array.isArray(generatedFlowchart.nodes) && generatedFlowchart.nodes.length > 0) {
           setFlowchartData(generatedFlowchart);
           setFlowchartCompleted(true);
-          // Reload the full flowchart data to ensure we have the latest version
-          try {
-            const fullResponse = await apiClient.getServiceFlowchartTeam(teamId);
-            if (fullResponse.data?.success && fullResponse.data?.flowchart?.flowchart_data) {
-              setFlowchartData(fullResponse.data.flowchart.flowchart_data);
+          setIsGenerating(false);
+        } else {
+          // If immediate response doesn't have nodes, reload from backend
+          // Poll for the flowchart data (wait up to 10 seconds)
+          let attempts = 0;
+          const maxAttempts = 10;
+          const pollInterval = 1000; // 1 second
+          
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            attempts++;
+            
+            try {
+              const fullResponse = await apiClient.getServiceFlowchartTeam(teamId);
+              console.log('Polling attempt', attempts, '- Full flowchart response:', fullResponse.data);
+              
+              if (fullResponse.data?.success && fullResponse.data?.flowchart?.flowchart_data) {
+                const loadedData = fullResponse.data.flowchart.flowchart_data;
+                console.log('Loaded flowchart data:', loadedData);
+                
+                if (loadedData && loadedData.nodes && Array.isArray(loadedData.nodes) && loadedData.nodes.length > 0) {
+                  setFlowchartData(loadedData);
+                  setFlowchartCompleted(true);
+                  setIsGenerating(false);
+                  toast({ title: "Success", description: "Flowchart generated successfully!" });
+                  return; // Exit early when we have valid data
+                }
+              }
+            } catch (e) {
+              console.error('Error polling flowchart:', e);
             }
-          } catch (e) {
-            console.error('Error reloading flowchart:', e);
           }
+          
+          // If we got here, polling didn't find valid data
+          setIsGenerating(false);
+          toast({ 
+            title: "Warning", 
+            description: "Flowchart generation may still be processing. Please refresh or check back later.",
+            variant: "default"
+          });
         }
-        toast({ title: "Success", description: "Flowchart generated successfully!" });
+        
+        if (!isGenerating) {
+          toast({ title: "Success", description: "Flowchart generated successfully!" });
+        }
       } else {
         throw new Error(response.data?.error || 'Failed to generate flowchart');
       }
     } catch (error: any) {
       console.error('Error generating flowchart:', error);
+      setIsGenerating(false);
       toast({ 
         title: "Error", 
         description: error.message || "Failed to generate flowchart. Please try again.", 
         variant: "destructive" 
       });
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -1384,8 +1421,23 @@ export const ServiceFlowchartBuilder = ({
               )}
             </div>
 
-            {flowchartData && flowchartData.nodes && flowchartData.nodes.length > 0 ? (
-              <Card>
+            {(() => {
+              console.log('Rendering Section 4 - flowchartData:', flowchartData);
+              console.log('isGenerating:', isGenerating);
+              console.log('flowchartCompleted:', flowchartCompleted);
+              
+              // Check if we have valid flowchart data
+              const hasValidFlowchart = flowchartData && 
+                flowchartData.nodes && 
+                Array.isArray(flowchartData.nodes) && 
+                flowchartData.nodes.length > 0;
+              
+              console.log('hasValidFlowchart:', hasValidFlowchart);
+              
+              if (hasValidFlowchart && !isGenerating) {
+                // Show the flowchart
+                return (
+                  <Card>
                 <CardHeader>
                   <CardTitle>Service Experience Flowchart</CardTitle>
                   <CardDescription>
@@ -1423,8 +1475,11 @@ export const ServiceFlowchartBuilder = ({
                   </div>
                 </CardContent>
               </Card>
-            ) : isGenerating ? (
-              <Card>
+                );
+              } else if (isGenerating) {
+                // Show generating state
+                return (
+                  <Card>
                 <CardHeader>
                   <CardTitle>Generating Your Flowchart</CardTitle>
                   <CardDescription>
@@ -1441,8 +1496,11 @@ export const ServiceFlowchartBuilder = ({
                   </div>
                 </CardContent>
               </Card>
-            ) : (
-              <Card>
+                );
+              } else {
+                // Show empty/not generated state
+                return (
+                  <Card>
                 <CardHeader>
                   <CardTitle>Flowchart Not Generated</CardTitle>
                   <CardDescription>
@@ -1457,7 +1515,9 @@ export const ServiceFlowchartBuilder = ({
                   </div>
                 </CardContent>
               </Card>
-            )}
+                );
+              }
+            })()}
 
             <div className="flex justify-between mt-8">
               {!flowchartCompleted && (
