@@ -14,6 +14,7 @@ import { UserMenu } from "../UserMenu";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import InfoButton from "@/components/info-button";
+import ReactMarkdown from "react-markdown";
 
 interface LegalStationProps {
   onComplete: (data: any) => void;
@@ -266,6 +267,30 @@ export const LegalStation = ({
     if (!teamId) {
       toast({ title: "Error", description: "No team found", variant: "destructive" });
       return;
+    }
+    
+    // GET before POST: Check if report already exists
+    try {
+      const existingReportRes = await apiClient.legalGetFeasibilityReportTeam(teamId);
+      if (existingReportRes.status >= 200 && existingReportRes.status < 300) {
+        const reportData = (existingReportRes as any).data;
+        const existingReport = reportData.report || reportData.feasibility_report;
+        if (existingReport && existingReport.report_text) {
+          // Report already exists, use it
+          setFeasibilityData(prev => ({
+            ...prev,
+            report: existingReport,
+            confidence: reportData.confidence || existingReport.confidence || 0,
+            isGenerating: false,
+            status: 'completed'
+          }));
+          toast({ title: "Report Loaded", description: "Using existing feasibility report" });
+          return;
+        }
+      }
+    } catch (error) {
+      // No existing report, continue with generation
+      console.log('[Legal Feasibility] No existing report found, proceeding with generation');
     }
     
     setFeasibilityData(prev => ({ ...prev, isGenerating: true, status: 'generating' }));
@@ -844,7 +869,9 @@ export const LegalStation = ({
                     
                     {feasibilityData.report.report_text && (
                       <div className="p-4 rounded-md border bg-card">
-                        <div className="text-sm whitespace-pre-wrap">{feasibilityData.report.report_text}</div>
+                        <div className="prose prose-sm max-w-none text-sm">
+                          <ReactMarkdown>{feasibilityData.report.report_text}</ReactMarkdown>
+                        </div>
                       </div>
                     )}
                     
