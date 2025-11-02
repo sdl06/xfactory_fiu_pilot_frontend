@@ -156,12 +156,12 @@ export const LegalStation = ({
       const response = await apiClient.legalTrademarkCheckTeam(teamId, trademarkData.businessName.trim());
       if (response.status >= 200 && response.status < 300) {
         const data = (response as any).data;
-        setTrademarkData(prev => ({
-          ...prev,
+    setTrademarkData(prev => ({
+      ...prev,
           searchResults: data.trademark?.analysis || null,
-          isSearching: false,
-          searchCompleted: true
-        }));
+      isSearching: false,
+      searchCompleted: true
+    }));
         toast({ title: "Success", description: "Trademark check completed" });
       } else {
         throw new Error('Trademark check failed');
@@ -344,9 +344,9 @@ export const LegalStation = ({
                 }
               } else if (currentStatus === 'failed') {
                 clearInterval(pollInterval);
-                setFeasibilityData(prev => ({ 
-                  ...prev, 
-                  isGenerating: false, 
+    setFeasibilityData(prev => ({ 
+      ...prev, 
+      isGenerating: false,
                   status: 'error' 
                 }));
                 toast({ 
@@ -463,11 +463,11 @@ export const LegalStation = ({
                 <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                   <Scale className="h-6 w-6 text-white" />
                 </div>
-                <div>
+            <div>
                   <h1 className="text-xl font-bold text-white">Legal Workshop</h1>
                   <p className="text-sm text-white/80">
-                    Build your legal foundation with guided tools and templates
-                  </p>
+                Build your legal foundation with guided tools and templates
+              </p>
                 </div>
               </div>
             </div>
@@ -507,7 +507,7 @@ export const LegalStation = ({
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="businessName">Business/Brand Name</Label>
+                    <Label htmlFor="businessName">Business/Brand Name</Label>
                       <InfoButton 
                         title="Business Name"
                         content="Enter the exact business or brand name you want to trademark. The system will analyze it for availability and suggest the appropriate Nice classification (trademark category)."
@@ -554,14 +554,14 @@ export const LegalStation = ({
                           <div className="mb-3">
                             <div className="text-sm text-blue-900 font-medium mb-1">Nice Classification:</div>
                             <div className="text-blue-800">Class {trademarkData.searchResults.nice_classification}</div>
-                          </div>
+                            </div>
                         )}
                         {trademarkData.searchResults.rationale && (
                           <div className="mb-3">
                             <div className="text-sm text-blue-900 font-medium mb-1">Rationale:</div>
                             <div className="text-blue-800 text-sm">{trademarkData.searchResults.rationale}</div>
-                          </div>
-                        )}
+                                </div>
+                              )}
                         {trademarkData.searchResults.analysis?.backup_classes && Array.isArray(trademarkData.searchResults.analysis.backup_classes) && (
                           <div>
                             <div className="text-sm text-blue-900 font-medium mb-1">Backup Classes:</div>
@@ -604,7 +604,7 @@ export const LegalStation = ({
                   <div className="space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label>Business Entity Type</Label>
+                      <Label>Business Entity Type</Label>
                         <InfoButton 
                           title="Business Entity Type"
                           content="The legal structure of your business. LLC offers flexibility, C-Corp is good for raising capital, S-Corp offers tax benefits. Choose based on your goals."
@@ -629,7 +629,7 @@ export const LegalStation = ({
 
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label>Headquarters City/State</Label>
+                      <Label>Headquarters City/State</Label>
                         <InfoButton 
                           title="Headquarters Location"
                           content="The city and state where your business will be primarily located. This affects local licensing, tax requirements, and state-specific regulations."
@@ -644,7 +644,7 @@ export const LegalStation = ({
 
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label>Expected Employee Count</Label>
+                      <Label>Expected Employee Count</Label>
                         <InfoButton 
                           title="Employee Count"
                           content="The number of people you plan to hire. Different employment laws apply based on size (1, 2-9, 10-49, 50+ employees)."
@@ -668,7 +668,7 @@ export const LegalStation = ({
 
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label>Industry Type</Label>
+                      <Label>Industry Type</Label>
                         <InfoButton 
                           title="Industry"
                           content="Your business industry determines specific regulations and licenses you'll need. For example, fintech needs financial licenses, healthcare needs HIPAA compliance."
@@ -695,7 +695,7 @@ export const LegalStation = ({
 
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label>Implementation Timeline</Label>
+                      <Label>Implementation Timeline</Label>
                         <InfoButton 
                           title="Timeline"
                           content="How long you want to take to complete legal setup. 3 months is fast-track, 6 months is standard, 12 months is comprehensive with extra planning."
@@ -749,78 +749,78 @@ export const LegalStation = ({
 
                       <div className="space-y-3 max-h-96 overflow-y-auto">
                         {Array.isArray(implementationData.checklist.entityRequirements) && implementationData.checklist.entityRequirements.length > 0 && (
-                          <div className="border rounded-lg p-3">
-                            <h4 className="font-medium mb-2 text-blue-700">Entity Formation Requirements</h4>
-                            <ul className="text-sm space-y-1">
-                              {implementationData.checklist.entityRequirements.map((req: string, index: number) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                                  {req}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                        <div className="border rounded-lg p-3">
+                          <h4 className="font-medium mb-2 text-blue-700">Entity Formation Requirements</h4>
+                          <ul className="text-sm space-y-1">
+                            {implementationData.checklist.entityRequirements.map((req: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                                {req}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                         )}
 
                         {Array.isArray(implementationData.checklist.employmentRequirements) && implementationData.checklist.employmentRequirements.length > 0 && (
-                          <div className="border rounded-lg p-3">
-                            <h4 className="font-medium mb-2 text-green-700">Employment Law Requirements</h4>
-                            <ul className="text-sm space-y-1">
-                              {implementationData.checklist.employmentRequirements.map((req: string, index: number) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                                  {req}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                        <div className="border rounded-lg p-3">
+                          <h4 className="font-medium mb-2 text-green-700">Employment Law Requirements</h4>
+                          <ul className="text-sm space-y-1">
+                            {implementationData.checklist.employmentRequirements.map((req: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                                {req}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                         )}
 
                         {Array.isArray(implementationData.checklist.industryCompliance) && implementationData.checklist.industryCompliance.length > 0 && (
-                          <div className="border rounded-lg p-3">
-                            <h4 className="font-medium mb-2 text-purple-700">Industry-Specific Compliance</h4>
-                            <ul className="text-sm space-y-1">
-                              {implementationData.checklist.industryCompliance.map((req: string, index: number) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                                  {req}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                        <div className="border rounded-lg p-3">
+                          <h4 className="font-medium mb-2 text-purple-700">Industry-Specific Compliance</h4>
+                          <ul className="text-sm space-y-1">
+                            {implementationData.checklist.industryCompliance.map((req: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                                {req}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                         )}
 
                         {Array.isArray(implementationData.checklist.locationRequirements) && implementationData.checklist.locationRequirements.length > 0 && (
-                          <div className="border rounded-lg p-3">
-                            <h4 className="font-medium mb-2 text-orange-700">Location-Specific Requirements</h4>
-                            <ul className="text-sm space-y-1">
-                              {implementationData.checklist.locationRequirements.map((req: string, index: number) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                                  {req}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                        <div className="border rounded-lg p-3">
+                          <h4 className="font-medium mb-2 text-orange-700">Location-Specific Requirements</h4>
+                          <ul className="text-sm space-y-1">
+                            {implementationData.checklist.locationRequirements.map((req: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                                {req}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                         )}
                       </div>
 
                       {Array.isArray(implementationData.checklist.milestones) && implementationData.checklist.milestones.length > 0 && (
-                        <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
-                          <h4 className="font-medium text-amber-900 mb-2">Implementation Timeline</h4>
-                          <div className="space-y-2">
-                            {implementationData.checklist.milestones.map((milestone: any, index: number) => (
-                              <div key={index} className="text-sm">
+                      <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+                        <h4 className="font-medium text-amber-900 mb-2">Implementation Timeline</h4>
+                        <div className="space-y-2">
+                          {implementationData.checklist.milestones.map((milestone: any, index: number) => (
+                            <div key={index} className="text-sm">
                                 <div className="font-medium text-amber-800">{milestone.phase} {milestone.timeframe && `(${milestone.timeframe})`}</div>
                                 {Array.isArray(milestone.tasks) && milestone.tasks.length > 0 && (
-                                  <div className="text-amber-700 ml-2">
-                                    {milestone.tasks.join(' • ')}
+                              <div className="text-amber-700 ml-2">
+                                {milestone.tasks.join(' • ')}
                                   </div>
                                 )}
-                              </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
                         </div>
+                      </div>
                       )}
                     </div>
                   )}
@@ -932,9 +932,9 @@ export const LegalStation = ({
                         )}
                       </div>
                     )}
-                  </div>
+                </div>
                 ) : (
-                  <div className="p-4 rounded-md border bg-muted/30">
+                <div className="p-4 rounded-md border bg-muted/30">
                     <div className="text-sm text-muted-foreground mb-4">
                       No feasibility report generated yet. Click the button below to generate an AI-powered legal feasibility analysis based on your idea.
                     </div>
@@ -948,7 +948,7 @@ export const LegalStation = ({
                     {feasibilityData.isGenerating ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating Report...
+                    Generating Report...
                       </>
                     ) : (
                       <>

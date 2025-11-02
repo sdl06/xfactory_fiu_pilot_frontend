@@ -1285,9 +1285,20 @@ user problems: ${probsLine}`;
     log.info("pollV0ForDemo:start", { chatId, maxWaitMs });
     const start = Date.now();
     let lastStatus: any = null;
+    let consecutiveErrors = 0;
+    const MAX_CONSECUTIVE_ERRORS = 5;
+    
     while (Date.now() - start < maxWaitMs) {
       try {
-        const chat: any = await v0.chats.getById({ chatId });
+        // Add timeout protection to individual API calls
+        const chat: any = await Promise.race([
+          v0.chats.getById({ chatId }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('getById timeout')), 10000)
+          )
+        ]);
+        
+        consecutiveErrors = 0; // Reset error counter on success
         lastStatus = chat?.latestVersion?.status || null;
         const demo = chat?.latestVersion?.demoUrl || chat?.webUrl || chat?.demo;
         if (demo) {
@@ -1299,8 +1310,17 @@ user problems: ${probsLine}`;
           log.warn("pollV0ForDemo:version-failed");
           return null;
         }
-      } catch (e) { log.warn("pollV0ForDemo:error", e); }
-      await new Promise(r => setTimeout(r, 2000)); // Check every 2 seconds instead of 1.2
+      } catch (e) {
+        consecutiveErrors++;
+        log.warn("pollV0ForDemo:error", { error: e, consecutiveErrors });
+        
+        // If we have too many consecutive errors, abort polling to prevent white screen
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          log.error("pollV0ForDemo:too-many-errors-aborting", { consecutiveErrors });
+          return null;
+        }
+      }
+      await new Promise(r => setTimeout(r, 2000)); // Check every 2 seconds
     }
     log.warn("pollV0ForDemo:timeout", { lastStatus, elapsed: Date.now() - start });
     return null;
@@ -1375,8 +1395,12 @@ user problems: ${probsLine}`;
   };
 
   const generateV0Landing = async (forceNew = false): Promise<any|null> => {
+    try {
       // Allow landing generation for any idea type if v0 is configured
-      if (!effectiveV0ApiKey || !effectiveV0ProjectId) { log.error("generateV0Landing:missing-config"); return null; }
+      if (!effectiveV0ApiKey || !effectiveV0ProjectId) { 
+        log.error("generateV0Landing:missing-config"); 
+        return null; 
+      }
       log.info("generateV0Landing:start", { forceNew });
       // Try team-scoped backend chat id first and existing demo
       let preExistingChatId: string | null = null;
@@ -1485,15 +1509,30 @@ user problems: ${probsLine}`;
       let demoUrl: string | null = null;
       if (session?.existing) {
         try {
-          const chat = await v0.chats.getById({ chatId: session.chatId });
+          // Add timeout protection for getById call
+          const chat = await Promise.race([
+            v0.chats.getById({ chatId: session.chatId }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('getById timeout')), 10000)
+            )
+          ]) as any;
           demoUrl = chat?.latestVersion?.demoUrl || chat?.webUrl || chat?.demo || null;
-        } catch (e) { log.warn('generateV0Landing:existing-getById-failed', e); }
+        } catch (e) { 
+          log.warn('generateV0Landing:existing-getById-failed', e);
+          // Continue to generation if existing fetch fails
+        }
       }
       if (!demoUrl) {
-        // Optionally send a tiny nudge message to refine only when creating new or no demo found
-        await sendV0Message(session.chatId, 'Ensure the landing page includes hero, features, pricing, and CTA.');
-        // Use longer timeout for landing page generation (60 seconds)
-        demoUrl = await pollV0ForDemo(session.chatId, 60000);
+        try {
+          // Optionally send a tiny nudge message to refine only when creating new or no demo found
+          await sendV0Message(session.chatId, 'Ensure the landing page includes hero, features, pricing, and CTA.');
+          // Use longer timeout for landing page generation (60 seconds)
+          demoUrl = await pollV0ForDemo(session.chatId, 60000);
+        } catch (pollError) {
+          log.error('generateV0Landing:poll-failed', pollError);
+          // Return null so calling code can handle gracefully
+          return null;
+        }
       }
 
       // Save demo URL back to backend
@@ -1535,11 +1574,16 @@ user problems: ${probsLine}`;
       }
       log.warn("generateV0Landing:no-demo-url");
       return null;
+    } catch (error) {
+      log.error("generateV0Landing:unexpected-error", error);
+      // Return null on any unexpected error to prevent white screen
+      return null;
     }
   };
 
   // Try to open an existing landing first; if missing, generate it
   const openOrGenerateLanding = async (forceNew = false) => {
+    let previewSet = false;
     try {
       setShowV0LandingScreen(true);
       setV0Phase('generating');
@@ -1582,6 +1626,7 @@ user problems: ${probsLine}`;
             setV0LiveUrl(raw);
             setV0DemoUrl(cacheBust(raw));
             setV0Phase('preview');
+            previewSet = true;
             return;
           }
           
@@ -1595,6 +1640,7 @@ user problems: ${probsLine}`;
             setV0LiveUrl(raw);
             setV0DemoUrl(cacheBust(raw));
             setV0Phase('preview');
+            previewSet = true;
             return;
           }
           
@@ -1615,6 +1661,7 @@ user problems: ${probsLine}`;
                 setV0LiveUrl(raw);
                 setV0DemoUrl(cacheBust(raw));
                 setV0Phase('preview');
+                previewSet = true;
                 return;
               }
             } catch {}
@@ -1631,6 +1678,7 @@ user problems: ${probsLine}`;
                 setV0LiveUrl(raw);
                 setV0DemoUrl(cacheBust(raw));
                 setV0Phase('preview');
+                previewSet = true;
                 return;
               }
             } catch {}
@@ -1638,13 +1686,19 @@ user problems: ${probsLine}`;
           
           if (notFound) {
             // Generate a fresh landing using team-scoped concept card
-            const landing = await generateV0Landing(forceNew);
-            if (landing?.liveUrl) {
-              const raw = stripTs(landing.liveUrl);
-              setV0LiveUrl(raw);
-            setV0DemoUrl(cacheBust(raw));
-              setV0Phase('preview');
-              return;
+            try {
+              const landing = await generateV0Landing(forceNew);
+              if (landing?.liveUrl) {
+                const raw = stripTs(landing.liveUrl);
+                setV0LiveUrl(raw);
+                setV0DemoUrl(cacheBust(raw));
+                setV0Phase('preview');
+                previewSet = true;
+                return;
+              }
+            } catch (genError) {
+              log.error('openOrGenerateLanding:generate-failed', genError);
+              // Don't throw - fall through to error handling
             }
           }
         } catch (e) {
@@ -1653,16 +1707,28 @@ user problems: ${probsLine}`;
         } // End shouldLoadExisting block
       }
       // If nothing found, generate team-scoped landing
-      const landing = await generateV0Landing(forceNew);
-      if (landing?.liveUrl) {
+      try {
+        const landing = await generateV0Landing(forceNew);
+        if (landing?.liveUrl) {
         const raw = stripTs(landing.liveUrl);
         setV0LiveUrl(raw);
         setV0DemoUrl(cacheBust(raw));
         setV0Phase('preview');
+        previewSet = true;
         return;
+        }
+      } catch (genError) {
+        log.error('openOrGenerateLanding:generate-failed', genError);
+        // Fall through to error handling
       }
-    } catch {
-      setV0Phase('intro');
+    } catch (e) {
+      log.error('openOrGenerateLanding:unexpected-error', e);
+    } finally {
+      // If preview was never set, reset to intro to prevent white screen
+      if (!previewSet) {
+        log.warn('openOrGenerateLanding:no-preview-set-resetting-to-intro');
+        setV0Phase('intro');
+      }
     }
   };
 
