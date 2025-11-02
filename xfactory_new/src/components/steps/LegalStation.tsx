@@ -261,18 +261,30 @@ export const LegalStation = ({
     try {
       const response = await apiClient.legalGenerateFeasibilityTeam(teamId);
       if (response.status >= 200 && response.status < 300) {
-        // Poll for completion
+        // The endpoint returns 202 with status='processing', start polling
+        toast({ 
+          title: "Generation Started", 
+          description: "Legal feasibility report is being generated. This may take several minutes for deep research..." 
+        });
+        
+        // Poll for completion (no timeout limit since it's deep research)
         const pollForReport = async () => {
-          let attempts = 0;
-          const maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds max
+          let pollAborted = false;
         
           const pollInterval = setInterval(async () => {
-            attempts++;
+            if (pollAborted) {
+              clearInterval(pollInterval);
+              return;
+            }
+            
             try {
               const statusRes = await apiClient.legalGetFeasibilityStatusTeam(teamId);
-              const status = (statusRes as any)?.data?.status;
+              const statusData = (statusRes as any)?.data;
+              const currentStatus = statusData?.status;
               
-              if (status === 'completed' || attempts >= maxAttempts) {
+              console.log(`[Legal Feasibility] Polling status: ${currentStatus}`);
+              
+              if (currentStatus === 'completed') {
                 clearInterval(pollInterval);
                 
                 // Get the report
@@ -293,12 +305,36 @@ export const LegalStation = ({
                   setFeasibilityData(prev => ({ ...prev, isGenerating: false, status: 'error' }));
                   toast({ title: "Error", description: "Failed to load feasibility report", variant: "destructive" });
                 }
+              } else if (currentStatus === 'failed') {
+                clearInterval(pollInterval);
+                setFeasibilityData(prev => ({ 
+                  ...prev, 
+                  isGenerating: false, 
+                  status: 'error' 
+                }));
+                toast({ 
+                  title: "Generation Failed", 
+                  description: statusData?.error_message || "Report generation failed. Please try again.", 
+                  variant: "destructive" 
+                });
+              } else if (currentStatus === 'processing' || currentStatus === 'pending') {
+                // Continue polling, status will show in UI
+                setFeasibilityData(prev => ({ 
+                  ...prev, 
+                  status: currentStatus === 'processing' ? 'generating' : 'generating' 
+                }));
               }
             } catch (error) {
-              clearInterval(pollInterval);
-              setFeasibilityData(prev => ({ ...prev, isGenerating: false, status: 'error' }));
+              console.error('[Legal Feasibility] Status polling error:', error);
+              // Continue polling on error (might be transient)
             }
-          }, 2000);
+          }, 3000); // Poll every 3 seconds
+          
+          // Cleanup on unmount
+          return () => {
+            pollAborted = true;
+            clearInterval(pollInterval);
+          };
         };
         
         pollForReport();
@@ -310,7 +346,7 @@ export const LegalStation = ({
       setFeasibilityData(prev => ({ ...prev, isGenerating: false, status: 'error' }));
       toast({ 
         title: "Error", 
-        description: error?.error || "Failed to generate feasibility report. Please try again.", 
+        description: error?.error || error?.message || "Failed to start feasibility report generation. Please try again.", 
         variant: "destructive" 
       });
     }
@@ -769,7 +805,23 @@ export const LegalStation = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {feasibilityData.report ? (
+                {feasibilityData.isGenerating && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                      <div>
+                        <div className="text-sm font-medium text-blue-900">Generating Legal Feasibility Report</div>
+                        <div className="text-xs text-blue-700 mt-1">
+                          {feasibilityData.status === 'generating' ? 
+                            'Deep research in progress... This may take several minutes.' :
+                            'Initializing report generation...'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!feasibilityData.isGenerating && feasibilityData.report ? (
                   <div className="space-y-4">
                     {feasibilityData.confidence > 0 && (
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
