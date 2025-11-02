@@ -1500,6 +1500,7 @@ user problems: ${probsLine}`;
             } catch {}
           }
         }
+      }
 
       const session: any = preExistingChatId
         ? { chatId: preExistingChatId, existing: true, projectId: localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || preExistingProjectId || effectiveV0ProjectId }
