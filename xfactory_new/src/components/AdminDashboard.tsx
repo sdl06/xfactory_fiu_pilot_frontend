@@ -1951,6 +1951,8 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [teams, setTeams] = useState<any[]>([]);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<any | null>(null);
+  const [teamToDelete, setTeamToDelete] = useState<any | null>(null);
+  const [deletingTeamFromList, setDeletingTeamFromList] = useState(false);
   const [showMemberInfo, setShowMemberInfo] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [isLoadingMember, setIsLoadingMember] = useState<boolean>(false);
@@ -2635,7 +2637,21 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                       {/* Rating removed from below investor; now shown next to mentor */}
                     </div>
                       </div>
-                      <Badge variant="secondary">{team.current_member_count}/{team.max_members}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{team.current_member_count}/{team.max_members}</Badge>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTeamToDelete(team);
+                          }}
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                     {Array.isArray(team.memberships) && team.memberships.length > 0 ? (
                       <div className="mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -2674,6 +2690,65 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             }}
           />
         )}
+
+        {/* Delete Team Confirmation Dialog (from list) */}
+        <AlertDialog open={!!teamToDelete} onOpenChange={(open) => !open && setTeamToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Team?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{teamToDelete?.name}"? This will remove all team members from the team. 
+                Members will need to form a new team when they log in next. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setTeamToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (!teamToDelete?.id) return;
+                  setDeletingTeamFromList(true);
+                  try {
+                    const response = await apiClient.deleteTeam(teamToDelete.id);
+                    if (response.status >= 200 && response.status < 300) {
+                      toast({
+                        title: "Team Deleted",
+                        description: `Team "${teamToDelete.name}" has been deleted. All members have been removed.`,
+                      });
+                      setTeamToDelete(null);
+                      await loadTeams();
+                      // If the deleted team was selected in the modal, close it
+                      if (selectedTeam?.id === teamToDelete.id) {
+                        setSelectedTeam(null);
+                        setShowTeamModal(false);
+                      }
+                    } else {
+                      throw new Error(response.data?.error || 'Failed to delete team');
+                    }
+                  } catch (error: any) {
+                    toast({
+                      title: "Error",
+                      description: error?.error || error?.message || "Failed to delete team",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setDeletingTeamFromList(false);
+                  }
+                }}
+                disabled={deletingTeamFromList}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deletingTeamFromList ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Team"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Add Users Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
