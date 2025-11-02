@@ -80,6 +80,15 @@ export const LegalStation = ({
           const strategyRes = await apiClient.legalGetStrategyTeam(currentTeamId);
           const strategy = (strategyRes as any)?.data;
           
+          // Auto-fetch business name from idea if not in trademark data
+          if (strategy?.idea?.output_name || strategy?.idea?.name) {
+            const ideaName = strategy.idea.output_name || strategy.idea.name;
+            setTrademarkData(prev => ({
+              ...prev,
+              businessName: prev.businessName || ideaName || ''
+            }));
+          }
+          
           if (strategy?.implementation_guide) {
             const guide = strategy.implementation_guide;
             setImplementationData(prev => ({
@@ -108,7 +117,7 @@ export const LegalStation = ({
           if (strategy?.trademark) {
             setTrademarkData(prev => ({
               ...prev,
-              businessName: strategy.trademark.business_name || '',
+              businessName: strategy.trademark.business_name || prev.businessName || '',
               searchResults: strategy.trademark.analysis || null,
               searchCompleted: !!strategy.trademark.business_name
             }));
@@ -177,10 +186,13 @@ export const LegalStation = ({
     setImplementationData(prev => ({ ...prev, isGenerating: true }));
     
     try {
+      // Send only headquarters_city if provided (optional), AI will fill in all other fields
       const payload: any = {};
-      if (implementationData.headquartersCity) {
-        payload.headquarters_city = implementationData.headquartersCity;
+      if (implementationData.headquartersCity && implementationData.headquartersCity.trim()) {
+        payload.headquarters_city = implementationData.headquartersCity.trim();
       }
+      // All other fields (business_entity, employee_count, industry_type, timeline) 
+      // will be AI-generated based on the idea context
       
       const response = await apiClient.legalGenerateInsightsTeam(teamId, payload);
       if (response.status >= 200 && response.status < 300) {
