@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, toAbsoluteMediaUrl } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import ReactMarkdown from "react-markdown";
 import { v0 } from 'v0-sdk';
 import TeamProgressView from "./TeamProgressView";
@@ -384,8 +385,10 @@ const renderServiceSection = (doc: any, section: 'flowchart'|'journeys'|'timelin
   ) : <div className="text-sm text-muted-foreground">No phases.</div>;
 };
 
-const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenChange: (o: boolean) => void; team: any; }) => {
+const TeamAdminModal = ({ open, onOpenChange, team, onTeamDeleted }: { open: boolean; onOpenChange: (o: boolean) => void; team: any; onTeamDeleted?: () => void; }) => {
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingTeam, setDeletingTeam] = useState(false);
   const [conceptCard, setConceptCard] = useState<any | null>(null);
   const [elevator, setElevator] = useState<any | null>(null);
   const [personaKit, setPersonaKit] = useState<any | null>(null);
@@ -786,7 +789,18 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Team: {team?.name}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Team: {team?.name}</DialogTitle>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Team
+            </Button>
+          </div>
         </DialogHeader>
 
         {/* Vertical sections menu (hidden in viewing mode) */}
@@ -1850,6 +1864,62 @@ const TeamAdminModal = ({ open, onOpenChange, team }: { open: boolean; onOpenCha
         )}
       </DialogContent>
       
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Team?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{team?.name}"? This will remove all team members from the team. 
+              Members will need to form a new team when they log in next. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!team?.id) return;
+                setDeletingTeam(true);
+                try {
+                  const response = await apiClient.deleteTeam(team.id);
+                  if (response.status >= 200 && response.status < 300) {
+                    toast({
+                      title: "Team Deleted",
+                      description: `Team "${team.name}" has been deleted. All members have been removed.`,
+                    });
+                    setShowDeleteDialog(false);
+                    onOpenChange(false);
+                    if (onTeamDeleted) {
+                      onTeamDeleted();
+                    }
+                  } else {
+                    throw new Error(response.data?.error || 'Failed to delete team');
+                  }
+                } catch (error: any) {
+                  toast({
+                    title: "Error",
+                    description: error?.error || error?.message || "Failed to delete team",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setDeletingTeam(false);
+                }
+              }}
+              disabled={deletingTeam}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingTeam ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Team"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
@@ -2597,6 +2667,11 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             open={showTeamModal}
             onOpenChange={setShowTeamModal}
             team={selectedTeam}
+            onTeamDeleted={() => {
+              // Refresh teams list after deletion
+              loadTeams();
+              setSelectedTeam(null);
+            }}
           />
         )}
 

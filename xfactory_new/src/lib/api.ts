@@ -1080,6 +1080,10 @@ class ApiClient {
     return this.delete(`/admin/teams/${teamId}/remove-investor/${investorId}/`);
   }
 
+  async deleteTeam(teamId: number) {
+    return this.delete(`/admin/teams/${teamId}/delete/`);
+  }
+
   async getAvailableMentors() {
     return this.get('/admin/mentors/');
   }
