@@ -113,6 +113,8 @@ const Index = () => {
     })()
   });
   const [trcSnapshot, setTrcSnapshot] = useState<any>({});
+  const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
+  const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
 
   // Sync completedStations with team roadmap completion (mockup) so UI reflects backend state
   useEffect(() => {
@@ -145,6 +147,9 @@ const Index = () => {
         const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
         const trcData: any = (trc as any)?.data || {};
         setTrcSnapshot(trcData);
+        // Store admin locks/unlocks
+        setAdminLocks(trcData?.admin_locks || {});
+        setAdminUnlocks(trcData?.admin_unlocks || {});
         const mvp = trcData?.mvp || {};
         const validation = trcData?.validation || {};
         const pitch = trcData?.pitch_deck || {};
@@ -239,9 +244,23 @@ const Index = () => {
     })();
   }, [isLoading, user]);
 
-  // Refresh roadmap on reset events without full page reload
+  // Listen for admin lock updates
   useEffect(() => {
     const onStorage = async (e: StorageEvent) => {
+      if (e.key === 'xfactory_adminLocksUpdated') {
+        try {
+          const teamIdStr = localStorage.getItem('xfactoryTeamId');
+          const teamId = teamIdStr ? Number(teamIdStr) : null;
+          if (teamId) {
+            const { apiClient } = await import("@/lib/api");
+            const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
+            const trcData: any = (trc as any)?.data || {};
+            setAdminLocks(trcData?.admin_locks || {});
+            setAdminUnlocks(trcData?.admin_unlocks || {});
+          }
+        } catch {}
+        return;
+      }
       if (e.key !== 'xfactoryRoadmapReset') return;
       try {
         // Resolve team id
@@ -257,6 +276,9 @@ const Index = () => {
 
         const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
         const trcData: any = (trc as any)?.data || {};
+        // Update admin locks/unlocks
+        setAdminLocks(trcData?.admin_locks || {});
+        setAdminUnlocks(trcData?.admin_unlocks || {});
 
         const mvp = trcData?.mvp || {};
         const validation = trcData?.validation || {};
@@ -1211,7 +1233,58 @@ const Index = () => {
     }
   };
 
+  // Helper function to map station ID to section key (matching ProductionLineFlow)
+  const sectionKeyForStation = (stationId: number): string => {
+    switch (stationId) {
+      case 1: return 'idea';
+      case 2: return 'mockups';
+      case 3: return 'validation';
+      case 4: return 'pitch_deck';
+      case 5: return 'mentorship_pre';
+      case 6: return 'mvp';
+      case 7: return 'mentorship_post';
+      case 8: return 'launch_prep';
+      case 9: return 'launch_execution';
+      case 10: return 'mentorship_pre_investor';
+      case 11: return 'pitch_practice';
+      case 12: return 'finance';
+      case 13: return 'marketing';
+      case 14: return 'legal';
+      case 15: return 'investor_presentation';
+      default: return `station_${stationId}`;
+    }
+  };
+
+  // Check if a station is locked based on admin settings
+  const isStationLocked = (stationId: number): boolean => {
+    // Completed stations are never locked
+    if (stationData.completedStations.includes(stationId)) return false;
+    
+    const key = sectionKeyForStation(stationId);
+    const explicitlyUnlocked = adminUnlocks?.[key] === true;
+    const explicitlyLocked = adminLocks?.[key] === true;
+    
+    // If explicitly unlocked and not explicitly locked, allow access
+    if (explicitlyUnlocked && !explicitlyLocked) return false;
+    
+    // If explicitly locked, block access
+    if (explicitlyLocked) return true;
+    
+    // Default behavior: locked-by-default (require explicit unlock)
+    // Only station 1 (idea creation) is unlocked by default for new users
+    if (stationId === 1 && stationData.completedStations.length === 0) return false;
+    
+    // All other stations require explicit admin unlock
+    return !explicitlyUnlocked;
+  };
+
   const handleEnterStation = async (stationId: number, reviewMode = false) => {
+    // Check if station is locked by admin
+    if (isStationLocked(stationId)) {
+      alert('This station is currently locked. Please contact an administrator to unlock it.');
+      return;
+    }
+
     // Mentorship stations (5 = Pre-MVP, 7 = Post-MVP, 10 = Pre-Investor) redirect to Google Form
     if (stationId === 5 || stationId === 7 || stationId === 10) {
       window.open('https://docs.google.com/forms/d/e/1FAIpQLSerWSBzORcSgMcP2D0nFGYhcs5qpLDjnpRY9F1xIF1Hnr-FZA/viewform', '_blank');
