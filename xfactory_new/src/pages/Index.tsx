@@ -160,8 +160,34 @@ const Index = () => {
         const prelaunch = trcData?.prelaunch || {};
         const ideation = trcData?.ideation || {};
         // Check roadmap flag for ideation completion (allows reset functionality)
-        // Only mark as completed if explicitly set to true
-        const isIdeaDone = ideation.completed === true;
+        // Only mark as completed if explicitly set to true AND both concept card and elevator pitch exist
+        let isIdeaDone = ideation.completed === true;
+        
+        // Verify that both concept card and elevator pitch actually exist before marking complete
+        if (isIdeaDone && teamId) {
+          try {
+            const conceptCard = await apiClient.getTeamConceptCard(teamId);
+            const elevatorPitch = await apiClient.getElevatorPitchSubmission(teamId);
+            const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+            const hasElevatorPitch = elevatorPitch && (elevatorPitch as any).status >= 200 && (elevatorPitch as any).status < 300 && ((elevatorPitch as any).data?.google_drive_link || (elevatorPitch as any).data?.submitted);
+            
+            // Only mark as done if both exist
+            if (!hasConceptCard || !hasElevatorPitch) {
+              isIdeaDone = false;
+              // Also update backend to reflect actual state
+              if (teamId) {
+                try {
+                  await apiClient.put(`/ideation/teams/${teamId}/roadmap-completion/`, { 
+                    ideation: { completed: false } 
+                  });
+                } catch {}
+              }
+            }
+          } catch {
+            // If check fails, don't mark as done
+            isIdeaDone = false;
+          }
+        }
         const isMockupDone = !!(mvp.prototype_built || mvp.software_mockup);
         // Only mark validation station complete when ALL tiers are done
         const isValidationComplete = !!(validation.secondary && validation.qualitative && validation.quantitative);
@@ -291,7 +317,25 @@ const Index = () => {
         const mentorship = trcData?.mentorship || {};
         const ideation = trcData?.ideation || {};
 
-        const isIdeaDone = ideation.completed === true;
+        // Check roadmap flag and verify artifacts exist
+        let isIdeaDone = ideation.completed === true;
+        
+        // Verify that both concept card and elevator pitch actually exist
+        if (isIdeaDone && teamId) {
+          try {
+            const conceptCard = await apiClient.getTeamConceptCard(teamId);
+            const elevatorPitch = await apiClient.getElevatorPitchSubmission(teamId);
+            const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+            const hasElevatorPitch = elevatorPitch && (elevatorPitch as any).status >= 200 && (elevatorPitch as any).status < 300 && ((elevatorPitch as any).data?.google_drive_link || (elevatorPitch as any).data?.submitted);
+            
+            // Only mark as done if both exist
+            if (!hasConceptCard || !hasElevatorPitch) {
+              isIdeaDone = false;
+            }
+          } catch {
+            isIdeaDone = false;
+          }
+        }
         const isMockupDone = !!(mvp.prototype_built || mvp.software_mockup);
         const isValidationComplete = !!(validation.secondary && validation.qualitative && validation.quantitative);
 
@@ -662,9 +706,17 @@ const Index = () => {
           await apiClient.delete(`/ideation/teams/${teamId}/brainstorming/`);
         } catch {}
         
+        // Reset ideation completion in backend (pivot follows same process as original)
+        try {
+          await apiClient.put(`/ideation/teams/${teamId}/roadmap-completion/`, { 
+            ideation: { completed: false } 
+          });
+        } catch {}
+        
         // Clear the completion flag in localStorage to allow re-entering onboarding
         try {
           localStorage.removeItem(scopedKey('xfactoryIdeaCompleted'));
+          localStorage.removeItem(scopedKey('xfactoryStationCompleted_1'));
           // Also clear any cached brainstorming data
           localStorage.removeItem('xfactoryBrainstorming');
         } catch {}
@@ -1155,31 +1207,44 @@ const Index = () => {
   const handleOnboardingComplete = async (data: UserData) => {
     setUserData(data);
     
-    // Mark the ideation section as completed in the backend
+    // Only mark ideation as completed if both concept card AND elevator pitch exist
     try {
       const { apiClient } = await import("@/lib/api");
-      const response = await apiClient.post('/auth/mark-completed/', {
-        section: 'ideation'
-      });
-      console.log('Ideation section marked as completed');
+      const teamIdStr = localStorage.getItem('xfactoryTeamId');
+      const teamId = teamIdStr ? Number(teamIdStr) : null;
       
-      // Update the user's progress locally to reflect the completion
-      if (user && response.data?.progress) {
-        // Update the user object with the new progress
-        user.progress = response.data.progress;
+      if (teamId) {
+        // Check for both concept card and elevator pitch
+        const conceptCard = await apiClient.getTeamConceptCard(teamId);
+        const elevatorPitch = await apiClient.getElevatorPitchSubmission(teamId);
+        const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+        const hasElevatorPitch = elevatorPitch && (elevatorPitch as any).status >= 200 && (elevatorPitch as any).status < 300 && ((elevatorPitch as any).data?.google_drive_link || (elevatorPitch as any).data?.submitted);
         
-        // Also update localStorage to ensure the completion is recognized
-        try {
-          localStorage.setItem(scopedKey('xfactoryIdeaCompleted'), 'true');
-        } catch {}
+        // Only mark complete if both exist
+        if (hasConceptCard && hasElevatorPitch) {
+          const response = await apiClient.post('/auth/mark-completed/', {
+            section: 'ideation'
+          });
+          console.log('Ideation section marked as completed');
+          
+          // Update roadmap completion
+          await apiClient.put(`/ideation/teams/${teamId}/roadmap-completion/`, { 
+            ideation: { completed: true } 
+          });
+          
+          // Update the user's progress locally to reflect the completion
+          if (user && response.data?.progress) {
+            user.progress = response.data.progress;
+            try {
+              localStorage.setItem(scopedKey('xfactoryIdeaCompleted'), 'true');
+            } catch {}
+          }
+        } else {
+          console.log('Ideation not marked complete: missing concept card or elevator pitch', { hasConceptCard, hasElevatorPitch });
+        }
       }
     } catch (error) {
-      console.error('Failed to mark ideation as completed:', error);
-      
-      // Even if backend fails, mark as completed locally to ensure user can proceed
-      try {
-        localStorage.setItem(scopedKey('xfactoryIdeaCompleted'), 'true');
-      } catch {}
+      console.error('Failed to check/mark ideation as completed:', error);
     }
     
     // After onboarding, go directly to the factory dashboard
@@ -1255,32 +1320,13 @@ const Index = () => {
     }
   };
 
-  // Check if a station is locked based on admin settings
-  const isStationLocked = (stationId: number): boolean => {
-    // Completed stations are never locked
-    if (stationData.completedStations.includes(stationId)) return false;
-    
+  const handleEnterStation = async (stationId: number, reviewMode = false) => {
+    // Strictly match admin locks logic (same as ProductionLineFlow and AdminDashboard)
     const key = sectionKeyForStation(stationId);
-    const explicitlyUnlocked = adminUnlocks?.[key] === true;
     const explicitlyLocked = adminLocks?.[key] === true;
     
-    // If explicitly unlocked and not explicitly locked, allow access
-    if (explicitlyUnlocked && !explicitlyLocked) return false;
-    
-    // If explicitly locked, block access
-    if (explicitlyLocked) return true;
-    
-    // Default behavior: locked-by-default (require explicit unlock)
-    // Only station 1 (idea creation) is unlocked by default for new users
-    if (stationId === 1 && stationData.completedStations.length === 0) return false;
-    
-    // All other stations require explicit admin unlock
-    return !explicitlyUnlocked;
-  };
-
-  const handleEnterStation = async (stationId: number, reviewMode = false) => {
-    // Check if station is locked by admin
-    if (isStationLocked(stationId)) {
+    // Only block if explicitly locked by admin (adminUnlocks override is handled in UI display, not entry blocking)
+    if (explicitlyLocked) {
       alert('This station is currently locked. Please contact an administrator to unlock it.');
       return;
     }

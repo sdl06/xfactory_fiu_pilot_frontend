@@ -853,17 +853,24 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
         try { await apiClient.generateBrainstormingAssistant(ideaId); } catch {}
       }
 
-      // Mark ideation completed in backend progress
-      try { await apiClient.markSectionCompleted('ideation'); } catch {}
-
-      // Mark ideation as completed in team roadmap completion
+      // Only mark ideation completed if both concept card AND elevator pitch exist
       try {
         const teamIdStr = localStorage.getItem('xfactoryTeamId');
         const teamId = teamIdStr ? Number(teamIdStr) : null;
         if (teamId) {
-          await apiClient.put(`/ideation/teams/${teamId}/roadmap-completion/`, { 
-            ideation: { completed: true } 
-          });
+          // Check for both concept card and elevator pitch
+          const conceptCard = await apiClient.getTeamConceptCard(teamId);
+          const elevatorPitch = await apiClient.getElevatorPitchSubmission(teamId);
+          const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+          const hasElevatorPitch = elevatorPitch && (elevatorPitch as any).status >= 200 && (elevatorPitch as any).status < 300 && ((elevatorPitch as any).data?.google_drive_link || (elevatorPitch as any).data?.submitted);
+          
+          // Only mark complete if both exist
+          if (hasConceptCard && hasElevatorPitch) {
+            await apiClient.markSectionCompleted('ideation');
+            await apiClient.put(`/ideation/teams/${teamId}/roadmap-completion/`, { 
+              ideation: { completed: true } 
+            });
+          }
         }
       } catch {}
 
