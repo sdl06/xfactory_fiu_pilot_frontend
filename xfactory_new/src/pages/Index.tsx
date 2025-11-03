@@ -136,6 +136,14 @@ const Index = () => {
         const { apiClient } = await import("@/lib/api");
         const status = await apiClient.get('/team-formation/status/');
         const team = (status as any)?.data?.current_team;
+        
+        // If team is deleted (is_active === false), redirect to team formation
+        if (team && team.is_active === false) {
+          console.log('Team is deleted. Redirecting to team formation (account-creation).');
+          setAppState("account-creation");
+          return;
+        }
+        
         const teamId = team?.id;
         if (!teamId) return;
         try { if (team?.name) localStorage.setItem('xfactoryTeamName', String(team.name)); } catch {}
@@ -228,9 +236,6 @@ const Index = () => {
           mentorship: 5,
           mvp: 6,
           testing: 7,
-          marketing: 12,
-          finance: 13,
-          legal: 14,
           prelaunch: 8,
         };
 
@@ -247,9 +252,8 @@ const Index = () => {
           }
           
           const mergedArr = Array.from(merged).sort((a,b)=>a-b);
-          // Determine next station to unlock (main sequence)
-          // Main progression sequence now includes workshops (12,13,14) after post‑MVP mentorship (7)
-          const mainSeq = [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15];
+          // Determine next station to unlock using streamlined sequence (workshops removed)
+          const mainSeq = [1,2,3,4,5,6,7,8,9,10,11,15];
           let nextStation = 1;
           for (const sid of mainSeq) {
             if (!merged.has(sid)) { nextStation = sid; break; }
@@ -358,9 +362,6 @@ const Index = () => {
           mentorship: 5,
           mvp: 6,
           testing: 7,
-          marketing: 12,
-          finance: 13,
-          legal: 14,
           prelaunch: 8,
         };
 
@@ -375,7 +376,7 @@ const Index = () => {
           }
           if (mvp.prototype_built || mvp.task_plan_generated) merged.add(7);
           const mergedArr = Array.from(merged).sort((a,b)=>a-b);
-          const mainSeq = [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15];
+          const mainSeq = [1,2,3,4,5,6,7,8,9,10,11,15];
           let nextStation = 1;
           for (const sid of mainSeq) { if (!merged.has(sid)) { nextStation = sid; break; } }
           const updated = { ...prev, completedStations: mergedArr } as any;
@@ -865,6 +866,13 @@ const Index = () => {
           return;
         }
         
+        // If team is deleted (is_active === false), redirect to team formation
+        if (team.is_active === false) {
+          console.log('Guard: Team is deleted. Redirecting to team formation (account-creation).');
+          setAppState("account-creation");
+          return;
+        }
+        
         // CRITICAL: Even if localStorage says idea is not completed, check backend roadmap progress
         // If user has progressed through any roadmap section, they should NOT be in onboarding
         const teamId = team.id;
@@ -988,7 +996,16 @@ const Index = () => {
         // Resolve and persist current team for scoping
         try {
           const status = await apiClient.get('/team-formation/status/');
-          const teamId = (status as any)?.data?.current_team?.id;
+          const team = (status as any)?.data?.current_team;
+          
+          // If team is deleted (is_active === false), redirect to team formation
+          if (team && team.is_active === false) {
+            console.log('Index - Team is deleted, redirecting to account creation for team formation');
+            setAppState("account-creation");
+            return;
+          }
+          
+          const teamId = team?.id;
           if (teamId) { try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {} }
         } catch {}
         setAppState("dashboard");
@@ -1008,6 +1025,13 @@ const Index = () => {
 
       if (statusData && statusData.current_team) {
         const team = statusData.current_team;
+        
+        // If team is deleted (is_active === false), redirect to team formation
+        if (team.is_active === false) {
+          console.log('Index - Team is deleted, redirecting to account creation for team formation');
+          setAppState("account-creation");
+          return;
+        }
         const sections = loginData?.progress?.sections_completed || loginData?.user?.progress?.sections_completed || [];
 
         // Check if team formation is complete (deadline passed or team is full)
@@ -1321,12 +1345,13 @@ const Index = () => {
   };
 
   const handleEnterStation = async (stationId: number, reviewMode = false) => {
-    // Strictly match admin locks logic (same as ProductionLineFlow and AdminDashboard)
+    // All sections start as locked by default
+    // Only allow entry if explicitly unlocked by admin
     const key = sectionKeyForStation(stationId);
-    const explicitlyLocked = adminLocks?.[key] === true;
+    const explicitlyUnlocked = adminUnlocks?.[key] === true;
     
-    // Only block if explicitly locked by admin (adminUnlocks override is handled in UI display, not entry blocking)
-    if (explicitlyLocked) {
+    // Block entry unless explicitly unlocked by admin
+    if (!explicitlyUnlocked) {
       alert('This station is currently locked. Please contact an administrator to unlock it.');
       return;
     }
@@ -1459,12 +1484,6 @@ const Index = () => {
         newData.monitoringData = data; // Post-Launch Performance data
       } else if (stationId === 11) {
         newData.iterationData = data; // Pitch Practice data
-      } else if (stationId === 12) {
-        newData.marketingData = data;
-      } else if (stationId === 13) {
-        newData.legalData = data;
-      } else if (stationId === 14) {
-        newData.financialData = data;
       } else if (stationId === 15) {
         newData.investorData = data;
       }
@@ -1504,9 +1523,6 @@ const Index = () => {
           4: 'pitch_deck',
           6: 'mvp',
           7: 'testing',
-          12: 'marketing',
-          13: 'finance',
-          14: 'legal',
           8: 'prelaunch',
         };
         const section = map[stationId];
@@ -1555,15 +1571,6 @@ const Index = () => {
             if (teamId) await apiClient.markMockupCompleted(teamId);
           } catch {}
         }
-        // For station 13 (Finance Workshop) ensure completion is reflected in TRC
-        if (stationId === 13) {
-          try {
-            const status = await apiClient.get('/team-formation/status/');
-            const teamId = (status as any)?.data?.current_team?.id;
-            if (teamId) await apiClient.markFinanceWorkshopCompleted(teamId);
-          } catch {}
-        }
-        
 
       } catch {}
     })();

@@ -334,7 +334,7 @@ export const FactoryDashboard = ({
 
   // Calculate progress
   const completedCount = stationData.completedStations.length;
-  const totalSteps = 15; // Total number of stations
+  const totalSteps = 12; // Total number of stations after removing workshops
   const progressPercentage = completedCount / totalSteps * 100;
 
   return (
@@ -689,6 +689,11 @@ export const FactoryDashboard = ({
             currentStation={stationData.currentStation}
             onEnterStation={onEnterStation}
             stationData={stationData}
+            onTeamMissing={() => {
+              if (onEnterTeamFormation) {
+                onEnterTeamFormation();
+              }
+            }}
           />
         </div>
 

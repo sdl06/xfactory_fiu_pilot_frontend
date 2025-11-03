@@ -460,4 +460,3 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
     </div>
   );
 };
-

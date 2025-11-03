@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import {
   ReactFlow,
-  useNodesState,
-  useEdgesState,
   MarkerType,
   Handle,
   Position,
@@ -17,19 +15,14 @@ import {
   Palette, 
   Target, 
   Code, 
-  TestTube, 
-  RefreshCw, 
   TrendingUp, 
   Rocket, 
-  BarChart3,
   Lock,
   CheckCircle,
   Play,
-  Clock,
   Package,
   Users,
-  Scale,
-  DollarSign
+  RefreshCw
 } from "lucide-react";
 
 interface ProductionLineFlowProps {
@@ -37,6 +30,7 @@ interface ProductionLineFlowProps {
   currentStation: number;
   onEnterStation: (stationId: number, reviewMode?: boolean) => void;
   stationData?: any; // Add stationData for refresh mechanism
+  onTeamMissing?: () => void;
 }
 
 const StationNode = ({ data }: { data: any }) => {
@@ -540,10 +534,12 @@ export const ProductionLineFlow = ({
   completedStations = [], 
   currentStation = 1, 
   onEnterStation,
-  stationData = {} // Add stationData for refresh mechanism
+  stationData = {}, // Add stationData for refresh mechanism
+  onTeamMissing
 }: ProductionLineFlowProps) => {
   const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
   const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
+  const [adminDataLoaded, setAdminDataLoaded] = useState<boolean>(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
   const [ideaCardComplete, setIdeaCardComplete] = useState<boolean>(false);
   
@@ -578,8 +574,23 @@ export const ProductionLineFlow = ({
       });
       
       setLastUpdateTime(Date.now());
-    } catch {}
-  }, []);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 403 || status === 404) {
+        setAdminLocks({});
+        setAdminUnlocks({});
+        try {
+          localStorage.removeItem('xfactoryTeamId');
+          localStorage.removeItem('xfactoryTeamName');
+        } catch {}
+        if (typeof onTeamMissing === 'function') {
+          onTeamMissing();
+        }
+      }
+    } finally {
+      setAdminDataLoaded(true);
+    }
+  }, [onTeamMissing]);
 
   // Load admin locks only once on mount and when explicitly triggered
   useEffect(() => {
@@ -623,7 +634,7 @@ export const ProductionLineFlow = ({
       window.removeEventListener('storage', onStorage);
       if (refreshTimeout) clearTimeout(refreshTimeout);
     };
-  }, []); // Empty dependency array - only run once
+  }, [loadAdminLocks]); // Re-run if admin lock loader changes
   const stations = [
     { id: 1, title: "AI Powered Idea Creation", description: "Generate and refine your startup idea with AI assistance and market research", icon: Lightbulb, estimatedTime: "30 mins", output: "Refined Idea Card" },
     { id: 2, title: "Visual Mockup Station", description: "Create stunning visual mockups and wireframes for your product concept", icon: Palette, estimatedTime: "45 mins", output: "Product Mockups" },
@@ -636,14 +647,8 @@ export const ProductionLineFlow = ({
     { id: 9, title: "Launch Execution Station", description: "Execute your product launch with coordinated marketing and communication", icon: TrendingUp, estimatedTime: "1 week", output: "Executed Launch" },
     { id: 10, title: "Pre-Investor Mentorship Session", description: "Final coaching and review before investor presentations", icon: Users, estimatedTime: "60 mins", output: "Mentorship Insights" },
     { id: 11, title: "Pitch Practice Station", description: "Practice investor pitches and refine messaging with AI feedback", icon: Target, estimatedTime: "45 mins", output: "Pitch Video & Feedback" },
-    // Workshops (12-14): Finance, Marketing, Legal
-    { id: 12, title: "Workshop: Financial Modeling", description: "Hands-on session to build your initial financial model", icon: DollarSign, estimatedTime: "90 mins", output: "Financial Model" },
-    { id: 13, title: "Workshop: Marketing Strategy", description: "Branding, acquisition channels, and campaign planning", icon: TrendingUp, estimatedTime: "60 mins", output: "Marketing Plan" },
-    { id: 14, title: "Workshop: Legal & Compliance", description: "Ensure your startup is compliant with key legal requirements", icon: Scale, estimatedTime: "60 mins", output: "Compliance Checklist" },
     { id: 15, title: "Investor Presentation", description: "Present your startup to investors with polished materials", icon: Target, estimatedTime: "2 hours", output: "Investor Presentation" },
   ];
-
-  const workshopIds = [12, 13, 14];
 
   const sectionKeyForStation = (stationId: number): string => {
     switch (stationId) {
@@ -658,70 +663,42 @@ export const ProductionLineFlow = ({
       case 9: return 'launch_execution';
       case 10: return 'mentorship_pre_investor';
       case 11: return 'pitch_practice';
-      case 12: return 'finance';
-      case 13: return 'marketing';
-      case 14: return 'legal';
       case 15: return 'investor_presentation';
       default: return `station_${stationId}`;
     }
   };
 
   const getStationStatus = useCallback((stationId: number) => {
-    // Show completed stations as completed
     if (completedStations.includes(stationId)) return 'completed';
-    
-    // Strictly match admin locks/unlocks logic (same as AdminDashboard)
-    // AdminDashboard saves: locks[key] = true/false, unlocks[key] = !locks[key]
-    // So we check locks - if true, station is locked; otherwise unlocked
-    const key = sectionKeyForStation(stationId);
-    const isLockedByAdmin = adminLocks?.[key] === true;
-    
-    // If explicitly locked by admin, show as locked
-    if (isLockedByAdmin) return 'locked';
-    
-    // Otherwise, station is accessible (unlocked by admin or no admin setting = default unlocked)
-    if (stationId === currentStation) return 'active';
-    
-    return 'unlocked';
-  }, [completedStations, currentStation, adminLocks]);
+    if (!adminDataLoaded) return 'locked';
 
-  // Build pipeline order: after 7, include workshops 12-14, then continue 8..11, and 15
-  const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15], []);
+    const key = sectionKeyForStation(stationId);
+    const explicitlyUnlocked = adminUnlocks?.[key] === true || adminLocks?.[key] === false;
+
+    if (stationId === currentStation) {
+      return explicitlyUnlocked ? 'active' : 'locked';
+    }
+
+    return explicitlyUnlocked ? 'unlocked' : 'locked';
+  }, [completedStations, currentStation, adminLocks, adminUnlocks, adminDataLoaded]);
+
+  // Build streamlined pipeline order without workshop duplicates
+  const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,8,9,10,11,15], []);
 
   // Fixed container height for consistent layout (desktop), adaptive on ultra-narrow devices
   const isUltraNarrow = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 420px)').matches : false;
   const FIXED_CONTAINER_HEIGHT = isUltraNarrow ? (typeof window !== 'undefined' ? Math.max(Math.floor(window.innerHeight * 0.7), 560) : 560) : 1400;
 
-  // Memoize nodes calculation (top workshops + pipeline grid)
+  // Memoize nodes calculation for streamlined pipeline grid
   const initialNodes: any[] = useMemo(() => {
-    const nodes: any[] = [];
-    // Top workshops row (wide cards)
-    workshopIds.forEach((wid, idx) => {
-      const station = stations.find(s => s.id === wid)!;
-      nodes.push({
-        id: `work-${wid}`,
-        type: 'station',
-        position: { x: 80 + idx * 460, y: 80 },
-        data: {
-          station,
-          status: getStationStatus(wid),
-          onEnter: onEnterStation,
-          isFirst: false,
-          isLast: false,
-          isWorkshop: true,
-        },
-      });
-    });
-    // Pipeline grid (3 per row; include workshop clones after 7)
-    pipelineOrder.forEach((sid, i) => {
+    return pipelineOrder.map((sid, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
       const station = stations.find(s => s.id === sid)!;
-      const isWorkshopClone = workshopIds.includes(sid);
-      nodes.push({
-        id: isWorkshopClone ? `pipe-${sid}` : `${sid}`,
+      return {
+        id: `${sid}`,
         type: 'station',
-        position: { x: col * 380 + 120, y: row * 240 + 220 },
+        position: { x: col * 380 + 120, y: row * 240 + 120 },
         data: {
           station,
           status: getStationStatus(sid),
@@ -730,24 +707,19 @@ export const ProductionLineFlow = ({
           isLast: i === pipelineOrder.length - 1,
           isWorkshop: false,
         },
-      });
+      };
     });
-    return nodes;
-  }, [stations, getStationStatus, onEnterStation]);
+  }, [stations, getStationStatus, onEnterStation, pipelineOrder]);
 
-  // Edges based on pipeline order
+  // Edges based on streamlined pipeline order
   const initialEdges: any[] = useMemo(() => {
-    const edges: any[] = [];
-    for (let i = 0; i < pipelineOrder.length - 1; i++) {
-      const curr = pipelineOrder[i];
-      const next = pipelineOrder[i + 1];
-      const sourceId = workshopIds.includes(curr) ? `pipe-${curr}` : `${curr}`;
-      const targetId = workshopIds.includes(next) ? `pipe-${next}` : `${next}`;
+    return pipelineOrder.slice(0, -1).map((curr, idx) => {
+      const next = pipelineOrder[idx + 1];
       const isCompleted = getStationStatus(curr) === 'completed';
-      edges.push({
-        id: `e${sourceId}-${targetId}`,
-        source: sourceId,
-        target: targetId,
+      return {
+        id: `e${curr}-${next}`,
+        source: `${curr}`,
+        target: `${next}`,
         type: 'smoothstep',
         animated: isCompleted,
         style: {
@@ -761,9 +733,8 @@ export const ProductionLineFlow = ({
           width: 16,
           height: 16,
         },
-      });
-    }
-    return edges;
+      };
+    });
   }, [pipelineOrder, getStationStatus]);
 
   // Create a stable key for memoization based on actual state changes
@@ -773,36 +744,14 @@ export const ProductionLineFlow = ({
 
   // Memoize nodes with stable dependencies
   const finalNodes = useMemo(() => {
-    const nodesNext: any[] = [];
-    
-    // Top workshops row
-    workshopIds.forEach((wid, idx) => {
-      const station = stations.find(s => s.id === wid)!;
-      nodesNext.push({
-        id: `work-${wid}`,
-        type: 'station',
-        position: { x: 80 + idx * 460, y: 80 },
-        data: {
-          station,
-          status: getStationStatus(wid),
-          onEnter: onEnterStation,
-          isFirst: false,
-          isLast: false,
-          isWorkshop: true,
-        },
-      });
-    });
-    
-    // Pipeline grid
-    pipelineOrder.forEach((sid, i) => {
+    return pipelineOrder.map((sid, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
       const station = stations.find(s => s.id === sid)!;
-      const isWorkshopClone = workshopIds.includes(sid);
-      nodesNext.push({
-        id: isWorkshopClone ? `pipe-${sid}` : `${sid}`,
+      return {
+        id: `${sid}`,
         type: 'station',
-        position: { x: col * 380 + 120, y: row * 240 + 220 },
+        position: { x: col * 380 + 120, y: row * 240 + 120 },
         data: {
           station,
           status: getStationStatus(sid),
@@ -811,25 +760,19 @@ export const ProductionLineFlow = ({
           isLast: i === pipelineOrder.length - 1,
           isWorkshop: false,
         },
-      });
+      };
     });
-    
-    return nodesNext;
-  }, [stateKey, getStationStatus, onEnterStation]); // Only depend on stateKey and stable functions
+  }, [stateKey, getStationStatus, onEnterStation, pipelineOrder]); // Only depend on stateKey and stable functions
 
   // Memoize edges with stable dependencies
   const finalEdges = useMemo(() => {
-    const edgesNext: any[] = [];
-    for (let i = 0; i < pipelineOrder.length - 1; i++) {
-      const curr = pipelineOrder[i];
-      const next = pipelineOrder[i + 1];
-      const sourceId = workshopIds.includes(curr) ? `pipe-${curr}` : `${curr}`;
-      const targetId = workshopIds.includes(next) ? `pipe-${next}` : `${next}`;
+    return pipelineOrder.slice(0, -1).map((curr, idx) => {
+      const next = pipelineOrder[idx + 1];
       const isCompleted = getStationStatus(curr) === 'completed';
-      edgesNext.push({
-        id: `e${sourceId}-${targetId}`,
-        source: sourceId,
-        target: targetId,
+      return {
+        id: `e${curr}-${next}`,
+        source: `${curr}`,
+        target: `${next}`,
         type: 'smoothstep',
         animated: isCompleted,
         style: {
@@ -843,10 +786,9 @@ export const ProductionLineFlow = ({
           width: 16,
           height: 16,
         },
-      });
-    }
-    return edgesNext;
-  }, [stateKey, getStationStatus]); // Only depend on stateKey and stable functions
+      };
+    });
+  }, [stateKey, getStationStatus, pipelineOrder]); // Only depend on stateKey and stable functions
 
   // Handle viewport changes to track metrics
   const onViewportChange = useCallback((viewport: any) => {
@@ -900,5 +842,3 @@ export const ProductionLineFlow = ({
 };
 
 export default ProductionLineFlow;
-
-
