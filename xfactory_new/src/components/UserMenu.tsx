@@ -352,4 +352,3 @@ export const UserMenu = ({ className = "" }: UserMenuProps) => {
     </>
   );
 };
-

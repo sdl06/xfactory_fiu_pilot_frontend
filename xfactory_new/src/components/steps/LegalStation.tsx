@@ -983,4 +983,3 @@ export const LegalStation = ({
       <FactorAI currentStation={14} userData={{ mvpData }} context="legal" />
     </div>
   );
-};

@@ -213,4 +213,3 @@ export const ScalingStation = ({ iterationData, onComplete, onBack }: ScalingSta
       />
     </div>
   );
-};

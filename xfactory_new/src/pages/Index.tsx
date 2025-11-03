@@ -721,6 +721,40 @@ const Index = () => {
           const status = await apiClient.get('/team-formation/status/');
           const teamId = (status as any)?.data?.current_team?.id;
           if (teamId) { try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {} }
+          
+          // If localStorage/user check says not completed, double-check backend roadmap progress
+          // This handles cases where localStorage is cleared but user has made progress
+          if (!isIdeaCompleted(user) && teamId) {
+            try {
+              const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
+              const trcData: any = (trc as any)?.data || {};
+              const hasAnyRoadmapProgress = !!(
+                (trcData?.validation && Object.keys(trcData.validation).length > 0) ||
+                (trcData?.mvp && Object.keys(trcData.mvp).length > 0) ||
+                (trcData?.pitch_deck && Object.keys(trcData.pitch_deck).length > 0) ||
+                (trcData?.testing && Object.keys(trcData.testing).length > 0) ||
+                (trcData?.marketing && Object.keys(trcData.marketing).length > 0) ||
+                (trcData?.operations && Object.keys(trcData.operations).length > 0) ||
+                (trcData?.finance && Object.keys(trcData.finance).length > 0) ||
+                (trcData?.legal && Object.keys(trcData.legal).length > 0) ||
+                (trcData?.prelaunch && Object.keys(trcData.prelaunch).length > 0)
+              );
+              
+              if (hasAnyRoadmapProgress) {
+                console.log('[Index] User has backend roadmap progress, redirecting to dashboard');
+                setUserData({
+                  hasIdea: true,
+                  businessType: (user.business_type as BusinessType) || null,
+                  ideaSummary: user.idea_summary || "",
+                });
+                setAppState("dashboard");
+                return;
+              }
+            } catch (trcError) {
+              // If roadmap check fails, continue normally (don't block)
+              console.warn('[Index] Failed to check roadmap completion on load:', trcError);
+            }
+          }
         } catch {}
       })();
       if (isIdeaCompleted(user)) {
@@ -738,16 +772,58 @@ const Index = () => {
   useEffect(() => {
     const ensureTeamBeforeOnboarding = async () => {
       if (appState !== "onboarding" || isLoading || !user) return;
+      
+      // Check if idea is completed via localStorage (quick check)
       if (isIdeaCompleted(user)) {
         setAppState("dashboard");
         return;
       }
+      
       try {
         const { apiClient } = await import("@/lib/api");
         const res = await apiClient.request('/team-formation/status/');
-        if (res.data && !res.data.current_team) {
+        const team = res.data?.current_team;
+        
+        // If no team found, redirect to team formation
+        if (!team) {
           console.log('Guard: No team found. Redirecting to team formation (account-creation).');
           setAppState("account-creation");
+          return;
+        }
+        
+        // CRITICAL: Even if localStorage says idea is not completed, check backend roadmap progress
+        // If user has progressed through any roadmap section, they should NOT be in onboarding
+        const teamId = team.id;
+        if (teamId) {
+          try {
+            const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
+            const trcData: any = (trc as any)?.data || {};
+            const hasAnyRoadmapProgress = !!(
+              (trcData?.validation && Object.keys(trcData.validation).length > 0) ||
+              (trcData?.mvp && Object.keys(trcData.mvp).length > 0) ||
+              (trcData?.pitch_deck && Object.keys(trcData.pitch_deck).length > 0) ||
+              (trcData?.testing && Object.keys(trcData.testing).length > 0) ||
+              (trcData?.marketing && Object.keys(trcData.marketing).length > 0) ||
+              (trcData?.operations && Object.keys(trcData.operations).length > 0) ||
+              (trcData?.finance && Object.keys(trcData.finance).length > 0) ||
+              (trcData?.legal && Object.keys(trcData.legal).length > 0) ||
+              (trcData?.prelaunch && Object.keys(trcData.prelaunch).length > 0)
+            );
+            
+            if (hasAnyRoadmapProgress) {
+              console.log('Guard: User has roadmap progress, redirecting to dashboard instead of onboarding');
+              setUserData({
+                hasIdea: true,
+                businessType: (user?.business_type as BusinessType) || null,
+                ideaSummary: user?.idea_summary || "",
+              });
+              setAppState("dashboard");
+              return;
+            }
+          } catch (trcError) {
+            // If roadmap check fails, continue with team check (don't block)
+            console.warn('[Guard] Failed to check team roadmap completion:', trcError);
+          }
         }
       } catch (e) {
         console.error('Guard check failed; sending to team formation as fallback', e);

@@ -1520,4 +1520,3 @@ export const ServiceFlowchartBuilder = ({
       </div>
     </div>
   );
-};

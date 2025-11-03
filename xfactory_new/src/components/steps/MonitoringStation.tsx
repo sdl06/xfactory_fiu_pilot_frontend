@@ -302,4 +302,3 @@ export const MonitoringStation = ({ launchData, onComplete, onBack }: Monitoring
       />
     </div>
   );
-};

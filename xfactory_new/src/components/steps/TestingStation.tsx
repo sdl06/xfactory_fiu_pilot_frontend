@@ -242,4 +242,3 @@ export const TestingStation = ({ prototypeData, onComplete, onBack }: TestingSta
       />
     </div>
   );
-};

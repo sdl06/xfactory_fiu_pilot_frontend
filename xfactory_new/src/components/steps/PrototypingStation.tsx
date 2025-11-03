@@ -210,4 +210,3 @@ export const PrototypingStation = ({ ideaCard, mockups, validationData, onComple
       />
     </div>
   );
-};

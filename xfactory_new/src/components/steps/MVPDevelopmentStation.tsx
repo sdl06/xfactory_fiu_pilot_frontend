@@ -901,4 +901,3 @@ export const MVPDevelopmentStation = ({
       <FactorAI currentStation={4} userData={{ mvpData }} context="mvp-development" />
     </div>
   );
-};
