@@ -4721,3 +4721,4 @@ export const ValidationEngine = ({ ideaCard, mockups, onComplete, onBack }: Vali
     </div>
   );
 };
+

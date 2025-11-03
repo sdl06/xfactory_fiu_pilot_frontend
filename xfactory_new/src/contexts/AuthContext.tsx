@@ -7,6 +7,10 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
+  role?: string;
+  status?: string;
+  program?: number | null;
+  is_team_owner?: boolean;
   business_type?: string;
   idea_summary?: string;
   preferred_archetype?: string;

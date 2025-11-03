@@ -155,8 +155,8 @@ const Index = () => {
         const prelaunch = trcData?.prelaunch || {};
         const ideation = trcData?.ideation || {};
         // Check roadmap flag for ideation completion (allows reset functionality)
-        // If ideation section doesn't exist or has completed: false, treat as incomplete
-        const isIdeaDone = ideation.completed !== false; // Default to true for backward compatibility, but allow reset
+        // Only mark as completed if explicitly set to true
+        const isIdeaDone = ideation.completed === true;
         const isMockupDone = !!(mvp.prototype_built || mvp.software_mockup);
         // Only mark validation station complete when ALL tiers are done
         const isValidationComplete = !!(validation.secondary && validation.qualitative && validation.quantitative);
@@ -269,7 +269,7 @@ const Index = () => {
         const mentorship = trcData?.mentorship || {};
         const ideation = trcData?.ideation || {};
 
-        const isIdeaDone = ideation.completed !== false;
+        const isIdeaDone = ideation.completed === true;
         const isMockupDone = !!(mvp.prototype_built || mvp.software_mockup);
         const isValidationComplete = !!(validation.secondary && validation.qualitative && validation.quantitative);
 

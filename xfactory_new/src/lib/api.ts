@@ -1,7 +1,39 @@
 import axios from 'axios';
-const API_BASE_URL = 'https://api.ivyfactory.io/api';
+
+const DEFAULT_PROD_API = 'https://api.ivyfactory.io/api';
+const DEFAULT_LOCAL_API = 'http://localhost:8000/api';
+
+const normalizeBaseUrl = (url: string) => url.replace(/\/+$/, '');
+
+const resolveApiBaseUrl = () => {
+  try {
+    const envUrl = (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_API_BASE_URL)
+      || (typeof process !== 'undefined' && process?.env?.VITE_API_BASE_URL);
+    if (envUrl && typeof envUrl === 'string') {
+      return normalizeBaseUrl(envUrl);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1'
+    ) {
+      return normalizeBaseUrl(DEFAULT_LOCAL_API);
+    }
+  }
+
+  return normalizeBaseUrl(DEFAULT_PROD_API);
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
+
 export const API_ORIGIN = (() => {
-  try { return new URL(API_BASE_URL).origin; } catch { return 'https://api.ivyfactory.io'; }
+  try { return new URL(API_BASE_URL).origin; } catch { return DEFAULT_PROD_API.replace(/\/api$/, ''); }
 })();
 
 export const toAbsoluteMediaUrl = (url?: string | null): string | undefined => {
@@ -247,6 +279,34 @@ class ApiClient {
     return this.request('/auth/change-password/', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async getActivationDetails(token: string) {
+    return this.request(`/auth/activate/${token}/`);
+  }
+
+  async completeActivation(payload: { token: string; password: string; confirm_password?: string; accepted_terms: boolean }) {
+    return this.request('/auth/activate/', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...payload,
+        confirm_password: payload.confirm_password ?? payload.password,
+      }),
+    });
+  }
+
+  async resendActivationInvite(email: string) {
+    return this.request('/auth/activate/resend/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async createOwnerTeam(payload: { name: string; tagline?: string }) {
+    return this.request('/teams/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   }
 
@@ -1098,8 +1158,6 @@ export default apiClient;
 
 // Helper: Build team PDF serve URL (iframe-friendly)
 export const getGammaPdfUrlTeam = (teamId: number): string => `${API_ORIGIN}/api/pitch-deck/teams/${teamId}/gamma/pdf/`;
-
-
 
 
 

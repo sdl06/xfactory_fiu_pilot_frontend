@@ -18,6 +18,7 @@ import {
   Target, 
   Code, 
   TestTube, 
+  RefreshCw, 
   TrendingUp, 
   Rocket, 
   BarChart3,
@@ -100,18 +101,143 @@ const StationNode = ({ data }: { data: any }) => {
               </Button>
             )}
             {status === 'completed' && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="h-7 px-3 border-success text-success"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEnter(station.id, true);
-                }}
-              >
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Review
-              </Button>
+              <>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="h-7 px-3 border-success text-success"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEnter(station.id, true);
+                  }}
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Review
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-7 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const teamIdStr = localStorage.getItem('xfactoryTeamId');
+                      let teamId = teamIdStr ? Number(teamIdStr) : NaN;
+                      if (!teamId || Number.isNaN(teamId)) {
+                        try { const status = await apiClient.get('/team-formation/status/'); teamId = (status as any)?.data?.current_team?.id; } catch {}
+                      }
+                      if (!teamId) return;
+                      // Map station IDs to backend section keys and reset payload
+                      // IMPORTANT: Clear ALL flags that contribute to completion status
+                      // Models will remain, but completion flags must be cleared so UI treats station as incomplete
+                      const resetPayload: any = {};
+                      
+                      switch (station.id) {
+                        case 1: // Idea - mark ideation as incomplete
+                          resetPayload['ideation'] = { completed: false };
+                          // Note: Concept card model remains, but station won't appear complete
+                          break;
+                        case 2: // Mockups - clear both flags that could mark it complete
+                          resetPayload['mvp'] = { software_mockup: false, prototype_built: false };
+                          break;
+                        case 3: // Validation - clear all three validation tiers
+                          resetPayload['validation'] = { 
+                            secondary: false, 
+                            qualitative: false, 
+                            quantitative: false 
+                          };
+                          break;
+                        case 4: // Pitch Deck - clear all pitch deck flags
+                          resetPayload['pitch_deck'] = { 
+                            slides_generated: false,
+                            practice_completed: false,
+                            mentor_deck_generated: false,
+                            investor_deck_generated: false,
+                            submission_completed: false
+                          };
+                          break;
+                        case 5: // Pre-MVP Mentorship
+                          resetPayload['mentorship'] = { pre_mvp_completed: false };
+                          break;
+                        case 6: // MVP - clear both MVP flags
+                          resetPayload['mvp'] = { 
+                            prototype_built: false, 
+                            task_plan_generated: false,
+                            software_mockup: false
+                          };
+                          break;
+                        case 7: // Testing/Post-MVP (uses testing section flags + mentorship.post_mvp_completed)
+                          resetPayload['testing'] = { 
+                            usability_completed: false,
+                            feedback_collection_completed: false
+                          };
+                          // Also clear post-MVP mentorship flag
+                          resetPayload['mentorship'] = { post_mvp_completed: false };
+                          // Also clear MVP flags since station 7 depends on MVP completion
+                          resetPayload['mvp'] = { 
+                            prototype_built: false, 
+                            task_plan_generated: false 
+                          };
+                          break;
+                        case 8: // Launch Prep
+                          resetPayload['prelaunch'] = { deployment_ready: false };
+                          break;
+                        case 9: // Launch Execution - also uses prelaunch
+                          resetPayload['prelaunch'] = { deployment_ready: false };
+                          break;
+                        case 10: // Pre-Investor Mentorship
+                          resetPayload['mentorship'] = { pre_investor_completed: false };
+                          break;
+                        case 11: // Pitch Practice - uses pitch_deck flags
+                          resetPayload['pitch_deck'] = { 
+                            practice_completed: false,
+                            slides_generated: false,
+                            submission_completed: false
+                          };
+                          break;
+                        case 12: // Finance Workshop
+                          resetPayload['finance'] = { budget_completed: false };
+                          break;
+                        case 13: // Marketing Workshop
+                          resetPayload['marketing'] = {
+                            submission_completed: false,
+                            strategy_link: '',
+                            branding_link: '',
+                            traction_link: ''
+                          };
+                          break;
+                        case 14: // Legal Workshop
+                          resetPayload['legal'] = { compliance_completed: false };
+                          break;
+                        case 15: // Investor Presentation - uses pitch_deck flags
+                          resetPayload['pitch_deck'] = { 
+                            submission_completed: false,
+                            investor_deck_generated: false
+                          };
+                          break;
+                        default:
+                          alert(`Unknown station ID: ${station.id}`);
+                          return;
+                      }
+                      
+                      await apiClient.updateTeamRoadmap(teamId, resetPayload);
+                      
+                      // Notify app to refresh roadmap without full reload
+                      try {
+                        localStorage.setItem('xfactoryRoadmapReset', String(Date.now()));
+                        window.dispatchEvent(new StorageEvent('storage', { key: 'xfactoryRoadmapReset' }));
+                      } catch {}
+                    } catch (error: any) {
+                      console.error('Failed to reset station:', error);
+                      alert(`Failed to reset ${station.title}: ${error?.message || 'Unknown error'}`);
+                    }
+                  }}
+                  title="Reset this step"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Reset
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -241,35 +367,149 @@ const StationNode = ({ data }: { data: any }) => {
         )}
         
         {status === 'completed' && (
-          <Button 
-            size="sm" 
-            variant="outline"
-            className="w-full border-success text-success"
-            onClick={async (e) => {
-              e.stopPropagation();
-              // Prefetch concept card when reviewing AI Powered Idea Creation (station 1)
-              if (station.id === 1) {
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="w-full border-success text-success"
+              onClick={async (e) => {
+                e.stopPropagation();
+                // Prefetch concept card when reviewing AI Powered Idea Creation (station 1)
+                if (station.id === 1) {
+                  try {
+                    const teamIdStr = localStorage.getItem('xfactoryTeamId');
+                    const teamId = teamIdStr ? Number(teamIdStr) : null;
+                    if (teamId) {
+                      let res: any = await apiClient.getTeamConceptCard(teamId);
+                      const ok = res && res.status >= 200 && res.status < 300 && (res as any).data;
+                      if (!ok) {
+                        try { await apiClient.generateTeamConceptCard(teamId); } catch {}
+                        try { res = await apiClient.getTeamConceptCard(teamId); } catch {}
+                      }
+                      // Also prefetch elevator pitch submission so review shows saved state
+                      try { await apiClient.getElevatorPitchSubmission(teamId); } catch {}
+                    }
+                  } catch {}
+                }
+                onEnter(station.id, true); // Pass true for review mode
+              }}
+            >
+              <CheckCircle className="h-3 w-3 mr-2" />
+              Review
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={async (e) => {
+                e.stopPropagation();
                 try {
                   const teamIdStr = localStorage.getItem('xfactoryTeamId');
-                  const teamId = teamIdStr ? Number(teamIdStr) : null;
-                  if (teamId) {
-                    let res: any = await apiClient.getTeamConceptCard(teamId);
-                    const ok = res && res.status >= 200 && res.status < 300 && (res as any).data;
-                    if (!ok) {
-                      try { await apiClient.generateTeamConceptCard(teamId); } catch {}
-                      try { res = await apiClient.getTeamConceptCard(teamId); } catch {}
-                    }
-                    // Also prefetch elevator pitch submission so review shows saved state
-                    try { await apiClient.getElevatorPitchSubmission(teamId); } catch {}
+                  let teamId = teamIdStr ? Number(teamIdStr) : NaN;
+                  if (!teamId || Number.isNaN(teamId)) {
+                    try { const status = await apiClient.get('/team-formation/status/'); teamId = (status as any)?.data?.current_team?.id; } catch {}
                   }
-                } catch {}
-              }
-              onEnter(station.id, true); // Pass true for review mode
-            }}
-          >
-            <CheckCircle className="h-3 w-3 mr-2" />
-            Review
-          </Button>
+                  if (!teamId) return;
+                  // Map station IDs to backend section keys and reset payload
+                  // IMPORTANT: Clear ALL flags that contribute to completion status
+                  // Models will remain, but completion flags must be cleared so UI treats station as incomplete
+                  const resetPayload: any = {};
+                  
+                  switch (station.id) {
+                    case 1: // Idea - mark ideation as incomplete
+                      resetPayload['ideation'] = { completed: false };
+                      // Note: Concept card model remains, but station won't appear complete
+                      break;
+                    case 2: // Mockups - clear both flags that could mark it complete
+                      resetPayload['mvp'] = { software_mockup: false, prototype_built: false };
+                      break;
+                    case 3: // Validation - clear all three validation tiers
+                      resetPayload['validation'] = { 
+                        secondary: false, 
+                        qualitative: false, 
+                        quantitative: false 
+                      };
+                      break;
+                    case 4: // Pitch Deck - clear all pitch deck flags
+                      resetPayload['pitch_deck'] = { 
+                        slides_generated: false,
+                        practice_completed: false,
+                        mentor_deck_generated: false,
+                        investor_deck_generated: false,
+                        submission_completed: false
+                      };
+                      break;
+                    case 5: // Pre-MVP Mentorship
+                      resetPayload['mentorship'] = { pre_mvp_completed: false };
+                      break;
+                    case 6: // MVP - clear both MVP flags
+                      resetPayload['mvp'] = { 
+                        prototype_built: false, 
+                        task_plan_generated: false,
+                        software_mockup: false
+                      };
+                      break;
+                    case 7: // Post-MVP Mentorship (controlled by MVP completion)
+                      // Clearing MVP flags also resets station 7
+                      resetPayload['mvp'] = { 
+                        prototype_built: false, 
+                        task_plan_generated: false 
+                      };
+                      break;
+                    case 8: // Launch Prep
+                      resetPayload['prelaunch'] = { deployment_ready: false };
+                      break;
+                    case 9: // Launch Execution - also uses prelaunch
+                      resetPayload['prelaunch'] = { deployment_ready: false };
+                      break;
+                    case 10: // Pre-Investor Mentorship
+                      resetPayload['mentorship'] = { pre_investor_completed: false };
+                      break;
+                    case 11: // Pitch Practice - uses pitch_deck flags
+                      resetPayload['pitch_deck'] = { 
+                        practice_completed: false,
+                        slides_generated: false,
+                        submission_completed: false
+                      };
+                      break;
+                    case 12: // Finance Workshop
+                      resetPayload['finance'] = { budget_completed: false };
+                      break;
+                    case 13: // Marketing Workshop - need to check what flags it uses
+                      resetPayload['marketing'] = {};
+                      break;
+                    case 14: // Legal Workshop
+                      resetPayload['legal'] = { compliance_completed: false };
+                      break;
+                    case 15: // Investor Presentation - uses pitch_deck flags
+                      resetPayload['pitch_deck'] = { 
+                        submission_completed: false,
+                        investor_deck_generated: false
+                      };
+                      break;
+                    default:
+                      alert(`Unknown station ID: ${station.id}`);
+                      return;
+                  }
+                  
+                  await apiClient.updateTeamRoadmap(teamId, resetPayload);
+                  
+                  // Notify app to refresh roadmap without full reload
+                  try {
+                    localStorage.setItem('xfactoryRoadmapReset', String(Date.now()));
+                    window.dispatchEvent(new StorageEvent('storage', { key: 'xfactoryRoadmapReset' }));
+                  } catch {}
+                } catch (error: any) {
+                  console.error('Failed to reset station:', error);
+                  alert(`Failed to reset ${station.title}: ${error?.message || 'Unknown error'}`);
+                }
+              }}
+              title="Reset this step"
+            >
+              <RefreshCw className="h-3 w-3 mr-2" />
+              Reset
+            </Button>
+          </div>
         )}
         
       </div>
@@ -427,14 +667,37 @@ export const ProductionLineFlow = ({
   };
 
   const getStationStatus = useCallback((stationId: number) => {
-    // Show completed stations as completed
+    // Debug logging for workshop stations
+    if (stationId >= 12 && stationId <= 14) {
+      console.log(`🔍 Station ${stationId} status check:`, {
+        stationId,
+        completedStations,
+        currentStation,
+        isCompleted: completedStations.includes(stationId),
+        isCurrent: stationId === currentStation,
+        financeCompleted: completedStations.includes(12),
+        marketingCompleted: completedStations.includes(13),
+        postMvpCompleted: completedStations.includes(7),
+        adminDataLoaded: Object.keys(adminLocks).length > 0 || Object.keys(adminUnlocks).length > 0
+      });
+    }
+    
+    // Completion display - always show completed stations as completed
+    // Completion is determined by roadmap flags only, not model existence
+    // This allows reset functionality to work properly - models remain but station appears incomplete
     if (completedStations.includes(stationId)) return 'completed';
     
-    // All stations are unlocked by default (no completion requirements)
-    if (stationId === currentStation) return 'active';
-    
-    return 'unlocked';
-  }, [completedStations, currentStation]);
+    // Locked-by-default gating: only admin unlocks open a station
+    const key = sectionKeyForStation(stationId);
+    const explicitlyUnlocked = adminUnlocks?.[key] === true;
+    const explicitlyLocked = adminLocks?.[key] === true;
+
+    // Current station is active only if explicitly unlocked (and not explicitly locked)
+    if (stationId === currentStation) return (explicitlyUnlocked && !explicitlyLocked) ? 'active' : 'locked';
+
+    // Other stations are unlocked only if explicitly unlocked (and not explicitly locked)
+    return (explicitlyUnlocked && !explicitlyLocked) ? 'unlocked' : 'locked';
+  }, [completedStations, currentStation, adminLocks, adminUnlocks, ideaCardComplete]);
 
   // Build pipeline order: after 7, include workshops 12-14, then continue 8..11, and 15
   const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15], []);
@@ -443,10 +706,27 @@ export const ProductionLineFlow = ({
   const isUltraNarrow = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 420px)').matches : false;
   const FIXED_CONTAINER_HEIGHT = isUltraNarrow ? (typeof window !== 'undefined' ? Math.max(Math.floor(window.innerHeight * 0.7), 560) : 560) : 1400;
 
-  // Memoize nodes calculation (pipeline grid only - workshops removed from top row as they're repeated in pipeline)
+  // Memoize nodes calculation (top workshops + pipeline grid)
   const initialNodes: any[] = useMemo(() => {
     const nodes: any[] = [];
-    // Pipeline grid (3 per row; include workshops after 7)
+    // Top workshops row (wide cards)
+    workshopIds.forEach((wid, idx) => {
+      const station = stations.find(s => s.id === wid)!;
+      nodes.push({
+        id: `work-${wid}`,
+        type: 'station',
+        position: { x: 80 + idx * 460, y: 80 },
+        data: {
+          station,
+          status: getStationStatus(wid),
+          onEnter: onEnterStation,
+          isFirst: false,
+          isLast: false,
+          isWorkshop: true,
+        },
+      });
+    });
+    // Pipeline grid (3 per row; include workshop clones after 7)
     pipelineOrder.forEach((sid, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
@@ -455,7 +735,7 @@ export const ProductionLineFlow = ({
       nodes.push({
         id: isWorkshopClone ? `pipe-${sid}` : `${sid}`,
         type: 'station',
-        position: { x: col * 380 + 120, y: row * 240 + 80 },
+        position: { x: col * 380 + 120, y: row * 240 + 220 },
         data: {
           station,
           status: getStationStatus(sid),
@@ -509,7 +789,25 @@ export const ProductionLineFlow = ({
   const finalNodes = useMemo(() => {
     const nodesNext: any[] = [];
     
-    // Pipeline grid (workshops removed from top row as they're repeated in pipeline)
+    // Top workshops row
+    workshopIds.forEach((wid, idx) => {
+      const station = stations.find(s => s.id === wid)!;
+      nodesNext.push({
+        id: `work-${wid}`,
+        type: 'station',
+        position: { x: 80 + idx * 460, y: 80 },
+        data: {
+          station,
+          status: getStationStatus(wid),
+          onEnter: onEnterStation,
+          isFirst: false,
+          isLast: false,
+          isWorkshop: true,
+        },
+      });
+    });
+    
+    // Pipeline grid
     pipelineOrder.forEach((sid, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
@@ -518,7 +816,7 @@ export const ProductionLineFlow = ({
       nodesNext.push({
         id: isWorkshopClone ? `pipe-${sid}` : `${sid}`,
         type: 'station',
-        position: { x: col * 380 + 120, y: row * 240 + 80 },
+        position: { x: col * 380 + 120, y: row * 240 + 220 },
         data: {
           station,
           status: getStationStatus(sid),
@@ -616,3 +914,4 @@ export const ProductionLineFlow = ({
 };
 
 export default ProductionLineFlow;
+

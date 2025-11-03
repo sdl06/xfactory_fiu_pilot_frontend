@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { OutputCard } from "@/components/OutputCard";
 import { StationFlowManager } from "@/lib/stationFlow";
-import { UserMenu } from "../UserMenu";
 import { 
   Lightbulb, 
   Brain, 
@@ -857,6 +856,17 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
       // Mark ideation completed in backend progress
       try { await apiClient.markSectionCompleted('ideation'); } catch {}
 
+      // Mark ideation as completed in team roadmap completion
+      try {
+        const teamIdStr = localStorage.getItem('xfactoryTeamId');
+        const teamId = teamIdStr ? Number(teamIdStr) : null;
+        if (teamId) {
+          await apiClient.put(`/ideation/teams/${teamId}/roadmap-completion/`, { 
+            ideation: { completed: true } 
+          });
+        }
+      } catch {}
+
       // Persist station completion on frontend
       try { localStorage.setItem(scopedKey('xfactoryStationCompleted_1'), 'true'); } catch {}
 
@@ -952,58 +962,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
   return (
     <div className="min-h-screen bg-background">
       {/* Factory Station Header */}
-      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full relative">
-        {/* Logos positioned at absolute left edge */}
-        <div className="absolute left-0 top-0 h-full flex items-center gap-4 pl-6">
-          <img 
-            src="/logos/prov_logo_white.png" 
-            alt="xFactory Logo" 
-            className="h-8 w-auto object-contain"
-            onError={(e) => {
-              const imgElement = e.target as HTMLImageElement;
-              imgElement.style.display = 'none';
-              const parent = imgElement.parentElement;
-              if (parent) {
-                const fallbackIcon = document.createElement('div');
-                fallbackIcon.innerHTML = '<svg class="h-8 w-8 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
-                parent.appendChild(fallbackIcon);
-              }
-            }}
-          />
-          <img 
-            src="/logos/fiualonetransreverse.png" 
-            alt="FIU Logo" 
-            className="h-8 w-auto object-contain"
-            onError={(e) => {
-              const imgElement = e.target as HTMLImageElement;
-              imgElement.style.display = 'none';
-              const parent = imgElement.parentElement;
-              if (parent) {
-                const fallbackText = document.createElement('span');
-                fallbackText.textContent = 'FIU';
-                fallbackText.className = 'text-white font-bold text-lg';
-                parent.appendChild(fallbackText);
-              }
-            }}
-          />
-        </div>
-
-        {/* User controls positioned at absolute right edge */}
-        <div className="absolute right-0 top-0 h-full flex items-center gap-3 pr-6">
-          <UserMenu />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white hover:bg-white/10 rounded-full"
-            onClick={onBack}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center">
-            {/* Left: Section name and icon (bounded left) */}
+      <header className="border-b border-border bg-gradient-conveyor backdrop-blur-sm sticky top-0 z-50 w-full">
+        <div className="w-full px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-machinery rounded-lg flex items-center justify-center animate-machinery-hum">
                 <Lightbulb className="h-6 w-6 text-primary-foreground" />
@@ -1012,6 +973,66 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                 <h1 className="text-xl font-bold text-white">Idea Creation Station</h1>
                 <p className="text-sm text-white/80">Structured Questionnaire & AI-Powered Ideation</p>
               </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Badge variant="warning">Station 1</Badge>
+              
+              {/* Logo - bigger and positioned on the right */}
+              <img 
+                src="/logos/prov_logo_white.png" 
+                alt="Ivy Factory Logo" 
+                className="h-12 w-auto object-contain"
+                onError={(e) => {
+                  // Fallback to Factory icon if logo fails to load
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.style.display = 'none';
+                  const parent = imgElement.parentElement;
+                  if (parent) {
+                    const fallbackIcon = document.createElement('div');
+                    fallbackIcon.innerHTML = '<svg class="h-12 w-12 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>';
+                    parent.appendChild(fallbackIcon);
+                  }
+                }}
+              />
+              
+              {/* Account Settings Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2 text-white hover:bg-white/10">
+                    <Settings className="h-4 w-4" />
+                    Account Settings
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Account Settings</DialogTitle>
+                    <DialogDescription>
+                      Update your profile information and preferences.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="archetype">Preferred Archetype</Label>
+                      <Select value={userArchetype} onValueChange={updateUserArchetype} disabled={isUpdatingArchetype}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your archetype" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Strategist">Strategist (The Dreamer & Strategist)</SelectItem>
+                          <SelectItem value="Builder">Builder (The Technical Architect)</SelectItem>
+                          <SelectItem value="Seller">Seller (The Sales & Growth Operator)</SelectItem>
+                          <SelectItem value="Designer">Designer (The User Experience Guardian)</SelectItem>
+                          <SelectItem value="Operator">Operator (The Execution Backbone)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your archetype helps teams understand your role and skills.
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -1207,9 +1228,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                     <label htmlFor="idea-problem" className="text-sm font-medium">Problem Statement</label>
                     <InfoButton
                       title="Problem Statement Decoder"
-                      content={`**Define the problem**
-                      Describe the specific problem your users face.
-                      Be clear and specific about the issue they need solved.`}
+                      content={`**Make the pain real**
+                      Describe the chaos your users complain about like you are venting in the group chat.
+                      Specific beats vague every time.`}
                     />
                   </div>
                   <textarea
@@ -1226,9 +1247,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                     <label htmlFor="idea-solution" className="text-sm font-medium">Solution Approach</label>
                     <InfoButton
                       title="Solution Glow-Up"
-                      content={`**Explain your solution**
-                      Describe what your solution does and how it works.
-                      Be clear about how it solves the problem you identified.`}
+                      content={`**Explain how you fix it**
+                      Drop the TikTok-length pitch for what your solution actually does.
+                      If it sounds like wizardry, add a sentence that proves it works.`}
                     />
                   </div>
                   <textarea
@@ -1245,9 +1266,9 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
                     <label htmlFor="idea-target" className="text-sm font-medium">Target Audience</label>
                     <InfoButton
                       title="Who Are The Humans?"
-                      content={`**Define your target audience**
-                      Identify the main people who need your solution.
-                      Describe their characteristics, needs, and preferences.`}
+                      content={`**Name the tribe**
+                      Call out the main people who scream "take my money" when they hear your solution.
+                      Bonus points for vibes, habits, and how broke or balling they are.`}
                     />
                   </div>
                   <textarea
@@ -1798,3 +1819,4 @@ export const IdeaCreationStation = ({ onComplete, onBack, reviewMode = false, ex
     </div>
   );
 };
+

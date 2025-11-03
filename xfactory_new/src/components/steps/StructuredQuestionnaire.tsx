@@ -277,6 +277,24 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-primary">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-primary-foreground">Idea Questionnaire</h1>
+                <p className="text-sm text-primary-foreground/80">Structured idea development</p>
+              </div>
+            </div>
+            <Badge variant="warning">Question {currentQuestionNumber} of {totalQuestions}</Badge>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Progress Bar */}
         <div className="mb-8">
@@ -442,3 +460,4 @@ export const StructuredQuestionnaire = ({ onComplete, onBack, teamId }: Structur
     </div>
   );
 };
+
