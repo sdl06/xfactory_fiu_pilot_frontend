@@ -2189,3 +2189,4 @@ This bar chart is like a financial scoreboard. Green bars = money coming in, Red
       <FactorAI currentStation={5} userData={{ previousData }} context="finance" />
     </div>
   );
+};

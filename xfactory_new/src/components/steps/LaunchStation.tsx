@@ -232,3 +232,4 @@ export const LaunchStation = ({ scalingData, onComplete, onBack }: LaunchStation
       />
     </div>
   );
+};
