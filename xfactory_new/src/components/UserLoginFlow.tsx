@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Factory, LogIn, ArrowLeft } from "lucide-react";
+import { Factory, LogIn, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
+import { Link } from "react-router-dom";
 
 interface UserLoginFlowProps {
   onLogin: (userData: any) => void | Promise<void>;
@@ -15,6 +16,7 @@ interface UserLoginFlowProps {
 export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
@@ -146,15 +148,34 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <div className="text-right">
+                  <Link
+                    to="/reset-password"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
               <Button 
                 type="submit" 
@@ -177,30 +198,16 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
               </Button>
             </form>
             
-            <div className="mt-6 text-center space-y-3">
+            <div className="mt-6 text-center">
               <Button
-                variant="link"
+                variant="ghost"
                 size="sm"
+                onClick={onBack}
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  // Placeholder for forgot password functionality
-                  console.log('Forgot password clicked');
-                }}
               >
-                Forgot Password? - Under development
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Landing
               </Button>
-              
-              <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onBack}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Landing
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>

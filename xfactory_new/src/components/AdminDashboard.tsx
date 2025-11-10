@@ -818,7 +818,19 @@ const TeamAdminModal = ({ open, onOpenChange, team, onTeamDeleted }: { open: boo
                 </button>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => toggleLock(s.key)}>
-                    {isLocked(s.key) ? (<><UnlockIcon className="h-4 w-4 mr-1" />Unlock</>) : (<><LockIcon className="h-4 w-4 mr-1" />Lock</>)}
+                    {isLocked(s.key)
+                      ? (
+                        <>
+                          <LockIcon className="h-4 w-4 mr-1" />
+                          Locked
+                        </>
+                        )
+                      : (
+                        <>
+                          <UnlockIcon className="h-4 w-4 mr-1" />
+                          Unlocked
+                        </>
+                        )}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => resetSection(s.key)}>
                     <RefreshCw className="h-4 w-4 mr-1" />Reset
@@ -3134,7 +3146,6 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     </div>
   );
 };
-
 
 
 

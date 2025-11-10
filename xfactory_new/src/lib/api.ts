@@ -226,6 +226,27 @@ class ApiClient {
     }
   }
 
+  async requestPasswordReset(email: string) {
+    return this.request('/auth/forgot-password/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPasswordWithCode(code: string, newPassword: string) {
+    return this.request('/auth/reset-password/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_code: code, new_password: newPassword }),
+    });
+  }
+
+  async resetPasswordWithToken(token: string, newPassword: string) {
+    // Backwards compatibility for older callers – forwards to the code-based API.
+    return this.resetPasswordWithCode(token, newPassword);
+  }
+
   async logout() {
     return this.request('/auth/logout/', {
       method: 'POST',
@@ -1158,7 +1179,5 @@ export default apiClient;
 
 // Helper: Build team PDF serve URL (iframe-friendly)
 export const getGammaPdfUrlTeam = (teamId: number): string => `${API_ORIGIN}/api/pitch-deck/teams/${teamId}/gamma/pdf/`;
-
-
 
 
