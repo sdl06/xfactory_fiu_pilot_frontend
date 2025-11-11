@@ -40,8 +40,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import html2canvas from 'html2canvas';
 import { ConceptCardVersionNavigation } from "@/components/ConceptCardVersionNavigation";
+import ResetPassword from "./ResetPassword";
 
-type AppState = "landing" | "admin-login" | "user-login" | "admin-dashboard" | "account-creation" | "mentor-signup" | "investor-signup" | "mentor-dashboard" | "investor-dashboard" | "onboarding" | "dashboard" | "station" | "community" | "completion" | "member-addition" | "mentor-team-select";
+type AppState = "landing" | "admin-login" | "user-login" | "admin-dashboard" | "account-creation" | "mentor-signup" | "investor-signup" | "mentor-dashboard" | "investor-dashboard" | "onboarding" | "dashboard" | "station" | "community" | "completion" | "member-addition" | "mentor-team-select" | "reset-password";
 
 interface UserData {
   hasIdea: boolean;
@@ -84,7 +85,8 @@ interface StationData {
 const Index = () => {
   const { user, isLoading, logout } = useAuth();
   const { toast } = useToast();
-  const [appState, setAppState] = useState<AppState>("landing");
+const [appState, setAppState] = useState<AppState>("landing");
+const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string }>({});
   const [userData, setUserData] = useState<UserData | null>(null);
   const [mentorData, setMentorData] = useState<any>(null);
   const [investorData, setInvestorData] = useState<any>(null);
@@ -115,6 +117,26 @@ const Index = () => {
   const [trcSnapshot, setTrcSnapshot] = useState<any>({});
   const [adminLocks, setAdminLocks] = useState<Record<string, boolean>>({});
   const [adminUnlocks, setAdminUnlocks] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const resetCode = params.get("resetCode") || params.get("code") || params.get("token");
+    const resetEmail = params.get("resetEmail") || params.get("email");
+
+    if (resetCode || resetEmail) {
+      setResetPrefill({
+        code: resetCode || undefined,
+        email: resetEmail || undefined,
+      });
+      setAppState("reset-password");
+
+      ["resetCode", "code", "token", "resetEmail", "email"].forEach((key) => params.delete(key));
+      const newQuery = params.toString();
+      const newUrl = newQuery ? `/?${newQuery}` : "/";
+      window.history.replaceState(null, "", newUrl);
+    }
+  }, []);
 
   // Sync completedStations with team roadmap completion (mockup) so UI reflects backend state
   useEffect(() => {
@@ -946,6 +968,16 @@ const Index = () => {
     setAppState("investor-signup");
   };
 
+  const handleForgotPassword = () => {
+    setResetPrefill({});
+    setAppState("reset-password");
+  };
+
+  const handleCloseResetPassword = () => {
+    setResetPrefill({});
+    setAppState("user-login");
+  };
+
 
   const handleLogin = () => {
     setAppState("user-login");
@@ -1609,7 +1641,17 @@ const Index = () => {
 }
 
   if (appState === "user-login") {
-    return <UserLoginFlow onLogin={handleUserLogin} onBack={handleBackToLanding} />;
+    return <UserLoginFlow onLogin={handleUserLogin} onBack={handleBackToLanding} onForgotPassword={handleForgotPassword} />;
+  }
+
+  if (appState === "reset-password") {
+    return (
+      <ResetPassword
+        onBack={handleCloseResetPassword}
+        initialVerificationCode={resetPrefill.code || ""}
+        initialEmail={resetPrefill.email || ""}
+      />
+    );
   }
 
   if (appState === "admin-dashboard") {

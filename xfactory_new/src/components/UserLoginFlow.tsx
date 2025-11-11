@@ -6,14 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Factory, LogIn, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
-import { Link } from "react-router-dom";
 
 interface UserLoginFlowProps {
   onLogin: (userData: any) => void | Promise<void>;
   onBack: () => void;
+  onForgotPassword: () => void;
 }
 
-export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
+export const UserLoginFlow = ({ onLogin, onBack, onForgotPassword }: UserLoginFlowProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -169,12 +169,13 @@ export const UserLoginFlow = ({ onLogin, onBack }: UserLoginFlowProps) => {
                   </button>
                 </div>
                 <div className="text-right">
-                  <Link
-                    to="/reset-password"
+                  <button
+                    type="button"
                     className="text-sm text-primary hover:underline"
+                    onClick={onForgotPassword}
                   >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
               </div>
               <Button 
