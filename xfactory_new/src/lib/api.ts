@@ -379,6 +379,19 @@ class ApiClient {
     });
   }
 
+  async markTeamIdeationCompleted(teamId: number, snapshot: Record<string, any> = {}) {
+    const completedAt = snapshot?.completed_at || new Date().toISOString();
+    return this.updateTeamRoadmap(teamId, {
+      ideation: {
+        completed: true,
+        completed_at: completedAt,
+        completion_source: 'admin_manual',
+        manual_override: true,
+        ...snapshot,
+      },
+    });
+  }
+
   // Service roadmap save
   async saveServiceRoadmap(ideaId: number, roadmap: any) {
     const payload: any = {
@@ -1179,5 +1192,4 @@ export default apiClient;
 
 // Helper: Build team PDF serve URL (iframe-friendly)
 export const getGammaPdfUrlTeam = (teamId: number): string => `${API_ORIGIN}/api/pitch-deck/teams/${teamId}/gamma/pdf/`;
-
 

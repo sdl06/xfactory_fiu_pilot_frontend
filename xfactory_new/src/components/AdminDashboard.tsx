@@ -1989,6 +1989,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [isManaging, setIsManaging] = useState(false);
+  const [markingIdeaTeamId, setMarkingIdeaTeamId] = useState<number | null>(null);
 
   // Load allowed users on component mount
   useEffect(() => {
@@ -2028,6 +2029,58 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         setTeams(teamsWithScores);
       }
     } catch {}
+  };
+
+  const updateTeamIdeationSnapshot = (teamObj: any, snapshot: Record<string, any>) => {
+    const mentorship = { ...(teamObj?.roadmap_completion?.mentorship || {}) };
+    const existing = mentorship && typeof mentorship._ideation === 'object' ? { ...mentorship._ideation } : {};
+    mentorship._ideation = { ...existing, ...snapshot };
+    return {
+      ...teamObj,
+      roadmap_completion: {
+        ...(teamObj?.roadmap_completion || {}),
+        mentorship,
+      },
+    };
+  };
+
+  const applyLocalIdeationCompletion = (teamId: number, snapshot: Record<string, any>) => {
+    setTeams(prev =>
+      prev.map(team => (team.id === teamId ? updateTeamIdeationSnapshot(team, snapshot) : team))
+    );
+    setSelectedTeam(prev => {
+      if (!prev || prev.id !== teamId) return prev;
+      return updateTeamIdeationSnapshot(prev, snapshot);
+    });
+  };
+
+  const markTeamIdeationComplete = async (team: any, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    if (!team?.id || markingIdeaTeamId === team.id) return;
+    setMarkingIdeaTeamId(team.id);
+    const timestamp = new Date().toISOString();
+    const snapshot = {
+      completed: true,
+      completed_at: timestamp,
+      completion_source: 'admin_manual',
+      manual_override: true,
+    };
+    try {
+      await apiClient.markTeamIdeationCompleted(team.id, snapshot);
+      applyLocalIdeationCompletion(team.id, snapshot);
+      toast({
+        title: "Ideation marked complete",
+        description: `${team.name} now appears as complete for idea generation.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to mark ideation complete",
+        description: error?.error || error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setMarkingIdeaTeamId(null);
+    }
   };
 
   const loadNotifications = async () => {
@@ -2596,93 +2649,133 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           <CardContent>
             {teams && teams.length > 0 ? (
               <div className="space-y-4">
-                {teams.map((team: any) => (
-                  <div key={team.id} className="p-4 border rounded-lg cursor-pointer hover:bg-muted/50" onClick={() => openTeamModal(team)}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold">{team.name}</div>
-                        <div className="text-xs text-muted-foreground">{team.description || 'No description'}</div>
+                {teams.map((team: any) => {
+                  const mentorship = (team?.roadmap_completion?.mentorship || {}) as Record<string, any>;
+                  const ideationSnapshot =
+                    mentorship && typeof mentorship._ideation === 'object' ? mentorship._ideation : {};
+                  const ideaCompleted = Boolean(ideationSnapshot?.completed);
+                  return (
+                    <div
+                      key={team.id}
+                      className="p-4 border rounded-lg cursor-pointer hover:bg-muted/50"
+                      onClick={() => openTeamModal(team)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">{team.name}</div>
+                          <div className="text-xs text-muted-foreground">{team.description || 'No description'}</div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="text-muted-foreground">Idea Stage:</span>
+                            {ideaCompleted ? (
+                              <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
+                                Completed
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                                Needs review
+                              </Badge>
+                            )}
+                            {!ideaCompleted && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-6 px-2 text-xs"
+                                disabled={markingIdeaTeamId === team.id}
+                                onClick={(e) => markTeamIdeationComplete(team, e)}
+                              >
+                                {markingIdeaTeamId === team.id ? (
+                                  <>
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                    Marking...
+                                  </>
+                                ) : (
+                                  'Mark completed'
+                                )}
+                              </Button>
+                            )}
+                          </div>
                           <div className="mt-1 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Mentor: </span>
-                        {Array.isArray(team.mentors) && team.mentors.length > 0 ? (
-                          <>
-                            <Badge variant="accent">{team.mentors[0].name || team.mentors[0].email}</Badge>
-                            {team.roadmap_completion?.mentorship?.rating ? (
-                              <span className="ml-1">Rating: {team.roadmap_completion.mentorship.rating}/5</span>
-                            ) : null}
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">Unassigned</span>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-6 px-2 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenManageDialog(team, 'mentor');
-                          }}
-                        >
-                          Manage
-                        </Button>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Mentor: </span>
+                              {Array.isArray(team.mentors) && team.mentors.length > 0 ? (
+                                <>
+                                  <Badge variant="accent">{team.mentors[0].name || team.mentors[0].email}</Badge>
+                                  {team.roadmap_completion?.mentorship?.rating ? (
+                                    <span className="ml-1">Rating: {team.roadmap_completion.mentorship.rating}/5</span>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">Unassigned</span>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenManageDialog(team, 'mentor');
+                                }}
+                              >
+                                Manage
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-muted-foreground">Investor: </span>
+                              {Array.isArray(team.investors) && team.investors.length > 0 ? (
+                                <Badge variant="secondary">{team.investors[0].name || team.investors[0].email}</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">Unassigned</span>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenManageDialog(team, 'investor');
+                                }}
+                              >
+                                Manage
+                              </Button>
+                            </div>
+                            {/* Rating removed from below investor; now shown next to mentor */}
                           </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-muted-foreground">Investor: </span>
-                        {Array.isArray(team.investors) && team.investors.length > 0 ? (
-                          <Badge variant="secondary">{team.investors[0].name || team.investors[0].email}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">Unassigned</span>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-6 px-2 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenManageDialog(team, 'investor');
-                          }}
-                        >
-                          Manage
-                        </Button>
-                      </div>
-                      {/* Rating removed from below investor; now shown next to mentor */}
-                    </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{team.current_member_count}/{team.max_members}</Badge>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTeamToDelete(team);
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                    {Array.isArray(team.memberships) && team.memberships.length > 0 ? (
-                      <div className="mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {team.memberships.map((m: any) => (
-                          <div 
-                            key={m.id} 
-                            className="text-sm p-2 rounded bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors"
-                            onClick={(e) => openMemberInfo(e, m, team)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{team.current_member_count}/{team.max_members}</Badge>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTeamToDelete(team);
+                            }}
+                            className="flex items-center gap-1"
                           >
-                            <div className="font-medium">{m.user?.full_name || m.user?.email || 'Member'}</div>
-                            <div className="text-xs text-muted-foreground">{m.assigned_archetype || 'Unassigned'}</div>
-                          </div>
-                        ))}
+                            <Trash2 className="h-3 w-3" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-xs text-muted-foreground mt-2">No members</div>
-                    )}
-                  </div>
-                ))}
+                      {Array.isArray(team.memberships) && team.memberships.length > 0 ? (
+                        <div className="mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {team.memberships.map((m: any) => (
+                            <div
+                              key={m.id}
+                              className="text-sm p-2 rounded bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors"
+                              onClick={(e) => openMemberInfo(e, m, team)}
+                            >
+                              <div className="font-medium">{m.user?.full_name || m.user?.email || 'Member'}</div>
+                              <div className="text-xs text-muted-foreground">{m.assigned_archetype || 'Unassigned'}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground mt-2">No members</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-sm text-muted-foreground">No teams found.</div>
@@ -3146,7 +3239,4 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     </div>
   );
 };
-
-
-
 

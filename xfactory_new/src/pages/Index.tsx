@@ -716,14 +716,7 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
         // Close the dialogs first
         setShowIdeaReview(false);
         setIsPivotingConcept(false);
-        
-        // Clear the existing idea card data to force a fresh start
-        setStationData(prev => ({
-          ...prev,
-          ideaCard: null,
-          onboardingData: null,
-        }));
-        
+
         // Clear brainstorming data in the backend to force fresh generation
         try {
           await apiClient.delete(`/ideation/teams/${teamId}/brainstorming/`);
@@ -736,7 +729,7 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
           });
         } catch {}
         
-        // Clear the completion flag in localStorage to allow re-entering onboarding
+        // Clear the completion flag in localStorage so ideation is treated as incomplete
         try {
           localStorage.removeItem(scopedKey('xfactoryIdeaCompleted'));
           localStorage.removeItem(scopedKey('xfactoryStationCompleted_1'));
@@ -744,13 +737,35 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
           localStorage.removeItem('xfactoryBrainstorming');
         } catch {}
         
-        // Navigate back to the onboarding flow (same flow as after team formation)
-        // The key will force a fresh remount with empty state
-        setStationData(prev => ({
-          ...prev,
-          _pivotReset: Date.now(),
-        }));
-        setAppState('onboarding');
+        // Jump directly into Idea Generation (Station 1) with a clean slate
+        setStationData(prev => {
+          const remainingStations = Array.isArray(prev?.completedStations)
+            ? prev.completedStations.filter(id => id !== 1)
+            : [];
+          return {
+            ...prev,
+            ideaCard: null,
+            onboardingData: null,
+            mockups: undefined,
+            validationData: undefined,
+            mvpData: undefined,
+            testingData: undefined,
+            pitchData: undefined,
+            iterationData: undefined,
+            scalingData: undefined,
+            launchData: undefined,
+            monitoringData: undefined,
+            marketingData: undefined,
+            legalData: undefined,
+            financialData: undefined,
+            investorData: undefined,
+            currentStation: 1,
+            reviewMode: false,
+            completedStations: remainingStations,
+            _pivotReset: Date.now(),
+          };
+        });
+        setAppState('station');
       }
     } catch {}
   };
