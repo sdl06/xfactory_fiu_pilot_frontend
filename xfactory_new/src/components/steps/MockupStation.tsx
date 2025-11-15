@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useRef } from "react";
 import { SubmitGate } from "@/components/SubmitGate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +15,8 @@ import { createLogger } from "@/lib/logger";
 import { apiClient, toAbsoluteMediaUrl } from "@/lib/api";
 import { scopedKey } from "@/lib/teamScope";
 const log = createLogger("MockupStation");
+const KEY_CHANGE_NOTICE = "We detected a new V0 API key. We're regenerating your landing page and restored your resets.";
+const DEFAULT_RESET_LIMIT = 3;
 // Ensure v0 SDK sees API key/project if it supports runtime config
 try {
   const _cfg: any = (v0 as any);
@@ -62,13 +63,15 @@ interface MockupStationProps {
   onBack: () => void;
   autoGenerate?: boolean;
   forceNewV0?: boolean;
+  defaultSelectionMode?: 'menu' | 'landing' | 'images' | 'service';
 }
 export const MockupStation = ({
   ideaCard,
   onComplete,
   onBack,
   autoGenerate = false,
-  forceNewV0 = false
+  forceNewV0 = false,
+  defaultSelectionMode = 'menu',
 }: MockupStationProps) => {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -82,7 +85,7 @@ export const MockupStation = ({
   const [v0InitialPrompt, setV0InitialPrompt] = useState<string>("");
   const [v0UserMessage, setV0UserMessage] = useState<string>("");
   const [isSendingV0, setIsSendingV0] = useState<boolean>(false);
-  const [selectionMode, setSelectionMode] = useState<'menu' | 'landing' | 'images' | 'service'>('menu');
+  const [selectionMode, setSelectionMode] = useState<'menu' | 'landing' | 'images' | 'service'>(defaultSelectionMode);
   const [serviceDoc, setServiceDoc] = useState<any | null>(null);
   const [serviceSection, setServiceSection] = useState<'flowchart'|'journeys'|'timeline'|'milestones'|'phases'>("flowchart");
   const [journeyZoom, setJourneyZoom] = useState<number>(1.15);
@@ -113,6 +116,20 @@ export const MockupStation = ({
   const [regenerationRound, setRegenerationRound] = useState<number>(0);
   const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
   const [maxRegenerationReached, setMaxRegenerationReached] = useState<boolean>(false);
+  const [v0KeySignature, setV0KeySignature] = useState<string | null>(null);
+  const [resetCount, setResetCount] = useState<number>(0);
+  const [resetLimit, setResetLimit] = useState<number>(DEFAULT_RESET_LIMIT);
+  const [resettingLanding, setResettingLanding] = useState<boolean>(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [landingAccessNotice, setLandingAccessNotice] = useState<string | null>(null);
+  const [keyChangeNotice, setKeyChangeNotice] = useState<string | null>(null);
+  const [autoRegenerateAfterKeyChange, setAutoRegenerateAfterKeyChange] = useState<boolean>(false);
+  const resetsRemaining = Math.max(0, resetLimit - resetCount);
+  const hasAutoOpenedLandingRef = useRef(false);
+  const hasSavedLanding = Boolean(v0LiveUrl || v0DemoUrl);
+  const lastPersistedDemoRef = useRef<string | null>(null);
+  const lastKnownLandingRef = useRef<string | null>(null);
+  const landingUrlStorageKey = scopedKey('xfactoryLastV0LandingUrl');
 
   // Build a save payload that always includes current flowchart
   const getRoadmapSaveObject = (): any => {
@@ -312,6 +329,34 @@ export const MockupStation = ({
   const [hasV0Chat, setHasV0Chat] = useState<boolean>(() => {
     try { return !!localStorage.getItem(scopedKey('xfactoryV0ChatId')); } catch { return false; }
   });
+  const landingLoadPromiseRef = useRef<Promise<boolean> | null>(null);
+
+  useEffect(() => {
+    setSelectionMode(defaultSelectionMode);
+    if (defaultSelectionMode === 'menu') {
+      setShowV0LandingScreen(false);
+      setV0Phase('intro');
+    }
+  }, [defaultSelectionMode]);
+
+  useEffect(() => {
+    if (v0LiveUrl || v0DemoUrl) return;
+    try {
+      const stored = localStorage.getItem(landingUrlStorageKey);
+      if (stored) {
+        lastKnownLandingRef.current = stored;
+        setV0LiveUrl(stripTs(stored));
+        setV0DemoUrl(cacheBust(stored));
+      }
+    } catch {}
+  }, [landingUrlStorageKey, v0DemoUrl, v0LiveUrl]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (selectionMode === 'menu') {
+      void loadExistingLandingMetadata({ allowMissingSignature: true });
+    }
+  }, [selectionMode]);
 
   // Prefer opening v0 demo in a new tab for hosts that often break iframing
   const canEmbedDemo = (u?: string | null) => {
@@ -323,67 +368,128 @@ export const MockupStation = ({
     } catch { return false; }
   };
 
-  useEffect(() => {
-    (async () => {
+  const setLandingPreview = (url?: string | null): boolean => {
+    if (!url) return false;
+    const raw = stripTs(url);
+    if (!raw) return false;
+    lastKnownLandingRef.current = raw;
+    try { localStorage.setItem(landingUrlStorageKey, raw); } catch {}
+    setV0LiveUrl(raw);
+    setV0DemoUrl(cacheBust(raw));
+    setV0Phase('preview');
+    return true;
+  };
+
+  const applyLandingPayload = async (payload: any): Promise<boolean> => {
+    if (!payload) return false;
+    try {
+      syncMockupMeta(payload);
+    } catch {}
+    if (setLandingPreview(payload?.v0_demo_url)) {
+      return true;
+    }
+    const mocks: any[] = Array.isArray(payload?.mockups) ? payload.mockups : [];
+    const mockWithUrl = mocks.find((m: any) => m?.v0_demo_url || m?.demo_url || m?.live_url || m?.url);
+    if (mockWithUrl) {
+      if (setLandingPreview(mockWithUrl.v0_demo_url || mockWithUrl.demo_url || mockWithUrl.live_url || mockWithUrl.url)) {
+        return true;
+      }
+    }
+    const cid = payload?.v0_chat_id
+      || (mocks.find((m: any) => m?.v0_chat_id)?.v0_chat_id)
+      || payload?.chat_id
+      || '';
+    const latestVid = payload?.v0_latest_version_id
+      || (mocks.find((m: any) => m?.v0_latest_version_id)?.v0_latest_version_id)
+      || '';
+    if (cid) {
+      try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), String(cid)); } catch {}
+      try { setHasV0Chat(true); } catch {}
+      try {
+        if (latestVid) {
+          const version = await (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid });
+          const demo = (version?.demoUrl || version?.webUrl || version?.demo || null) as string | null;
+          if (setLandingPreview(demo)) {
+            return true;
+          }
+        }
+        const chatDetails = await (v0 as any).chats.getById({ chatId: cid });
+        const latestVersion = (chatDetails as any)?.latestVersion;
+        if (latestVersion) {
+          const demo = (latestVersion.demoUrl || latestVersion.webUrl || latestVersion.demo || null) as string | null;
+          if (setLandingPreview(demo)) {
+            return true;
+          }
+        }
+      } catch (err) {
+        log.warn('applyLandingPayload:version-fetch-failed', err);
+      }
+    }
+    return false;
+  };
+
+  const fetchIdeaMockupPayload = async (): Promise<any | null> => {
+    try {
+      const ideaId = await resolveTeamIdeaId();
+      if (!ideaId) return null;
+      const headers = v0KeySignature ? { 'X-V0-Key-Signature': v0KeySignature } : undefined;
+      const resp = await apiClient.request(`/mockups/software/${ideaId}/`, { method: 'GET', headers });
+      if (resp?.status && resp.status >= 200 && resp.status < 300 && resp.data) {
+        return resp.data;
+      }
+    } catch (err) {
+      log.warn('fetchIdeaMockupPayload:error', err);
+    }
+    return null;
+  };
+
+  const loadExistingLandingMetadata = async (options?: { allowMissingSignature?: boolean }): Promise<boolean> => {
+    const allowMissingSignature = options?.allowMissingSignature ?? false;
+    if (landingLoadPromiseRef.current) {
+      return landingLoadPromiseRef.current;
+    }
+    if (v0KeySignature === null && !allowMissingSignature) return false;
+    const promise = (async () => {
+      let foundLanding = false;
       try {
         let teamId: number | null = null;
         try {
           const status = await apiClient.get('/team-formation/status/');
           teamId = (status as any)?.data?.current_team?.id || null;
         } catch {}
-        if (!teamId) return;
-        const existing = await apiClient.getSoftwareMockupTeam(teamId);
-        const st = (existing as any)?.status as number | undefined;
-        if (st === 404) {
-          // Nothing exists yet; stay on menu until user chooses to generate
-          return;
-        }
-        const cid = (existing as any)?.data?.v0_chat_id
-          || ((existing as any)?.data?.mockups || []).find((m: any) => m?.v0_chat_id)?.v0_chat_id;
-        const latestVid = (existing as any)?.data?.v0_latest_version_id;
-        // Prefer top-level saved demo first regardless of chat id
-        try {
-          const topLevelDemo = (existing as any)?.data?.v0_demo_url as string | undefined;
-          if (topLevelDemo) {
-            const raw = stripTs(topLevelDemo);
-            setV0LiveUrl(raw);
-            setV0DemoUrl(cacheBust(raw));
-            setV0Phase('preview');
-            return;
+        if (teamId) {
+          const existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
+          const st = (existing as any)?.status as number | undefined;
+          if (st && st >= 200 && st < 300) {
+            const payload = (existing as any)?.data;
+            foundLanding = await applyLandingPayload(payload);
           }
-          const mocks: any[] = Array.isArray((existing as any)?.data?.mockups) ? (existing as any).data.mockups : [];
-          const withDemo = mocks.find((m: any) => m?.v0_demo_url);
-          const withDemoAlt = mocks.find((m: any) => typeof m?.demo_url === 'string' && m.demo_url);
-          const chosen = withDemo?.v0_demo_url || withDemoAlt?.demo_url;
-          if (chosen) {
-            const raw = stripTs(chosen);
-            setV0LiveUrl(raw);
-            setV0DemoUrl(cacheBust(raw));
-            setV0Phase('preview');
-            return;
-          }
-        } catch {}
-        // If chat id exists, attempt latest version fetch and open
-        if (cid) {
-          try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), String(cid)); } catch {}
-          try { setHasV0Chat(true); } catch {}
-          try {
-            if (latestVid) {
-              const v = await (v0 as any).chats.getVersion({ chatId: cid, versionId: latestVid });
-              const demo = (v?.demoUrl || v?.webUrl || v?.demo || null) as string | null;
-              if (demo) {
-                const raw = stripTs(demo);
-                setV0LiveUrl(raw);
-                setV0DemoUrl(cacheBust(raw));
-                setV0Phase('preview');
-                return;
-              }
-            }
-          } catch {}
         }
-      } catch {}
+        if (!foundLanding) {
+          const ideaPayload = await fetchIdeaMockupPayload();
+          if (ideaPayload) {
+            foundLanding = await applyLandingPayload(ideaPayload);
+          }
+        }
+      } catch (error) {
+        log.warn('loadExistingLandingMetadata:error', error);
+      }
+      return foundLanding;
     })();
-  }, []);
+    landingLoadPromiseRef.current = promise;
+    try {
+      const found = await promise;
+      return found || Boolean(v0LiveUrl || v0DemoUrl);
+    } finally {
+      landingLoadPromiseRef.current = null;
+    }
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (v0KeySignature === null) return;
+    void loadExistingLandingMetadata();
+  }, [v0KeySignature]);
   const getMockupType = () => {
     const productType = ideaCard.productType || ideaCard.businessType || ideaCard.business_type || "";
     const pt = String(productType).toLowerCase();
@@ -397,18 +503,6 @@ export const MockupStation = ({
   };
 
   const isSoftwareIdea = () => getMockupType() === "app";
-
-  const stripTs = (u?: string | null): string => {
-    if (!u) return '';
-    try {
-      const url = new URL(u);
-      url.searchParams.delete('ts');
-      const qs = url.searchParams.toString();
-      return qs ? url.toString() : `${url.origin}${url.pathname}`;
-    } catch {
-      return String(u).replace(/([?&])ts=\d+(&|$)/g, (m, p1, p2) => (p2 && p2 !== '&' ? p2 : '')).replace(/[?&]$/, '');
-    }
-  };
 
   // Inline SVG flow renderers for service roadmap (flowchart-style)
   const JourneyFlowSVG = ({ stages, zoom = 1 }: { stages: Array<{ stage?: string; activities?: any[]; touchpoints?: any[] }>, zoom?: number }) => {
@@ -851,11 +945,119 @@ export const MockupStation = ({
 
     return { lanes, nodes, edges };
   };
-  const cacheBust = (u?: string | null): string => {
-    const raw = stripTs(u || '');
-    if (!raw) return '';
-    return raw + (raw.includes('?') ? '&' : '?') + 'ts=' + Date.now();
-  };
+type LandingIntent = 'auto' | 'access' | 'generate';
+
+const stripTs = (u?: string | null): string => {
+  if (!u) return '';
+  try {
+    const url = new URL(u);
+    url.searchParams.delete('ts');
+    const qs = url.searchParams.toString();
+    return qs ? url.toString() : `${url.origin}${url.pathname}`;
+  } catch {
+    return String(u).replace(/([?&])ts=\d+(&|$)/g, (m, p1, p2) => (p2 && p2 !== '&' ? p2 : '')).replace(/[?&]$/, '');
+  }
+};
+
+const cacheBust = (u?: string | null): string => {
+  const raw = stripTs(u || '');
+  if (!raw) return '';
+  try {
+    const host = new URL(raw).host.toLowerCase();
+    if (host.endsWith('v0.app') || host.endsWith('vusercontent.net')) {
+      return raw;
+    }
+  } catch {
+    return raw;
+  }
+  return raw + (raw.includes('?') ? '&' : '?') + 'ts=' + Date.now();
+};
+
+  const getCurrentTeamId = useCallback(async (): Promise<number | null> => {
+    try {
+      const status = await apiClient.get('/team-formation/status/');
+      const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+      if (teamId) {
+        try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {}
+        return Number(teamId);
+      }
+    } catch {}
+    try {
+      const cached = localStorage.getItem('xfactoryTeamId');
+      if (cached) return Number(cached);
+    } catch {}
+    return null;
+  }, []);
+  const persistLandingSnapshot = useCallback(async ({
+    demoUrl,
+    projectId,
+    chatId,
+    latestVersionId,
+    status = 'completed',
+    prompt,
+    title,
+    description,
+  }: {
+    demoUrl?: string | null;
+    projectId?: string | null | undefined;
+    chatId?: string | null | undefined;
+    latestVersionId?: string | null | undefined;
+    status?: string;
+    prompt?: string | null;
+    title?: string | null;
+    description?: string | null;
+  } = {}) => {
+    try {
+      const teamId = await getCurrentTeamId();
+      if (!teamId) {
+        log.warn('persistLandingSnapshot:no-team');
+        return;
+      }
+      const payload: any = {};
+      let hasPayload = false;
+      if (demoUrl) {
+        payload.v0_demo_url = stripTs(demoUrl);
+        hasPayload = true;
+      }
+      const resolvedProject = projectId || localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || undefined;
+      if (resolvedProject) {
+        payload.v0_project_id = resolvedProject;
+        hasPayload = true;
+      }
+      const resolvedChat = chatId || localStorage.getItem(scopedKey('xfactoryV0ChatId')) || undefined;
+      if (resolvedChat) {
+        payload.v0_chat_id = resolvedChat;
+        hasPayload = true;
+      }
+      if (latestVersionId) {
+        payload.v0_latest_version_id = latestVersionId;
+        hasPayload = true;
+      }
+      if (prompt) {
+        payload.v0_prompt = prompt;
+        hasPayload = true;
+      }
+      if (title) {
+        payload.title = title;
+        hasPayload = true;
+      }
+      if (description) {
+        payload.description = description;
+        hasPayload = true;
+      }
+      if (!hasPayload) return;
+      payload.status = status;
+      const resp = await apiClient.createSoftwareMockupTeam(teamId, payload, { keySignature: v0KeySignature || undefined });
+      syncMockupMeta(resp?.data);
+    } catch (err) {
+      log.warn('persistLandingSnapshot:failed', err);
+    }
+  }, [getCurrentTeamId, v0KeySignature]);
+  const persistProjectId = useCallback(async (projectId?: string | null) => {
+    if (!projectId) return;
+    try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), String(projectId)); } catch {}
+    await persistLandingSnapshot({ projectId, status: 'draft' });
+  }, [persistLandingSnapshot]);
 
   const getIdeaId = (): number | null => {
     try {
@@ -900,6 +1102,52 @@ export const MockupStation = ({
       return null;
     } catch { return null; }
   };
+  const syncMockupMeta = (payload?: any) => {
+    if (!payload || typeof payload !== 'object') return;
+    if (typeof payload.reset_count === 'number') setResetCount(payload.reset_count);
+    if (typeof payload.reset_limit === 'number') setResetLimit(payload.reset_limit);
+    if (payload.key_changed) {
+      setKeyChangeNotice(payload.key_changed_message || KEY_CHANGE_NOTICE);
+      setAutoRegenerateAfterKeyChange(true);
+    }
+    if (typeof payload.resets_remaining === 'number') {
+      // Ensure limit stays in sync even if backend doesn't send reset_limit
+      const inferredLimit = payload.reset_count + payload.resets_remaining;
+      if (inferredLimit > resetLimit) setResetLimit(inferredLimit);
+    }
+    setResetError(null);
+  };
+  const clearStoredV0State = () => {
+    try { localStorage.removeItem(scopedKey('xfactoryV0ChatId')); } catch {}
+    try { localStorage.removeItem(scopedKey('xfactoryV0ProjectId')); } catch {}
+    setHasV0Chat(false);
+  };
+  const createNewV0Project = async (): Promise<string | undefined> => {
+    try {
+      if (!(v0 as any)?.projects?.create) {
+        log.error('createNewV0Project:projects API not available');
+        return undefined;
+      }
+      const project = await (v0 as any).projects.create({
+        name: `xfactory-${Date.now()}`,
+        description: 'Auto-created project for xFactory mockup generation',
+      });
+      const projectId = project?.id || project?.projectId || project?.data?.id;
+      if (projectId) {
+        await persistProjectId(projectId);
+        return projectId;
+      }
+    } catch (err) {
+      log.error('createNewV0Project:failed', err);
+    }
+    return undefined;
+  };
+  const isProjectForbiddenError = (err: any) => {
+    const status = err?.status || err?.statusCode;
+    if (status === 403) return true;
+    const msg = String(err?.message || err?.toString?.() || '').toLowerCase();
+    return msg.includes('project_forbidden_error') || (err?.response?.data?.error?.code === 'project_forbidden_error');
+  };
 
   const v0ApiKey = (import.meta as any).env?.VITE_V0_API_KEY as string | undefined;
   const v0ProjectId = (import.meta as any).env?.VITE_V0_PROJECT_ID as string | undefined;
@@ -907,6 +1155,39 @@ export const MockupStation = ({
   const v0ProjectIdFallback = (import.meta as any).env?.V0_PROJECT_ID as string | undefined;
   const effectiveV0ApiKey = v0ApiKey || v0ApiKeyFallback;
   const effectiveV0ProjectId = v0ProjectId || v0ProjectIdFallback;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const key = effectiveV0ApiKey || '';
+      if (typeof window === 'undefined') {
+        if (!cancelled) setV0KeySignature('');
+        return;
+      }
+      if (!key) {
+        if (!cancelled) setV0KeySignature('');
+        return;
+      }
+      try {
+        if (window.crypto?.subtle) {
+          const encoder = new TextEncoder();
+          const digest = await window.crypto.subtle.digest('SHA-256', encoder.encode(key));
+          const hashArray = Array.from(new Uint8Array(digest));
+          const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 64);
+          if (!cancelled) setV0KeySignature(`sha256:${hashHex}`);
+          return;
+        }
+      } catch (err) {
+        log.warn('v0-signature:crypto-failed', err);
+      }
+      let simpleHash = 0;
+      for (let i = 0; i < key.length; i += 1) {
+        simpleHash = (simpleHash * 31 + key.charCodeAt(i)) >>> 0;
+      }
+      if (!cancelled) setV0KeySignature(`simple:${simpleHash.toString(16)}`);
+    })();
+    return () => { cancelled = true; };
+  }, [effectiveV0ApiKey, effectiveV0ProjectId]);
 
   const createOrResumeV0Chat = async (forceNew = false) => {
     log.info("createOrResumeV0Chat:start", { forceNew });
@@ -950,19 +1231,12 @@ export const MockupStation = ({
             projectIdToUse = typeof verifiedProject === 'string' ? verifiedProject : projectIdToUse;
             // Persist verified chat to backend metadata for durability
             try {
-              // Prefer team-scoped save
-              let teamIdForSave: number | null = null;
-              try { const status = await apiClient.get('/team-formation/status/'); teamIdForSave = (status as any)?.data?.current_team?.id || null; } catch {}
-              if (teamIdForSave) {
-                await apiClient.createSoftwareMockupTeam(teamIdForSave, {
-                v0_project_id: projectIdToUse,
-                v0_chat_id: lsChatId,
-                v0_latest_version_id: (chat as any)?.latestVersion?.id,
-                status: 'draft'
-                });
-              } else {
-                log.warn('createOrResumeV0Chat: no team; skip persisting chat metadata');
-              }
+              await persistLandingSnapshot({
+                projectId: projectIdToUse,
+                chatId: lsChatId,
+                latestVersionId: (chat as any)?.latestVersion?.id,
+                status: 'draft',
+              });
               log.info('createOrResumeV0Chat:ls-chat-resumed', { chatId: lsChatId });
             } catch (e) { log.warn('createOrResumeV0Chat:ls-chat-save-failed', e); }
             try { setHasV0Chat(true); } catch {}
@@ -992,7 +1266,8 @@ export const MockupStation = ({
         } catch {}
             
             if (shouldLoadExisting) {
-              const existing = await apiClient.getSoftwareMockupTeam(teamId);
+              const existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
+              syncMockupMeta((existing as any)?.data);
         // No fallback to idea-scoped fetch; software mockups are team-scoped
         const existingChatId = existing?.data?.mockups?.find((m: any) => m.v0_chat_id)?.v0_chat_id || existing?.data?.mockups?.[0]?.v0_chat_id;
         const existingProjectId = existing?.data?.mockups?.find((m: any) => m.v0_project_id)?.v0_project_id || existing?.data?.v0_project_id;
@@ -1175,33 +1450,44 @@ user problems: ${probsLine}`;
     // Create chat using v0 SDK
     if (!effectiveV0ApiKey) throw new Error('Missing V0 API key');
     log.debug("createOrResumeV0Chat:v0-create", { projectIdToUse });
-    const chat = await v0.chats.create({
-      system: 'You are a helpful assistant that builds production-quality landing pages with React/Next and Tailwind. Output assets and structure as needed.',
-      message,
-      projectId: projectIdToUse
-    });
+    if (!projectIdToUse) {
+      projectIdToUse = await createNewV0Project();
+    }
+    const createChat = async (projectId?: string) => {
+      return v0.chats.create({
+        system: 'You are a helpful assistant that builds production-quality landing pages with React/Next and Tailwind. Output assets and structure as needed.',
+        message,
+        projectId
+      });
+    };
+    let chat: any;
+    try {
+      chat = await createChat(projectIdToUse);
+    } catch (err) {
+      if (isProjectForbiddenError(err)) {
+        log.warn('createOrResumeV0Chat:project-forbidden', err);
+        clearStoredV0State();
+        projectIdToUse = await createNewV0Project();
+        if (!projectIdToUse) throw err;
+        chat = await createChat(projectIdToUse);
+      } else {
+        throw err;
+      }
+    }
     log.info("createOrResumeV0Chat:v0-created", { chatId: chat?.id });
     try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), chat?.id || ''); } catch {}
     try { localStorage.setItem(scopedKey('xfactoryV0ProjectId'), String(projectIdToUse || '')); } catch {}
 
     // Save chat metadata in backend
     try {
-      const { apiClient } = await import("@/lib/api");
       log.debug("createOrResumeV0Chat:save-metadata");
-      // Prefer team-scoped save
-      let teamIdForSave: number | null = null;
-      try { const status = await apiClient.get('/team-formation/status/'); teamIdForSave = (status as any)?.data?.current_team?.id || null; } catch {}
-      if (teamIdForSave) {
-        await apiClient.createSoftwareMockupTeam(teamIdForSave, {
-          v0_prompt: message,
-          v0_project_id: projectIdToUse,
-          v0_chat_id: chat.id,
-          v0_latest_version_id: (chat as any)?.latestVersion?.id,
-          status: 'draft'
-        });
-      } else {
-        log.warn('createOrResumeV0Chat: no team for save; skipping');
-      }
+      await persistLandingSnapshot({
+        projectId: projectIdToUse,
+        chatId: chat.id,
+        latestVersionId: (chat as any)?.latestVersion?.id,
+        status: 'draft',
+        prompt: message,
+      });
       try { setHasV0Chat(true); } catch {}
       log.info("createOrResumeV0Chat:saved");
     } catch (e) { log.warn("createOrResumeV0Chat:save-metadata-failed", e); }
@@ -1367,23 +1653,19 @@ user problems: ${probsLine}`;
         setV0LiveUrl(stripTs(demoUrl));
         setV0DemoUrl(cacheBust(demoUrl));
         try {
-          const ideaId = getIdeaId();
-          // Prefer team-scoped persistence only
-          try {
-            const status = await apiClient.get('/team-formation/status/');
-            const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-            if (teamId) {
-              await apiClient.createSoftwareMockupTeam(teamId, {
-                v0_demo_url: stripTs(demoUrl || ''),
-                v0_project_id: localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || undefined,
-                v0_chat_id: chatId,
-                v0_latest_version_id: (versionId || (await (async () => { try { const latest = await v0.chats.getById({ chatId }); return (latest as any)?.latestVersion?.id; } catch { return undefined; } })())),
-                status: 'completed'
-              });
-            } else {
-              log.warn('handleSendV0Instruction: no team; skipping demo save');
-            }
-          } catch {}
+          let resolvedVersionId = versionId;
+          if (!resolvedVersionId) {
+            try {
+              const latestMeta = await v0.chats.getById({ chatId });
+              resolvedVersionId = (latestMeta as any)?.latestVersion?.id;
+            } catch {}
+          }
+          await persistLandingSnapshot({
+            demoUrl,
+            chatId,
+            latestVersionId: resolvedVersionId,
+            status: 'completed',
+          });
         } catch (e) { log.warn('handleSendV0Instruction:save-demo-failed', e as any); }
       }
       setV0UserMessage('');
@@ -1425,7 +1707,8 @@ user problems: ${probsLine}`;
               } catch {}
               
               if (shouldLoadExisting) {
-            existing = await apiClient.getSoftwareMockupTeam(teamId);
+            existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
+            syncMockupMeta((existing as any)?.data);
               }
           }
         } catch {}
@@ -1538,26 +1821,22 @@ user problems: ${probsLine}`;
 
       // Save demo URL back to backend
       try {
-        const { apiClient } = await import("@/lib/api");
-        const ideaId = getIdeaId();
         if (demoUrl) {
-          log.debug("generateV0Landing:save-demo", { ideaId, demoUrl });
+          log.debug("generateV0Landing:save-demo", { demoUrl });
+          let latestVersionId: string | undefined;
           try {
-            const status = await apiClient.get('/team-formation/status/');
-            const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-            if (teamId) {
-              await apiClient.createSoftwareMockupTeam(teamId, {
-                v0_demo_url: stripTs(demoUrl || ''),
-                v0_project_id: preExistingProjectId || effectiveV0ProjectId,
-                v0_chat_id: session.chatId,
-                v0_latest_version_id: (await (async () => { try { const latest = await v0.chats.getById({ chatId: session.chatId }); return (latest as any)?.latestVersion?.id; } catch { return undefined; } })()),
-                status: 'completed'
-              });
-            } else {
-              log.warn('generateV0Landing: no team; skipping demo save');
-            }
-            log.info("generateV0Landing:saved-demo");
-          } catch (e) { log.warn("generateV0Landing:save-team-demo-failed", e); }
+            const latest = await v0.chats.getById({ chatId: session.chatId });
+            latestVersionId = (latest as any)?.latestVersion?.id;
+          } catch {}
+          await persistLandingSnapshot({
+            demoUrl,
+            projectId: preExistingProjectId || effectiveV0ProjectId,
+            chatId: session.chatId,
+            latestVersionId,
+            status: 'completed',
+            prompt: v0InitialPrompt || '',
+          });
+          log.info("generateV0Landing:saved-demo");
         }
       } catch (e) { log.warn("generateV0Landing:save-demo-failed", e); }
 
@@ -1615,7 +1894,8 @@ user problems: ${probsLine}`;
         
         if (shouldLoadExisting) {
         try {
-          const existing = await apiClient.getSoftwareMockupTeam(teamId);
+          const existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
+          syncMockupMeta((existing as any)?.data);
           const ok = (existing as any)?.status >= 200 && (existing as any)?.status < 300;
           const notFound = (existing as any)?.status === 404;
           const data: any = ok ? (existing as any)?.data || {} : {};
@@ -1733,6 +2013,93 @@ user problems: ${probsLine}`;
     }
   };
 
+  const handleOpenLanding = async (forceNew = false, intent: LandingIntent = 'auto') => {
+    setResetError(null);
+    setLandingAccessNotice(null);
+    let loadedExisting = false;
+    if (!forceNew) {
+      try {
+        loadedExisting = await loadExistingLandingMetadata({ allowMissingSignature: true });
+      } catch (error) {
+        log.warn('handleOpenLanding:load-existing-failed', error);
+      }
+    }
+    const ready = hasSavedLanding || loadedExisting;
+    if (!forceNew && ready) {
+      setSelectionMode('landing');
+      setShowV0LandingScreen(true);
+      setV0Phase('preview');
+      return;
+    }
+    if (intent === 'access' && lastKnownLandingRef.current) {
+      if (setLandingPreview(lastKnownLandingRef.current)) {
+        setSelectionMode('landing');
+        setShowV0LandingScreen(true);
+        return;
+      }
+    }
+    if (intent === 'access') {
+      setLandingAccessNotice('No saved landing page was found. Generate one first, then access it here.');
+      return;
+    }
+    setSelectionMode('landing');
+    setShowV0LandingScreen(true);
+    setV0Phase('generating');
+    openOrGenerateLanding(forceNew).catch(() => setV0Phase('intro'));
+  };
+
+  const handleResetLanding = async () => {
+    if (resettingLanding) return;
+    setResetError(null);
+    setResettingLanding(true);
+    try {
+      let teamId: number | null = null;
+      try {
+        const status = await apiClient.get('/team-formation/status/');
+        teamId = (status as any)?.data?.current_team?.id || null;
+      } catch {}
+      if (!teamId) {
+        setResetError('Team not available yet. Please refresh and try again.');
+        return;
+      }
+      const resp = await apiClient.resetSoftwareMockupTeam(teamId, {}, { keySignature: v0KeySignature || undefined });
+      const ok = resp.status >= 200 && resp.status < 300 && (resp.data as any)?.success !== false;
+      syncMockupMeta(resp.data);
+      if (ok) {
+        try { localStorage.removeItem(scopedKey('xfactoryV0ChatId')); } catch {}
+        try { localStorage.removeItem(scopedKey('xfactoryV0ProjectId')); } catch {}
+        setHasV0Chat(false);
+        setV0DemoUrl(null);
+        setV0LiveUrl(null);
+        void handleOpenLanding(true, 'generate');
+      } else {
+        const message = (resp.data as any)?.message || resp.error || 'Unable to reset the landing page right now.';
+        setResetError(message);
+      }
+    } catch (error) {
+      log.warn('resetLanding:error', error);
+      setResetError('Unable to reset the landing page right now. Please try again.');
+    } finally {
+      setResettingLanding(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!autoRegenerateAfterKeyChange) return;
+    setAutoRegenerateAfterKeyChange(false);
+    setSelectionMode('landing');
+    setShowV0LandingScreen(true);
+    setV0Phase('generating');
+    openOrGenerateLanding(true).catch(() => setV0Phase('intro'));
+  }, [autoRegenerateAfterKeyChange]);
+
+  useEffect(() => {
+    if (!v0DemoUrl) return;
+    if (lastPersistedDemoRef.current === v0DemoUrl) return;
+    lastPersistedDemoRef.current = v0DemoUrl;
+    persistLandingSnapshot({ demoUrl: v0DemoUrl, status: 'completed' });
+  }, [persistLandingSnapshot, v0DemoUrl]);
+
   // New software flow: dashboard-focused prompt and preview embed
   const generateV0Dashboard = async (forceNew = false) => {
     log.info("generateV0Dashboard:start", { forceNew });
@@ -1756,26 +2123,23 @@ user problems: ${probsLine}`;
 
       // Save demo URL back to backend and update UI
       try {
-        const { apiClient } = await import("@/lib/api");
-        const ideaId = getIdeaId();
-        const teamIdStr = localStorage.getItem('xfactoryTeamId');
-        const teamId = teamIdStr ? Number(teamIdStr) : null;
         if (demoUrl) {
-          log.debug("generateV0Dashboard:save-demo", { ideaId, teamId, demoUrl });
-          const payload = {
+          log.debug("generateV0Dashboard:save-demo", { demoUrl });
+          let latestVersionId: string | undefined;
+          try {
+            const latestMeta = await v0.chats.getById({ chatId: session.chatId });
+            latestVersionId = (latestMeta as any)?.latestVersion?.id;
+          } catch {}
+          await persistLandingSnapshot({
+            demoUrl,
+            projectId: effectiveV0ProjectId,
+            chatId: session.chatId,
+            latestVersionId,
+            status: 'completed',
+            prompt: 'Dashboard generation',
             title: 'V0 Dashboard',
             description: 'Generated via V0 platform',
-            v0_prompt: 'Dashboard generation',
-            v0_project_id: effectiveV0ProjectId,
-            v0_chat_id: session.chatId,
-            v0_demo_url: demoUrl,
-            status: 'completed'
-          };
-          if (teamId) {
-            await apiClient.createSoftwareMockupTeam(teamId, payload);
-          } else {
-            log.warn('generateV0Dashboard: no team; skipping demo save');
-          }
+          });
           log.info("generateV0Dashboard:saved-demo");
         }
       } catch (e) { log.warn("generateV0Dashboard:save-demo-failed", e); }
@@ -1877,9 +2241,7 @@ user problems: ${probsLine}`;
       log.info("handleMockupSelect:landing-selected");
       // Trigger v0 landing generation regardless of idea type
       // Open the dedicated V0 landing screen and show loading until ready
-      setShowV0LandingScreen(true);
-      setV0Phase('generating');
-      openOrGenerateLanding(forceNewV0).catch((e) => { log.error("handleMockupSelect:error", e); setV0Phase('intro'); });
+      void handleOpenLanding(forceNewV0, 'generate');
       return;
     }
     setSelectedMockups(prev => prev.includes(mockupId) ? prev.filter(id => id !== mockupId) : [...prev, mockupId]);
@@ -2014,6 +2376,24 @@ user problems: ${probsLine}`;
                     <div className="aspect-video rounded-lg overflow-hidden border">
                       <iframe src={v0DemoUrl!} width="100%" height="100%" style={{ minHeight: 520 }} />
                     </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        variant="destructive"
+                        onClick={handleResetLanding}
+                        disabled={resettingLanding || resetsRemaining <= 0}
+                      >
+                        {resettingLanding ? 'Resetting…' : `Reset Landing (${resetsRemaining} left)`}
+                      </Button>
+                      <div className="text-xs text-muted-foreground flex items-center">
+                        Need a fresh start? Reset consumes one of your attempts.
+                      </div>
+                    </div>
+                    {resetError && (
+                      <div className="text-xs text-destructive">{resetError}</div>
+                    )}
+                    {!resetError && resetsRemaining <= 0 && (
+                      <div className="text-xs text-muted-foreground">You have used all available resets.</div>
+                    )}
                     {/* Send follow-up instruction to v0 */}
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
@@ -2196,6 +2576,20 @@ user problems: ${probsLine}`;
               <CardDescription>Select one to continue. You can come back and generate others.</CardDescription>
             </CardHeader>
             <CardContent>
+              {keyChangeNotice && (
+                <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 mt-0.5" />
+                    <div className="flex-1 text-sm">
+                      <p>{keyChangeNotice}</p>
+                      <p className="mt-1 text-xs text-amber-700">We started a fresh landing page for you and reset your attempts.</p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setKeyChangeNotice(null)}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-6 h-96">
                 {/* Landing Page - Top Half */}
                 <Card className="col-span-2 p-6 border-2 border-dashed border-primary/30 bg-primary/5">
@@ -2209,20 +2603,27 @@ user problems: ${probsLine}`;
                       <div className="text-sm text-muted-foreground">
                         Create a professional landing page with hero section, features, pricing, and clear call-to-action.
                       </div>
+                    <div className="text-xs text-muted-foreground">
+                      Resets remaining: {resetsRemaining} / {resetLimit}
                     </div>
-                    <Button
-                      variant="warning"
-                      size="lg"
-                      className="w-full"
-                      onClick={() => {
-                        setShowV0LandingScreen(true);
-                        setV0Phase('generating');
-                        openOrGenerateLanding(forceNewV0).catch(() => setV0Phase('intro'));
-                      }}
-                    >
-                      Generate Landing Page
-                    </Button>
+                    {landingAccessNotice && hasSavedLanding && (
+                      <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                        {landingAccessNotice}
+                      </div>
+                    )}
                   </div>
+                  <Button
+                    variant="warning"
+                    size="lg"
+                    className="w-full"
+                    onClick={() => {
+                      const intent: LandingIntent = hasSavedLanding ? 'access' : 'generate';
+                      void handleOpenLanding(forceNewV0, intent);
+                    }}
+                  >
+                    {hasSavedLanding ? 'Access Landing Page' : 'Generate Landing Page'}
+                  </Button>
+                </div>
                 </Card>
                 <Card className="p-4 border-dashed">
                   <div className="space-y-2">
@@ -2356,7 +2757,8 @@ user problems: ${probsLine}`;
                       } catch {}
                       if (teamId) {
                         try {
-                          const existing = await apiClient.getSoftwareMockupTeam(teamId);
+                          const existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
+                          syncMockupMeta((existing as any)?.data);
                           const v0_chat_id = (existing as any)?.data?.v0_chat_id
                             || localStorage.getItem(scopedKey('xfactoryV0ChatId')) || undefined;
                           const v0_project_id = (existing as any)?.data?.v0_project_id
@@ -2365,11 +2767,11 @@ user problems: ${probsLine}`;
                             || (existing as any)?.data?.v0_demo_url
                             || v0DemoUrl
                             || undefined;
-                          await apiClient.createSoftwareMockupTeam(teamId, {
-                            v0_project_id,
-                            v0_chat_id,
-                            v0_demo_url: demoUrl,
-                            status: 'completed'
+                          await persistLandingSnapshot({
+                            demoUrl,
+                            projectId: v0_project_id,
+                            chatId: v0_chat_id,
+                            status: 'completed',
                           });
                         } catch {}
                         try { await apiClient.markMockupCompleted(teamId); } catch {}
@@ -2430,14 +2832,23 @@ user problems: ${probsLine}`;
                     <Sparkles className="h-4 w-4" />
                     Uses v0 to generate a live interactive preview
                   </div>
+                  {landingAccessNotice && hasSavedLanding && (
+                    <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                      {landingAccessNotice}
+                    </div>
+                  )}
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setSelectionMode('menu')}>Back</Button>
-                    <Button variant="warning" size="lg" onClick={() => {
-                      setShowV0LandingScreen(true);
-                      setV0Phase('generating');
-                      openOrGenerateLanding(forceNewV0).catch(() => setV0Phase('intro'));
-                    }} className="w-full sm:w-auto">
-                      Generate Landing Page
+                    <Button
+                      variant="warning"
+                      size="lg"
+                      onClick={() => {
+                        const intent: LandingIntent = hasSavedLanding ? 'access' : 'generate';
+                        void handleOpenLanding(forceNewV0, intent);
+                      }}
+                      className="w-full sm:w-auto"
+                    >
+                      {hasSavedLanding ? 'Access Landing Page' : 'Generate Landing Page'}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                   </div>
@@ -2470,6 +2881,7 @@ user problems: ${probsLine}`;
                 <CardHeader>
                   <CardTitle>Landing Preview (v0)</CardTitle>
                   <CardDescription>Interact with the live preview below or open it in a new tab.</CardDescription>
+                  <div className="text-xs text-muted-foreground">Resets remaining: {resetsRemaining} / {resetLimit}</div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {v0InitialPrompt && (
@@ -2509,11 +2921,11 @@ user problems: ${probsLine}`;
                                 const status = await apiClient.get('/team-formation/status/');
                                 const teamId = (status as any)?.data?.current_team?.id as number | undefined;
                                 if (teamId) {
-                                  await apiClient.createSoftwareMockupTeam(teamId, {
-                                    v0_demo_url: v0DemoUrl,
-                                    v0_project_id: effectiveV0ProjectId,
-                                    v0_chat_id: v0ChatId || undefined,
-                                    status: 'completed'
+                                  await persistLandingSnapshot({
+                                    demoUrl: v0DemoUrl,
+                                    projectId: effectiveV0ProjectId,
+                                    chatId: v0ChatId || undefined,
+                                    status: 'completed',
                                   });
                                 } else {
                                   log.warn('save software mockup: no team; skipping');

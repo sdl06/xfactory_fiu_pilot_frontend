@@ -80,6 +80,7 @@ interface StationData {
   completedStations: number[];
   onboardingInitialStep?: number;
   _pivotReset?: number; // Used to force remount when pivoting
+  mockupEntryMode?: 'menu' | 'landing' | 'images' | 'service';
 }
 
 const Index = () => {
@@ -1435,13 +1436,20 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
         productType: (userData?.businessType as any) || 'App',
         title: (() => { try { return lsGetScoped('xfactoryConceptTitle') || 'Concept'; } catch { return 'Concept'; } })(),
       };
-              setStationData(prev => {
-          const updated = { ...prev, currentStation: 2, reviewMode, ideaCard: prev.ideaCard || placeholderIdeaCard, mockups: undefined };
-          try { localStorage.setItem(scopedKey('xfactoryCurrentStation'), '2'); } catch {}
-          return updated;
-        });
-        setAppState("station");
-        return;
+      setStationData(prev => {
+        const updated = {
+          ...prev,
+          currentStation: 2,
+          reviewMode,
+          ideaCard: prev.ideaCard || placeholderIdeaCard,
+          mockups: undefined,
+          mockupEntryMode: 'menu',
+        };
+        try { localStorage.setItem(scopedKey('xfactoryCurrentStation'), '2'); } catch {}
+        return updated;
+      });
+      setAppState("station");
+      return;
     }
 
     // Ensure Station 4 (Investor Pitch Deck Generation) initializes with a placeholder ideaCard
@@ -2126,6 +2134,7 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
           onBack={handleBackToDashboard}
           autoGenerate={!stationData.mockups}
           forceNewV0={reviewMode}
+          defaultSelectionMode={stationData.mockupEntryMode || 'menu'}
         />
       );
     }

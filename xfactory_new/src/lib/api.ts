@@ -35,6 +35,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 export const API_ORIGIN = (() => {
   try { return new URL(API_BASE_URL).origin; } catch { return DEFAULT_PROD_API.replace(/\/api$/, ''); }
 })();
+const V0_SIGNATURE_HEADER = 'X-V0-Key-Signature';
 
 export const toAbsoluteMediaUrl = (url?: string | null): string | undefined => {
   if (!url) return undefined;
@@ -56,6 +57,11 @@ class ApiClient {
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+  }
+
+  private v0SignatureHeaders(keySignature?: string) {
+    if (!keySignature) return undefined;
+    return { [V0_SIGNATURE_HEADER]: keySignature };
   }
 
   // Get CSRF token from server
@@ -901,35 +907,43 @@ class ApiClient {
   }
 
   // Software mockups (team-scoped only)
-  async createSoftwareMockupIdea(ideaId: number, payload: { title?: string; description?: string; v0_prompt?: string; v0_project_id?: string; v0_chat_id?: string; v0_latest_version_id?: string; v0_demo_url?: string; status?: string }) {
+  async createSoftwareMockupIdea(ideaId: number, payload: { title?: string; description?: string; v0_prompt?: string; v0_project_id?: string; v0_chat_id?: string; v0_latest_version_id?: string; v0_demo_url?: string; status?: string }, options?: { keySignature?: string }) {
+    const headers = this.v0SignatureHeaders(options?.keySignature);
     // Prefer team-scoped persistence; fallback to idea-scoped (backup behavior)
     try {
       const status = await this.get('/team-formation/status/');
       const teamId = (status as any)?.data?.current_team?.id as number | undefined;
       if (teamId) {
-        return this.post(`/ideation/teams/${teamId}/software-mockup/save/`, payload);
+        return this.post(`/ideation/teams/${teamId}/software-mockup/save/`, payload, headers ? { headers } : undefined);
       }
     } catch {}
     // Backup flow: idea-scoped endpoint for first version persistence
-    return this.post(`/mockups/software/${ideaId}/`, payload);
+    return this.post(`/mockups/software/${ideaId}/`, payload, headers ? { headers } : undefined);
   }
-  async getSoftwareMockupIdea(ideaId: number) {
+  async getSoftwareMockupIdea(ideaId: number, options?: { keySignature?: string }) {
+    const headers = this.v0SignatureHeaders(options?.keySignature);
     // Prefer team-scoped when available; fallback to idea-scoped (backup)
     try {
       const status = await this.get('/team-formation/status/');
       const teamId = (status as any)?.data?.current_team?.id as number | undefined;
       if (teamId) {
-        return this.get(`/ideation/teams/${teamId}/software-mockup/`);
+        return this.get(`/ideation/teams/${teamId}/software-mockup/`, headers ? { headers } : undefined);
       }
     } catch {}
-    return this.get(`/mockups/software/${ideaId}/`);
+    return this.get(`/mockups/software/${ideaId}/`, headers ? { headers } : undefined);
   }
-  async createSoftwareMockupTeam(teamId: number, payload: { title?: string; description?: string; v0_prompt?: string; v0_project_id?: string; v0_chat_id?: string; v0_latest_version_id?: string; v0_demo_url?: string; status?: string }) {
+  async createSoftwareMockupTeam(teamId: number, payload: { title?: string; description?: string; v0_prompt?: string; v0_project_id?: string; v0_chat_id?: string; v0_latest_version_id?: string; v0_demo_url?: string; status?: string }, options?: { keySignature?: string }) {
     // Use ideation app routes (loaded for sure) to resolve team -> latest idea
-    return this.post(`/ideation/teams/${teamId}/software-mockup/save/`, payload);
+    const headers = this.v0SignatureHeaders(options?.keySignature);
+    return this.post(`/ideation/teams/${teamId}/software-mockup/save/`, payload, headers ? { headers } : undefined);
   }
-  async getSoftwareMockupTeam(teamId: number) {
-    return this.get(`/ideation/teams/${teamId}/software-mockup/`);
+  async getSoftwareMockupTeam(teamId: number, options?: { keySignature?: string }) {
+    const headers = this.v0SignatureHeaders(options?.keySignature);
+    return this.get(`/ideation/teams/${teamId}/software-mockup/`, headers ? { headers } : undefined);
+  }
+  async resetSoftwareMockupTeam(teamId: number, payload?: { reason?: string }, options?: { keySignature?: string }) {
+    const headers = this.v0SignatureHeaders(options?.keySignature);
+    return this.post(`/ideation/teams/${teamId}/software-mockup/reset/`, payload || {}, headers ? { headers } : undefined);
   }
 
   // MVP: Software (idea- and team-scoped)
@@ -1061,29 +1075,37 @@ class ApiClient {
   }
 
   // Generic GET request
-  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'GET' });
+  async get<T = any>(endpoint: string, extra?: RequestInit): Promise<ApiResponse<T>> {
+    const options: RequestInit = { method: 'GET' };
+    if (extra) Object.assign(options, extra);
+    return this.request<T>(endpoint, options);
   }
 
   // Generic POST request
-  async post<T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  async post<T = any>(endpoint: string, data: any, extra?: RequestInit): Promise<ApiResponse<T>> {
+    const options: RequestInit = { method: 'POST', body: JSON.stringify(data) };
+    if (extra) Object.assign(options, extra);
+    if (!options.body) {
+      options.body = JSON.stringify(data);
+    }
+    return this.request<T>(endpoint, options);
   }
 
   // Generic PUT request
-  async put<T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+  async put<T = any>(endpoint: string, data: any, extra?: RequestInit): Promise<ApiResponse<T>> {
+    const options: RequestInit = { method: 'PUT', body: JSON.stringify(data) };
+    if (extra) Object.assign(options, extra);
+    if (!options.body) {
+      options.body = JSON.stringify(data);
+    }
+    return this.request<T>(endpoint, options);
   }
 
   // Generic DELETE request
-  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+  async delete<T = any>(endpoint: string, extra?: RequestInit): Promise<ApiResponse<T>> {
+    const options: RequestInit = { method: 'DELETE' };
+    if (extra) Object.assign(options, extra);
+    return this.request<T>(endpoint, options);
   }
 
   async getTeamLatestIdeaId(teamId: number) { return this.get(`/ideation/teams/${teamId}/latest-idea/`); }
