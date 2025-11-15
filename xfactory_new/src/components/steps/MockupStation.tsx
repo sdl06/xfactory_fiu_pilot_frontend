@@ -57,6 +57,22 @@ const dedupeMockups = (list: Array<any>): Array<any> => {
   return out;
 };
 
+const sortMockupsLatestFirst = (list?: Array<any> | null): Array<any> => {
+  const candidates = Array.isArray(list) ? [...list] : [];
+  const timestamp = (item: any): number => {
+    const base = item?.updated_at || item?.created_at;
+    const value = base ? new Date(base).getTime() : NaN;
+    return Number.isFinite(value) ? value : 0;
+  };
+  return candidates.sort((a, b) => {
+    const delta = timestamp(b) - timestamp(a);
+    if (delta !== 0) return delta;
+    const fallbackDelta = (Number(b?.id ?? b?.pk ?? 0) || 0) - (Number(a?.id ?? a?.pk ?? 0) || 0);
+    if (fallbackDelta !== 0) return fallbackDelta;
+    return 0;
+  });
+};
+
 interface MockupStationProps {
   ideaCard: any;
   onComplete: (mockups: any) => void;
@@ -388,7 +404,7 @@ export const MockupStation = ({
     if (setLandingPreview(payload?.v0_demo_url)) {
       return true;
     }
-    const mocks: any[] = Array.isArray(payload?.mockups) ? payload.mockups : [];
+    const mocks: any[] = sortMockupsLatestFirst(payload?.mockups);
     const mockWithUrl = mocks.find((m: any) => m?.v0_demo_url || m?.demo_url || m?.live_url || m?.url);
     if (mockWithUrl) {
       if (setLandingPreview(mockWithUrl.v0_demo_url || mockWithUrl.demo_url || mockWithUrl.live_url || mockWithUrl.url)) {
@@ -1269,8 +1285,12 @@ const cacheBust = (u?: string | null): string => {
               const existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
               syncMockupMeta((existing as any)?.data);
         // No fallback to idea-scoped fetch; software mockups are team-scoped
-        const existingChatId = existing?.data?.mockups?.find((m: any) => m.v0_chat_id)?.v0_chat_id || existing?.data?.mockups?.[0]?.v0_chat_id;
-        const existingProjectId = existing?.data?.mockups?.find((m: any) => m.v0_project_id)?.v0_project_id || existing?.data?.v0_project_id;
+        const existingMocks = sortMockupsLatestFirst((existing as any)?.data?.mockups);
+        const existingChatId = existingMocks.find((m: any) => m?.v0_chat_id)?.v0_chat_id
+          || (existing as any)?.data?.v0_chat_id
+          || existingMocks[0]?.v0_chat_id;
+        const existingProjectId = existingMocks.find((m: any) => m?.v0_project_id)?.v0_project_id
+          || (existing as any)?.data?.v0_project_id;
         if (existingProjectId && typeof existingProjectId === 'string') {
           projectIdToUse = existingProjectId;
         }
@@ -1720,7 +1740,7 @@ user problems: ${probsLine}`;
           if (cid && typeof cid === 'string') preExistingChatId = cid;
           if (pid && typeof pid === 'string') preExistingProjectId = pid;
           // Fast path: Check saved demo URLs first (no v0 API calls needed)
-          const mocks: any[] = Array.isArray((existing as any)?.data?.mockups) ? (existing as any).data.mockups : [];
+          const mocks: any[] = sortMockupsLatestFirst((existing as any)?.data?.mockups);
           const topLevelDemo = (existing as any)?.data?.v0_demo_url as string | undefined;
           if (topLevelDemo) {
             try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), preExistingChatId || ''); } catch {}
@@ -1912,7 +1932,7 @@ user problems: ${probsLine}`;
           }
           
           // Check mockups array for demo URL (second fastest path)
-          const mocks: any[] = Array.isArray(data?.mockups) ? data.mockups : [];
+          const mocks: any[] = sortMockupsLatestFirst(data?.mockups);
           const withDemo = mocks.find((m: any) => m?.v0_demo_url);
           const withDemoAlt = mocks.find((m: any) => typeof m?.demo_url === 'string' && m.demo_url);
           const mockDemo = withDemo?.v0_demo_url || withDemoAlt?.demo_url || null;
@@ -2763,7 +2783,8 @@ user problems: ${probsLine}`;
                             || localStorage.getItem(scopedKey('xfactoryV0ChatId')) || undefined;
                           const v0_project_id = (existing as any)?.data?.v0_project_id
                             || localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || undefined;
-                          const demoUrl = ((existing as any)?.data?.mockups || []).find((m: any) => m?.v0_demo_url)?.v0_demo_url
+                          const latestMocks = sortMockupsLatestFirst((existing as any)?.data?.mockups);
+                          const demoUrl = latestMocks.find((m: any) => m?.v0_demo_url)?.v0_demo_url
                             || (existing as any)?.data?.v0_demo_url
                             || v0DemoUrl
                             || undefined;
