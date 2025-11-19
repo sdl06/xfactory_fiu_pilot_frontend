@@ -25,7 +25,8 @@ import {
   Lock as LockIcon,
   Unlock as UnlockIcon,
   RefreshCw,
-  ArrowLeft
+  ArrowLeft,
+  ExternalLink
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -553,12 +554,23 @@ const TeamAdminModal = ({ open, onOpenChange, team, onTeamDeleted }: { open: boo
             const tb = Date.parse(b?.created_at || '') || 0;
             return tb - ta;
           });
-          const demo = (typeof data?.v0_demo_url === 'string' && data.v0_demo_url)
-            || (sortedItems.find((m: any) => typeof m?.v0_demo_url === 'string' && m.v0_demo_url)?.v0_demo_url)
-            || (sortedItems.find((m: any) => typeof m?.demo_url === 'string' && m.demo_url)?.demo_url)
+          // Check multiple possible fields for v0 demo URL
+          const demo = (typeof data?.v0_demo_url === 'string' && data.v0_demo_url.trim())
+            || (typeof data?.v0_live_url === 'string' && data.v0_live_url.trim())
+            || (sortedItems.find((m: any) => typeof m?.v0_demo_url === 'string' && m.v0_demo_url?.trim())?.v0_demo_url)
+            || (sortedItems.find((m: any) => typeof m?.v0_live_url === 'string' && m.v0_live_url?.trim())?.v0_live_url)
+            || (sortedItems.find((m: any) => typeof m?.demo_url === 'string' && m.demo_url?.trim())?.demo_url)
+            || (sortedItems.find((m: any) => typeof m?.live_url === 'string' && m.live_url?.trim())?.live_url)
             || null;
-          const normalized = stripTs((toAbsoluteMediaUrl(demo) || demo || null) as any);
-          setLandingUrl(normalized);
+          // Normalize URL: strip timestamp params and ensure it's absolute
+          // Don't use toAbsoluteMediaUrl for v0 URLs as they're already absolute
+          const normalized = demo ? stripTs(demo.trim()) : null;
+          if (normalized && normalized.length > 0) {
+            setLandingUrl(normalized);
+            console.log('[AdminModal] Set landing URL from mockup data:', normalized);
+          } else {
+            console.log('[AdminModal] No valid demo URL found in mockup data');
+          }
           const imgs: Array<{ url: string; title?: string; type?: string }> = [];
           const flows: Array<{ url: string; title?: string; type?: string }> = [];
           items.forEach((m: any) => {
@@ -595,33 +607,89 @@ const TeamAdminModal = ({ open, onOpenChange, team, onTeamDeleted }: { open: boo
             }
           } catch {}
           // Try v0 SDK for the latest demo URL when chat metadata exists
-          try {
-            const cid: string | undefined = (data?.v0_chat_id as string | undefined)
-              || (sortedItems.find((m: any) => m?.v0_chat_id)?.v0_chat_id as string | undefined);
-            let latestVid: string | undefined = data?.v0_latest_version_id as string | undefined;
-            const anyV0: any = v0 as any;
-            if (cid && anyV0?.chats) {
-              if (!latestVid && anyV0.chats.getById) {
-                try { const info = await anyV0.chats.getById({ chatId: cid }); latestVid = (info as any)?.latestVersion?.id; } catch {}
+          // Only do this if we don't already have a landing URL
+          if (!landingUrl) {
+            try {
+              const cid: string | undefined = (data?.v0_chat_id as string | undefined)
+                || (sortedItems.find((m: any) => m?.v0_chat_id)?.v0_chat_id as string | undefined);
+              let latestVid: string | undefined = data?.v0_latest_version_id as string | undefined;
+              const anyV0: any = v0 as any;
+              if (cid && anyV0?.chats) {
+                if (!latestVid && anyV0.chats.getById) {
+                  try { 
+                    const info = await anyV0.chats.getById({ chatId: cid }); 
+                    latestVid = (info as any)?.latestVersion?.id; 
+                  } catch (e) {
+                    console.log('[AdminModal] v0 getById failed:', e);
+                  }
+                }
+                if (latestVid && anyV0.chats.getVersion) {
+                  try {
+                    const v = await anyV0.chats.getVersion({ chatId: cid, versionId: latestVid });
+                    const live = (v?.demoUrl || v?.webUrl || v?.demo || null) as string | null;
+                    if (live) {
+                      const normalized = stripTs(live);
+                      setLandingUrl(normalized);
+                      console.log('[AdminModal] v0 SDK provided landing URL:', normalized);
+                    }
+                  } catch (e) {
+                    console.log('[AdminModal] v0 getVersion failed:', e);
+                  }
+                }
+                // If we have a chat ID but no version ID, try getting the latest version directly
+                if (!latestVid && anyV0.chats.getById) {
+                  try {
+                    const info = await anyV0.chats.getById({ chatId: cid });
+                    const latest = (info as any)?.latestVersion;
+                    if (latest) {
+                      const live = (latest?.demoUrl || latest?.webUrl || latest?.demo || null) as string | null;
+                      if (live) {
+                        const normalized = stripTs(live);
+                        setLandingUrl(normalized);
+                        console.log('[AdminModal] v0 SDK latestVersion provided landing URL:', normalized);
+                      }
+                    }
+                  } catch (e) {
+                    console.log('[AdminModal] v0 getById (latestVersion) failed:', e);
+                  }
+                }
               }
-              if (latestVid && anyV0.chats.getVersion) {
-                try {
-                  const v = await anyV0.chats.getVersion({ chatId: cid, versionId: latestVid });
-                  const live = (v?.demoUrl || v?.webUrl || v?.demo || null) as string | null;
-                  if (live) setLandingUrl(stripTs(live));
-                } catch {}
-              }
+            } catch (e) {
+              console.log('[AdminModal] v0 SDK check failed:', e);
             }
-          } catch {}
+          }
 
           // If landing still empty after v0 check, try MVP software record as fallback
-          if (!demo && !landingUrl) {
+          if (!landingUrl) {
             try {
               const smvp = await apiClient.getSoftwareMvpTeam(teamId);
               const d: any = (smvp as any)?.data || {};
-              const mvpdemo = d?.v0_demo_url || (Array.isArray(d?.mockups) ? d.mockups.find((m:any)=>m?.v0_demo_url)?.v0_demo_url : null);
-              if (mvpdemo && !landingUrl) setLandingUrl(stripTs((toAbsoluteMediaUrl(mvpdemo) || mvpdemo) as any));
-            } catch {}
+              const mvpdemo = (typeof d?.v0_demo_url === 'string' && d.v0_demo_url.trim())
+                || (typeof d?.v0_live_url === 'string' && d.v0_live_url.trim())
+                || (Array.isArray(d?.mockups) ? d.mockups.find((m:any)=>typeof m?.v0_demo_url === 'string' && m.v0_demo_url?.trim())?.v0_demo_url : null)
+                || (Array.isArray(d?.mockups) ? d.mockups.find((m:any)=>typeof m?.v0_live_url === 'string' && m.v0_live_url?.trim())?.v0_live_url : null)
+                || null;
+              if (mvpdemo) {
+                const normalized = stripTs((toAbsoluteMediaUrl(mvpdemo) || mvpdemo) as any);
+                setLandingUrl(normalized);
+                console.log('[AdminModal] MVP record provided landing URL:', normalized);
+              }
+            } catch (e) {
+              console.log('[AdminModal] MVP fallback check failed:', e);
+            }
+          }
+          
+          // Log final state for debugging
+          if (!landingUrl) {
+            console.log('[AdminModal] No landing URL found. Data structure:', {
+              hasData: !!data,
+              v0_demo_url: data?.v0_demo_url,
+              v0_live_url: data?.v0_live_url,
+              mockupsCount: sortedItems.length,
+              mockupFields: sortedItems.length > 0 ? Object.keys(sortedItems[0]) : []
+            });
+          } else {
+            console.log('[AdminModal] Landing URL set:', landingUrl);
           }
           // De-dupe image URLs
           const seen = new Set<string>();
@@ -1030,7 +1098,14 @@ const TeamAdminModal = ({ open, onOpenChange, team, onTeamDeleted }: { open: boo
                         )}
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-xs text-muted-foreground truncate">{landingUrl}</div>
-                          <a href={landingUrl} target="_blank" className="underline text-primary">Open</a>
+                          <a 
+                            href={landingUrl || undefined} 
+                            target="_blank" 
+                            rel="noreferrer noopener"
+                            className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border hover:bg-muted"
+                          >
+                            <ExternalLink className="h-4 w-4" /> Open Live
+                          </a>
                         </div>
                       </div>
                     ) : (

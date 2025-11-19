@@ -2430,6 +2430,41 @@ user problems: ${probsLine}`;
                       <a href={(v0LiveUrl || v0DemoUrl)!} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border">
                         <ExternalLink className="h-4 w-4" /> Open Live
                       </a>
+                      <Button 
+                        variant="machinery" 
+                        className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-lg hover:shadow-xl"
+                        onClick={async () => {
+                          try {
+                            let teamId: number | null = null;
+                            try {
+                              const status = await apiClient.get('/team-formation/status/');
+                              teamId = (status as any)?.data?.current_team?.id || null;
+                            } catch {}
+                            if (teamId && v0DemoUrl) {
+                              const existing = await apiClient.getSoftwareMockupTeam(teamId);
+                              const v0_chat_id = (existing as any)?.data?.v0_chat_id
+                                || localStorage.getItem(scopedKey('xfactoryV0ChatId')) || undefined;
+                              const v0_project_id = (existing as any)?.data?.v0_project_id
+                                || localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || undefined;
+                              await persistLandingSnapshot({
+                                demoUrl: v0DemoUrl,
+                                projectId: v0_project_id,
+                                chatId: v0_chat_id,
+                                status: 'completed',
+                              });
+                              try { await apiClient.markMockupCompleted(teamId); } catch {}
+                              log.info('Mockup submitted successfully');
+                            } else {
+                              log.warn('Submit mockup: missing teamId or v0DemoUrl');
+                            }
+                          } catch (e) { 
+                            log.warn('Submit mockup failed', e);
+                          }
+                        }}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Submit Mockup
+                      </Button>
                       <Button variant="warning" onClick={() => { setShowV0LandingScreen(false); setSelectionMode('menu'); setV0Phase('intro'); }}>
                         Back to Menu
                         <ArrowRight className="ml-2 h-4 w-4" />
@@ -2932,36 +2967,36 @@ user problems: ${probsLine}`;
                         <a href={v0DemoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border">
                           <ExternalLink className="h-4 w-4" /> Open Live
                         </a>
-                        <Button variant="warning" onClick={async () => {
-                          try {
-                            const ideaId = getIdeaId();
-                            if (ideaId && v0DemoUrl) {
-                              let v0ChatId: string | null = null;
-                              try { v0ChatId = localStorage.getItem(scopedKey('xfactoryV0ChatId')); } catch {}
-                              try {
-                                const status = await apiClient.get('/team-formation/status/');
-                                const teamId = (status as any)?.data?.current_team?.id as number | undefined;
-                                if (teamId) {
-                                  await persistLandingSnapshot({
-                                    demoUrl: v0DemoUrl,
-                                    projectId: effectiveV0ProjectId,
-                                    chatId: v0ChatId || undefined,
-                                    status: 'completed',
-                                  });
-                                } else {
-                                  log.warn('save software mockup: no team; skipping');
-                                }
-                              } catch {}
-                              // Mark team MVP/mockup completion
-                              try {
-                                const status = await apiClient.get('/team-formation/status/');
-                                const teamId = status.data?.current_team?.id;
-                                if (teamId) await apiClient.markMockupCompleted(teamId);
-                              } catch {}
-                            }
-                          } catch (e) { log.warn('save software mockup failed', e); }
-                          returnToMainMenu();
-                        }}>
+                        <Button 
+                          variant="warning" 
+                          className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-lg hover:shadow-xl"
+                          onClick={async () => {
+                            try {
+                              const ideaId = getIdeaId();
+                              if (ideaId && v0DemoUrl) {
+                                let v0ChatId: string | null = null;
+                                try { v0ChatId = localStorage.getItem(scopedKey('xfactoryV0ChatId')); } catch {}
+                                try {
+                                  const status = await apiClient.get('/team-formation/status/');
+                                  const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+                                  if (teamId) {
+                                    await persistLandingSnapshot({
+                                      demoUrl: v0DemoUrl,
+                                      projectId: effectiveV0ProjectId,
+                                      chatId: v0ChatId || undefined,
+                                      status: 'completed',
+                                    });
+                                  } else {
+                                    log.warn('save software mockup: no team; skipping');
+                                  }
+                                } catch {}
+                                // Don't mark mockup as complete here - only mark when explicitly submitted via SubmitGate
+                                // Individual mockup saves don't mean the station is complete
+                              }
+                            } catch (e) { log.warn('save software mockup failed', e); }
+                            returnToMainMenu();
+                          }}
+                        >
                           Use this Mockup
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
@@ -3265,44 +3300,27 @@ user problems: ${probsLine}`;
                         </Button>
                       </div>
                       
-                      <Button variant="warning" onClick={async () => {
-                        // Save selected images as PhysicalMockup records
-                        try {
-                          // Prefer team-scoped save
-                          let teamId: number | null = null;
+                      <Button 
+                        variant="warning" 
+                        className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-lg hover:shadow-xl"
+                        onClick={async () => {
+                          // Save selected images as PhysicalMockup records
                           try {
-                            const cached = localStorage.getItem('xfactoryTeamId');
-                            teamId = cached ? Number(cached) : null;
-                          } catch {}
-                          const selected = dedupeMockups(
-                            (generatedMockups.length && selectedMockups.length === 0
-                              ? generatedMockups
-                              : generatedMockups.filter(m => selectedMockups.includes(m.id)))
-                          );
-                          if (teamId) {
-                            for (const m of selected) {
-                              if (m.url) {
-                                await apiClient.savePhysicalMockupTeam(teamId, {
-                                  image_url: m.url,
-                                  image_prompt: m.prompt || '',
-                                  title: m.title || 'Product Mockup',
-                                  description: m.description || ''
-                                });
-                              }
-                            }
+                            // Prefer team-scoped save
+                            let teamId: number | null = null;
                             try {
-                              const status = await apiClient.get('/team-formation/status/');
-                              const tid = status.data?.current_team?.id;
-                              if (tid) await apiClient.markMockupCompleted(tid);
+                              const cached = localStorage.getItem('xfactoryTeamId');
+                              teamId = cached ? Number(cached) : null;
                             } catch {}
-                          } else {
-                            // Fallback: idea scope
-                            const ideaId = getIdeaId();
-                            if (ideaId) {
+                            const selected = dedupeMockups(
+                              (generatedMockups.length && selectedMockups.length === 0
+                                ? generatedMockups
+                                : generatedMockups.filter(m => selectedMockups.includes(m.id)))
+                            );
+                            if (teamId) {
                               for (const m of selected) {
                                 if (m.url) {
-                                  await apiClient.post('/physical-mockup/save/', {
-                                    idea_id: ideaId,
+                                  await apiClient.savePhysicalMockupTeam(teamId, {
                                     image_url: m.url,
                                     image_prompt: m.prompt || '',
                                     title: m.title || 'Product Mockup',
@@ -3310,17 +3328,32 @@ user problems: ${probsLine}`;
                                   });
                                 }
                               }
-                              try {
-                                const status = await apiClient.get('/team-formation/status/');
-                                const tid = status.data?.current_team?.id;
-                                if (tid) await apiClient.markMockupCompleted(tid);
-                              } catch {}
+                              // Don't mark mockup as complete here - only mark when explicitly submitted via SubmitGate
+                              // Individual mockup saves don't mean the station is complete
+                            } else {
+                              // Fallback: idea scope
+                              const ideaId = getIdeaId();
+                              if (ideaId) {
+                                for (const m of selected) {
+                                  if (m.url) {
+                                    await apiClient.post('/physical-mockup/save/', {
+                                      idea_id: ideaId,
+                                      image_url: m.url,
+                                      image_prompt: m.prompt || '',
+                                      title: m.title || 'Product Mockup',
+                                      description: m.description || ''
+                                    });
+                                  }
+                                }
+                                // Don't mark mockup as complete here - only mark when explicitly submitted via SubmitGate
+                                // Individual mockup saves don't mean the station is complete
+                              }
                             }
-                          }
-                        } catch (e) { log.warn('save physical mockups failed', e); }
-                        // Return to mockup main menu without advancing the flow
-                        returnToMainMenu();
-                      }} className="flex-1">
+                          } catch (e) { log.warn('save physical mockups failed', e); }
+                          // Return to mockup main menu without advancing the flow
+                          returnToMainMenu();
+                        }}
+                      >
                         Use These Images
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
@@ -3968,31 +4001,33 @@ user problems: ${probsLine}`;
 
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setSelectionMode('menu')}>Back</Button>
-                    <Button variant="warning" onClick={async () => {
-                      try {
-                        let teamId: number | null = null;
+                    <Button 
+                      variant="warning" 
+                      className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-lg hover:shadow-xl"
+                      onClick={async () => {
                         try {
-                          const cached = localStorage.getItem('xfactoryTeamId');
-                          teamId = cached ? Number(cached) : null;
-                          if (!teamId) {
-                            const status = await apiClient.get('/team-formation/status/');
-                            teamId = (status as any)?.data?.current_team?.id || null;
-                            if (teamId) { try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {} }
-                          }
-                        } catch {}
-                        if (teamId && serviceDoc) {
-                          await apiClient.saveServiceRoadmapTeam(teamId, getRoadmapSaveObject());
-                          // Mark team MVP/mockup completion
+                          let teamId: number | null = null;
                           try {
-                            const status = await apiClient.get('/team-formation/status/');
-                            const tid = status.data?.current_team?.id;
-                            if (tid) await apiClient.markMockupCompleted(tid);
+                            const cached = localStorage.getItem('xfactoryTeamId');
+                            teamId = cached ? Number(cached) : null;
+                            if (!teamId) {
+                              const status = await apiClient.get('/team-formation/status/');
+                              teamId = (status as any)?.data?.current_team?.id || null;
+                              if (teamId) { try { localStorage.setItem('xfactoryTeamId', String(teamId)); } catch {} }
+                            }
                           } catch {}
-                        }
-                      } catch (e) { log.warn('save service roadmap failed', e); }
-                      // Return to mockup main menu without advancing the flow
-                      returnToMainMenu();
-                    }}>Use This Flow</Button>
+                          if (teamId && serviceDoc) {
+                            await apiClient.saveServiceRoadmapTeam(teamId, getRoadmapSaveObject());
+                            // Don't mark mockup as complete here - only mark when explicitly submitted via SubmitGate
+                            // Individual mockup saves don't mean the station is complete
+                          }
+                        } catch (e) { log.warn('save service roadmap failed', e); }
+                        // Return to mockup main menu without advancing the flow
+                        returnToMainMenu();
+                      }}
+                    >
+                      Use This Flow
+                    </Button>
                   </div>
                 </div>
               )}

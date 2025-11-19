@@ -1033,8 +1033,53 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
         }
       }
 
-      // If user has already completed idea generation/onboarding, go straight to dashboard
-      let hasCompleted = isIdeaCompleted(loginData);
+      // CRITICAL: Check backend for ideation completion FIRST, before any other checks
+      // This prevents users with completed ideation from being incorrectly sent to team formation
+      let backendIdeationCompletedEarly = false;
+      try {
+        const status = await apiClient.get('/team-formation/status/');
+        const team = (status as any)?.data?.current_team;
+        const teamId = team?.id;
+        
+        if (teamId) {
+          try {
+            // Check roadmap completion for ideation status
+            const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
+            const trcData: any = (trc as any)?.data || {};
+            const ideation = trcData?.ideation || trcData?.mentorship?._ideation || {};
+            backendIdeationCompletedEarly = ideation.completed === true;
+
+            // Also verify concept card exists to ensure ideation is truly complete
+            if (backendIdeationCompletedEarly) {
+              try {
+                const conceptCard = await apiClient.getTeamConceptCard(teamId);
+                const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+                if (!hasConceptCard) {
+                  backendIdeationCompletedEarly = false;
+                }
+              } catch {
+                backendIdeationCompletedEarly = false;
+              }
+            }
+          } catch (error) {
+            // If backend check fails, try to verify with concept card directly
+            try {
+              const conceptCard = await apiClient.getTeamConceptCard(teamId);
+              const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+              if (hasConceptCard) {
+                backendIdeationCompletedEarly = true;
+              }
+            } catch {
+              // If both checks fail, fall back to frontend check
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Index - Error checking backend ideation completion early:', error);
+      }
+
+      // If user has already completed idea generation/onboarding (frontend or backend), go straight to dashboard
+      let hasCompleted = isIdeaCompleted(loginData) || backendIdeationCompletedEarly;
       if (hasCompleted) {
         setUserData({
           hasIdea: true,
@@ -1081,21 +1126,50 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
           return;
         }
         const sections = loginData?.progress?.sections_completed || loginData?.user?.progress?.sections_completed || [];
+        const teamId = team?.id;
 
-        // Check if team formation is complete (deadline passed or team is full)
-        const now = new Date();
-        const formationDeadline = team.formation_deadline ? new Date(team.formation_deadline) : null;
-        const isFormationComplete = formationDeadline ? now > formationDeadline : team.current_member_count >= team.max_members;
+        // CRITICAL: Check backend for ideation completion BEFORE checking team formation status
+        // This prevents users with completed ideation from being incorrectly sent to team formation
+        let backendIdeationCompleted = false;
+        if (teamId) {
+          try {
+            // Check roadmap completion for ideation status
+            const trc = await apiClient.get(`/ideation/teams/${teamId}/roadmap-completion/`);
+            const trcData: any = (trc as any)?.data || {};
+            const ideation = trcData?.ideation || trcData?.mentorship?._ideation || {};
+            backendIdeationCompleted = ideation.completed === true;
 
-        // If team formation is not complete, go to team formation dashboard
-        if (!isFormationComplete) {
-          setTeamData(team);
-          setAppState("member-addition");
-          return;
+            // Also verify concept card exists to ensure ideation is truly complete
+            if (backendIdeationCompleted) {
+              try {
+                const conceptCard = await apiClient.getTeamConceptCard(teamId);
+                const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+                if (!hasConceptCard) {
+                  backendIdeationCompleted = false;
+                }
+              } catch {
+                backendIdeationCompleted = false;
+              }
+            }
+          } catch (error) {
+            console.log('Index - Error checking backend ideation completion:', error);
+            // If backend check fails, try to verify with concept card directly
+            try {
+              const conceptCard = await apiClient.getTeamConceptCard(teamId);
+              const hasConceptCard = conceptCard && (conceptCard as any).status >= 200 && (conceptCard as any).status < 300 && (conceptCard as any).data;
+              if (hasConceptCard) {
+                // If concept card exists, assume ideation is complete
+                backendIdeationCompleted = true;
+              }
+            } catch {
+              // If both checks fail, fall back to frontend check
+            }
+          }
         }
 
-        // If ideation already completed for the user, go to dashboard
-        if (sections.length > 0) {
+        // CRITICAL: If ideation is completed (either from frontend or backend check), ALWAYS go to dashboard
+        // NEVER send users with completed ideation to team formation, regardless of team formation status
+        if (sections.length > 0 || backendIdeationCompleted) {
           setUserData({
             hasIdea: true,
             businessType: (loginData.user?.business_type as BusinessType) || null,
@@ -1105,9 +1179,19 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
           return;
         }
 
+        // Check if team formation is complete (team is full)
+        const isFormationComplete = team.current_member_count >= team.max_members;
+
+        // If team formation is not complete, go to team formation dashboard
+        // Only do this if ideation is NOT completed (already handled above)
+        if (!isFormationComplete) {
+          setTeamData(team);
+          setAppState("member-addition");
+          return;
+        }
+
         // Always check team concept card when logging in with a team
         try {
-          const { apiClient } = await import("@/lib/api");
           const teamId = team?.id;
           if (teamId) {
             try {
@@ -1696,6 +1780,7 @@ const [resetPrefill, setResetPrefill] = useState<{ code?: string; email?: string
         onComplete={handleMemberAdditionComplete}
         onBack={teamData?.fromDashboard ? () => setAppState("dashboard") : handleBackFromMemberAddition}
         fromDashboard={teamData?.fromDashboard || false}
+        onGoToDashboard={() => setAppState("dashboard")}
       />
     );
   }

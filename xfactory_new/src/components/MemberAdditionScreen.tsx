@@ -18,6 +18,7 @@ interface MemberAdditionScreenProps {
   onComplete: () => void;
   onBack: () => void;
   fromDashboard?: boolean; // New prop to track if user came from dashboard
+  onGoToDashboard?: () => void; // New prop to allow direct navigation to dashboard
 }
 
 interface JoinRequest {
@@ -31,7 +32,7 @@ interface JoinRequest {
   created_at: string;
 }
 
-export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboard = false }: MemberAdditionScreenProps) => {
+export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboard = false, onGoToDashboard }: MemberAdditionScreenProps) => {
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -51,9 +52,9 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Mock deadline - in real implementation, this would come from backend
-  const deadline = new Date();
-  deadline.setDate(deadline.getDate() + 7); // 7 days from now
+  // DEADLINES DISABLED - No timed deadlines
+  // const deadline = new Date();
+  // deadline.setDate(deadline.getDate() + 7); // 7 days from now
 
   useEffect(() => {
     // Load user archetype
@@ -80,25 +81,26 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
       loadMembers();
     }
     
+    // DEADLINES DISABLED - No countdown timer
     // Update countdown timer
-    const timer = setInterval(() => {
-      const now = new Date();
-      const diff = deadline.getTime() - now.getTime();
-      
-      if (diff <= 0) {
-        setTimeRemaining("Deadline passed");
-        onComplete(); // Auto-proceed to idea generation
-        return;
-      }
-      
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
-      setTimeRemaining(`${days}d ${hours}h ${minutes}m`);
-    }, 60000); // Update every minute
+    // const timer = setInterval(() => {
+    //   const now = new Date();
+    //   const diff = deadline.getTime() - now.getTime();
+    //   
+    //   if (diff <= 0) {
+    //     setTimeRemaining("Deadline passed");
+    //     onComplete(); // Auto-proceed to idea generation
+    //     return;
+    //   }
+    //   
+    //   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    //   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    //   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    //   
+    //   setTimeRemaining(`${days}d ${hours}h ${minutes}m`);
+    // }, 60000); // Update every minute
 
-    return () => clearInterval(timer);
+    // return () => clearInterval(timer);
   }, [user]);
 
   const loadJoinRequests = async () => {
@@ -455,18 +457,40 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
               </div>
             </div>
             
+            {/* DEADLINES DISABLED - Timer removed */}
             {/* Centered timer */}
-            <div className="flex-1 text-center">
+            {/* <div className="flex-1 text-center">
               <div className="flex items-center justify-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">{timeRemaining}</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Provisional Fix: Bypass Team Formation Button */}
+        {onGoToDashboard && (
+          <Card className="mb-6 border-amber-200 bg-amber-50 shadow-industrial">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-900 mb-1">Are you done with team formation?</p>
+                  <p className="text-xs text-amber-700">If you've completed team formation or are working solo, you can proceed directly to the dashboard.</p>
+                </div>
+                <Button 
+                  variant="machinery" 
+                  onClick={onGoToDashboard}
+                  className="ml-4"
+                >
+                  Go to Dashboard →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Team Info Card */}
         <Card className="mb-6 shadow-industrial">
           <CardHeader>
@@ -960,9 +984,7 @@ export const MemberAdditionScreen = ({ teamData, onComplete, onBack, fromDashboa
                 {(() => { 
                   try { 
                     const isIdeaCompleted = localStorage.getItem('xfactoryIdeaCompleted') === 'true';
-                    const now = new Date();
-                    const formationDeadline = teamData.formation_deadline ? new Date(teamData.formation_deadline) : null;
-                    const isFormationComplete = formationDeadline ? now > formationDeadline : teamData.current_member_count >= teamData.max_members;
+                    const isFormationComplete = teamData.current_member_count >= teamData.max_members;
                     
                     if (isIdeaCompleted) {
                       return 'Back to Dashboard →';
