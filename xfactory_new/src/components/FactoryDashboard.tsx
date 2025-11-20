@@ -334,7 +334,7 @@ export const FactoryDashboard = ({
 
   // Calculate progress
   const completedCount = stationData.completedStations.length;
-  const totalSteps = 12; // Total number of stations after removing workshops
+  const totalSteps = 15; // Total number of stations (including workshops 12-14)
   const progressPercentage = completedCount / totalSteps * 100;
 
   return (

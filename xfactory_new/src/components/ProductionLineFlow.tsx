@@ -22,7 +22,10 @@ import {
   Play,
   Package,
   Users,
-  RefreshCw
+  RefreshCw,
+  DollarSign,
+  Scale,
+  Megaphone
 } from "lucide-react";
 
 interface ProductionLineFlowProps {
@@ -469,8 +472,13 @@ const StationNode = ({ data }: { data: any }) => {
                     case 12: // Finance Workshop
                       resetPayload['finance'] = { budget_completed: false };
                       break;
-                    case 13: // Marketing Workshop - need to check what flags it uses
-                      resetPayload['marketing'] = {};
+                    case 13: // Marketing Workshop
+                      resetPayload['marketing'] = {
+                        submission_completed: false,
+                        strategy_link: '',
+                        branding_link: '',
+                        traction_link: ''
+                      };
                       break;
                     case 14: // Legal Workshop
                       resetPayload['legal'] = { compliance_completed: false };
@@ -643,6 +651,9 @@ export const ProductionLineFlow = ({
     { id: 5, title: "Pre-MVP Mentorship Session", description: "Strategic guidance and planning before building your MVP with expert mentors", icon: Users, estimatedTime: "60 mins", output: "Mentorship Insights" },
     { id: 6, title: "MVP Development Station", description: "Plan and build your Minimum Viable Product with development roadmap", icon: Code, estimatedTime: "2-8 weeks", output: "MVP Plan & Build" },
     { id: 7, title: "Post-MVP Mentorship Session", description: "Review MVP results and plan next steps with experienced mentors", icon: Users, estimatedTime: "90 mins", output: "Strategic Guidance" },
+    { id: 12, title: "Workshop: Financial Modeling", description: "Hands-on session to build your initial financial model", icon: DollarSign, estimatedTime: "90 mins", output: "Financial Model" },
+    { id: 13, title: "Workshop: Marketing Strategy", description: "Branding, acquisition channels, and campaign planning", icon: Megaphone, estimatedTime: "60 mins", output: "Marketing Plan" },
+    { id: 14, title: "Workshop: Legal & Compliance", description: "Ensure your startup is compliant with key legal requirements", icon: Scale, estimatedTime: "60 mins", output: "Compliance Checklist" },
     { id: 8, title: "Launch Prep Station", description: "Prepare for product launch with go-to-market strategy and launch planning", icon: Rocket, estimatedTime: "1 week", output: "Launch Plan" },
     { id: 9, title: "Launch Execution Station", description: "Execute your product launch with coordinated marketing and communication", icon: TrendingUp, estimatedTime: "1 week", output: "Executed Launch" },
     { id: 10, title: "Pre-Investor Mentorship Session", description: "Final coaching and review before investor presentations", icon: Users, estimatedTime: "60 mins", output: "Mentorship Insights" },
@@ -663,6 +674,9 @@ export const ProductionLineFlow = ({
       case 9: return 'launch_execution';
       case 10: return 'mentorship_pre_investor';
       case 11: return 'pitch_practice';
+      case 12: return 'finance';
+      case 13: return 'marketing';
+      case 14: return 'legal';
       case 15: return 'investor_presentation';
       default: return `station_${stationId}`;
     }
@@ -673,6 +687,20 @@ export const ProductionLineFlow = ({
     if (!adminDataLoaded) return 'locked';
 
     const key = sectionKeyForStation(stationId);
+    // Workshops (12, 13, 14) are always locked by default unless explicitly unlocked by admin
+    const workshopIds = [12, 13, 14];
+    const isWorkshop = workshopIds.includes(stationId);
+    
+    // For workshops, require explicit admin unlock
+    if (isWorkshop) {
+      const explicitlyUnlocked = adminUnlocks?.[key] === true || adminLocks?.[key] === false;
+      if (stationId === currentStation) {
+        return explicitlyUnlocked ? 'active' : 'locked';
+      }
+      return explicitlyUnlocked ? 'unlocked' : 'locked';
+    }
+
+    // For regular stations, use existing logic
     const explicitlyUnlocked = adminUnlocks?.[key] === true || adminLocks?.[key] === false;
 
     if (stationId === currentStation) {
@@ -682,8 +710,8 @@ export const ProductionLineFlow = ({
     return explicitlyUnlocked ? 'unlocked' : 'locked';
   }, [completedStations, currentStation, adminLocks, adminUnlocks, adminDataLoaded]);
 
-  // Build streamlined pipeline order without workshop duplicates
-  const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,8,9,10,11,15], []);
+  // Build pipeline order: after station 7 (Post-MVP Mentorship), include workshops 12-14, then continue with 8-11, and 15
+  const pipelineOrder: number[] = useMemo(() => [1,2,3,4,5,6,7,12,13,14,8,9,10,11,15], []);
 
   // Fixed container height for consistent layout (desktop), adaptive on ultra-narrow devices
   const isUltraNarrow = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 420px)').matches : false;

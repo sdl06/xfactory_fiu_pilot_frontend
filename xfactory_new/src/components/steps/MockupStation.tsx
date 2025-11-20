@@ -140,6 +140,7 @@ export const MockupStation = ({
   const [landingAccessNotice, setLandingAccessNotice] = useState<string | null>(null);
   const [keyChangeNotice, setKeyChangeNotice] = useState<string | null>(null);
   const [autoRegenerateAfterKeyChange, setAutoRegenerateAfterKeyChange] = useState<boolean>(false);
+  const [v0InstructionError, setV0InstructionError] = useState<string | null>(null);
   const resetsRemaining = Math.max(0, resetLimit - resetCount);
   const hasAutoOpenedLandingRef = useRef(false);
   const hasSavedLanding = Boolean(v0LiveUrl || v0DemoUrl);
@@ -1635,11 +1636,87 @@ user problems: ${probsLine}`;
   const handleSendV0Instruction = async () => {
     if (!v0UserMessage.trim()) return;
     setIsSendingV0(true);
+    setV0InstructionError(null);
     try {
       let chatId: string | null = null;
       try { chatId = localStorage.getItem(scopedKey('xfactoryV0ChatId')); } catch {}
+      
+      // Validate and trim chatId from localStorage
+      if (chatId) {
+        chatId = chatId.trim();
+        if (!chatId) chatId = null;
+      }
+      
+      // If not in localStorage, try to fetch from backend - check both models
       if (!chatId) {
-        log.error('handleSendV0Instruction:no-chat-id');
+        try {
+          const status = await apiClient.get('/team-formation/status/');
+          const teamId = (status as any)?.data?.current_team?.id as number | undefined;
+          if (teamId) {
+            const existing = await apiClient.getSoftwareMockupTeam(teamId, { keySignature: v0KeySignature || undefined });
+            const data = (existing as any)?.data;
+            
+            // Fallback order: Check all possible sources for chat ID
+            // 1. Top-level v0_chat_id (from SoftwareMockupChat model)
+            let cid = data?.v0_chat_id || data?.chat_id;
+            if (cid && typeof cid === 'string' && cid.trim()) {
+              chatId = cid.trim();
+              try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), chatId); } catch {}
+              log.info('handleSendV0Instruction:found-chat-id-from-backend', { source: 'SoftwareMockupChat (top-level)', chatId: chatId.substring(0, 10) + '...' });
+            } else {
+              // 2. Check individual mockups array (from SoftwareMockup model)
+              const mocks: any[] = sortMockupsLatestFirst(data?.mockups || []);
+              for (const mock of mocks) {
+                const mockCid = mock?.v0_chat_id || mock?.chat_id;
+                if (mockCid && typeof mockCid === 'string' && mockCid.trim()) {
+                  chatId = mockCid.trim();
+                  try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), chatId); } catch {}
+                  log.info('handleSendV0Instruction:found-chat-id-from-backend', { source: 'SoftwareMockup (mockups array)', chatId: chatId.substring(0, 10) + '...' });
+                  break; // Use first valid chat ID found
+                }
+              }
+              
+              if (!chatId) {
+                log.warn('handleSendV0Instruction:no-chat-id-in-backend', { 
+                  hasData: !!data, 
+                  hasMocks: mocks.length > 0,
+                  topLevelChatId: !!cid,
+                  mockChatIds: mocks.filter(m => m?.v0_chat_id || m?.chat_id).length,
+                  checkedSources: ['SoftwareMockupChat (top-level)', 'SoftwareMockup (mockups array)']
+                });
+              }
+            }
+          }
+        } catch (e) {
+          log.warn('handleSendV0Instruction:fetch-chat-id-failed', e);
+        }
+      }
+      
+      // If still no chat ID but we have a demo URL, try to create/resume a chat session
+      if (!chatId || !chatId.trim()) {
+        if (v0DemoUrl || v0LiveUrl) {
+          log.info('handleSendV0Instruction:attempting-resume-chat', { hasDemoUrl: !!v0DemoUrl, hasLiveUrl: !!v0LiveUrl });
+          try {
+            // Try to resume existing chat - this will check backend and create if needed
+            const session: any = await createOrResumeV0Chat(false);
+            if (session?.chatId) {
+              chatId = session.chatId;
+              try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), chatId); } catch {}
+              log.info('handleSendV0Instruction:resumed-chat', { chatId: chatId.substring(0, 10) + '...' });
+            }
+          } catch (e) {
+            log.warn('handleSendV0Instruction:resume-chat-failed', e);
+          }
+        }
+      }
+      
+      if (!chatId || !chatId.trim()) {
+        log.error('handleSendV0Instruction:no-chat-id', { 
+          hadLocalStorage: !!localStorage.getItem(scopedKey('xfactoryV0ChatId')),
+          hasDemoUrl: !!v0DemoUrl,
+          hasLiveUrl: !!v0LiveUrl
+        });
+        setV0InstructionError('No active v0 chat found. Please generate a landing page first, then you can send instructions to modify it.');
         setIsSendingV0(false);
         return;
       }
@@ -1670,6 +1747,10 @@ user problems: ${probsLine}`;
       // If still not available, fallback to existing polling helper
       if (!demoUrl) demoUrl = await pollV0ForDemo(chatId, 30000);
       if (demoUrl) {
+        // Ensure chat ID is saved to localStorage
+        if (chatId && typeof chatId === 'string' && chatId.trim()) {
+          try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), chatId.trim()); } catch {}
+        }
         setV0LiveUrl(stripTs(demoUrl));
         setV0DemoUrl(cacheBust(demoUrl));
         try {
@@ -1689,8 +1770,10 @@ user problems: ${probsLine}`;
         } catch (e) { log.warn('handleSendV0Instruction:save-demo-failed', e as any); }
       }
       setV0UserMessage('');
+      setV0InstructionError(null); // Clear error on success
     } catch (e) {
       log.error('handleSendV0Instruction:error', e);
+      setV0InstructionError('Failed to send instruction. Please try again.');
     } finally {
       setIsSendingV0(false);
     }
@@ -1923,6 +2006,11 @@ user problems: ${probsLine}`;
           // Early return: Check saved demo URL first (fastest path)
           const topLevelDemo = typeof data?.v0_demo_url === 'string' && data.v0_demo_url ? data.v0_demo_url : undefined;
           if (topLevelDemo) {
+            // Save chat ID to localStorage if available
+            const cid = data?.v0_chat_id;
+            if (cid && typeof cid === 'string' && cid.trim()) {
+              try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), cid.trim()); } catch {}
+            }
             const raw = stripTs(topLevelDemo);
             setV0LiveUrl(raw);
             setV0DemoUrl(cacheBust(raw));
@@ -1937,6 +2025,11 @@ user problems: ${probsLine}`;
           const withDemoAlt = mocks.find((m: any) => typeof m?.demo_url === 'string' && m.demo_url);
           const mockDemo = withDemo?.v0_demo_url || withDemoAlt?.demo_url || null;
           if (mockDemo) {
+            // Save chat ID to localStorage if available (from top-level or mockup)
+            const cid = data?.v0_chat_id || withDemo?.v0_chat_id || withDemoAlt?.v0_chat_id;
+            if (cid && typeof cid === 'string' && cid.trim()) {
+              try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), cid.trim()); } catch {}
+            }
             const raw = stripTs(mockDemo);
             setV0LiveUrl(raw);
             setV0DemoUrl(cacheBust(raw));
@@ -1958,6 +2051,10 @@ user problems: ${probsLine}`;
               ]) as any;
               const vDemo = v?.demoUrl || v?.webUrl || v?.demo;
               if (vDemo) {
+                // Save chat ID to localStorage
+                if (cid && typeof cid === 'string' && cid.trim()) {
+                  try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), cid.trim()); } catch {}
+                }
                 const raw = stripTs(vDemo);
                 setV0LiveUrl(raw);
                 setV0DemoUrl(cacheBust(raw));
@@ -1975,6 +2072,10 @@ user problems: ${probsLine}`;
               ]) as any;
               const vDemo = latest?.latestVersion?.demoUrl || latest?.webUrl || latest?.demo;
               if (vDemo) {
+                // Save chat ID to localStorage
+                if (cid && typeof cid === 'string' && cid.trim()) {
+                  try { localStorage.setItem(scopedKey('xfactoryV0ChatId'), cid.trim()); } catch {}
+                }
                 const raw = stripTs(vDemo);
                 setV0LiveUrl(raw);
                 setV0DemoUrl(cacheBust(raw));
@@ -2117,7 +2218,14 @@ user problems: ${probsLine}`;
     if (!v0DemoUrl) return;
     if (lastPersistedDemoRef.current === v0DemoUrl) return;
     lastPersistedDemoRef.current = v0DemoUrl;
-    persistLandingSnapshot({ demoUrl: v0DemoUrl, status: 'completed' });
+    // Get chat ID from localStorage if available (persistLandingSnapshot will also check, but be explicit)
+    let chatId: string | null = null;
+    try { chatId = localStorage.getItem(scopedKey('xfactoryV0ChatId')); } catch {}
+    persistLandingSnapshot({ 
+      demoUrl: v0DemoUrl, 
+      chatId: chatId || undefined,
+      status: 'completed' 
+    });
   }, [persistLandingSnapshot, v0DemoUrl]);
 
   // New software flow: dashboard-focused prompt and preview embed
@@ -2418,7 +2526,10 @@ user problems: ${probsLine}`;
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         value={v0UserMessage}
-                        onChange={(e) => setV0UserMessage(e.target.value)}
+                        onChange={(e) => {
+                          setV0UserMessage(e.target.value);
+                          if (v0InstructionError) setV0InstructionError(null); // Clear error when user starts typing
+                        }}
                         placeholder="Type an instruction for v0 (e.g., Add dark mode)"
                         className="flex-1 px-3 py-2 border rounded bg-background text-foreground"
                       />
@@ -2426,6 +2537,11 @@ user problems: ${probsLine}`;
                         {isSendingV0 ? 'Applying…' : 'Apply Change'}
                       </Button>
                     </div>
+                    {v0InstructionError && (
+                      <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                        {v0InstructionError}
+                      </div>
+                    )}
                     <div className="flex gap-3">
                       <a href={(v0LiveUrl || v0DemoUrl)!} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border">
                         <ExternalLink className="h-4 w-4" /> Open Live
@@ -2440,22 +2556,24 @@ user problems: ${probsLine}`;
                               const status = await apiClient.get('/team-formation/status/');
                               teamId = (status as any)?.data?.current_team?.id || null;
                             } catch {}
-                            if (teamId && v0DemoUrl) {
+                            // Use v0LiveUrl (clean URL) if available, otherwise use v0DemoUrl (will be stripped)
+                            const urlToSave = v0LiveUrl || v0DemoUrl;
+                            if (teamId && urlToSave) {
                               const existing = await apiClient.getSoftwareMockupTeam(teamId);
                               const v0_chat_id = (existing as any)?.data?.v0_chat_id
                                 || localStorage.getItem(scopedKey('xfactoryV0ChatId')) || undefined;
                               const v0_project_id = (existing as any)?.data?.v0_project_id
                                 || localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || undefined;
                               await persistLandingSnapshot({
-                                demoUrl: v0DemoUrl,
+                                demoUrl: urlToSave, // persistLandingSnapshot will strip timestamp if needed
                                 projectId: v0_project_id,
                                 chatId: v0_chat_id,
                                 status: 'completed',
                               });
                               try { await apiClient.markMockupCompleted(teamId); } catch {}
-                              log.info('Mockup submitted successfully');
+                              log.info('Mockup submitted successfully', { urlSaved: urlToSave.substring(0, 50) + '...' });
                             } else {
-                              log.warn('Submit mockup: missing teamId or v0DemoUrl');
+                              log.warn('Submit mockup: missing teamId or demo URL', { hasTeamId: !!teamId, hasLiveUrl: !!v0LiveUrl, hasDemoUrl: !!v0DemoUrl });
                             }
                           } catch (e) { 
                             log.warn('Submit mockup failed', e);
@@ -2819,12 +2937,14 @@ user problems: ${probsLine}`;
                           const v0_project_id = (existing as any)?.data?.v0_project_id
                             || localStorage.getItem(scopedKey('xfactoryV0ProjectId')) || undefined;
                           const latestMocks = sortMockupsLatestFirst((existing as any)?.data?.mockups);
-                          const demoUrl = latestMocks.find((m: any) => m?.v0_demo_url)?.v0_demo_url
+                          // Prefer v0LiveUrl (clean URL), then check backend, then use v0DemoUrl
+                          const demoUrl = v0LiveUrl
+                            || latestMocks.find((m: any) => m?.v0_demo_url)?.v0_demo_url
                             || (existing as any)?.data?.v0_demo_url
                             || v0DemoUrl
                             || undefined;
                           await persistLandingSnapshot({
-                            demoUrl,
+                            demoUrl, // persistLandingSnapshot will strip timestamp if needed
                             projectId: v0_project_id,
                             chatId: v0_chat_id,
                             status: 'completed',
@@ -2963,6 +3083,11 @@ user problems: ${probsLine}`;
                           {isSendingV0 ? 'Applying…' : 'Apply Change'}
                         </Button>
                       </div>
+                      {v0InstructionError && (
+                        <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                          {v0InstructionError}
+                        </div>
+                      )}
                       <div className="flex gap-3">
                         <a href={v0DemoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border">
                           <ExternalLink className="h-4 w-4" /> Open Live
